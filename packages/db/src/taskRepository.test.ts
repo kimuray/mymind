@@ -34,7 +34,6 @@ const createTask = (id = 't1', noteMd: string | null = null) =>
     parentId: null,
     title: '企画書ドラフトを書く',
     noteMd,
-    sortOrder: 1,
   });
 
 const statusChange = (from: Status, to: Status, minute: number): StatusChangeEvent => {
@@ -148,5 +147,174 @@ describe('ADR-0009 機微データの列', () => {
   it('メモがなければ null のまま保存する', () => {
     createTask('t1', null);
     expect(repo.find('t1')?.noteMd).toBeNull();
+  });
+});
+
+describe('ADR-0004 1回の操作の変更をまとめて保存する', () => {
+  const createChild = (id: string) =>
+    repo.create({
+      created: { type: 'created', taskId: id, at: at(0), day: DAY },
+      parentId: 't1',
+      title: `子 ${id}`,
+      noteMd: null,
+    });
+
+  it('子の変更と自動ルールによる親の変更を、同じトランザクションで保存する', () => {
+    createTask();
+    createChild('c1');
+    const childEvent = changeStatus({
+      taskId: 'c1',
+      at: at(1),
+      day: DAY,
+      from: 'todo',
+      to: 'doing',
+    });
+    const parentEvent = changeStatus({
+      taskId: 't1',
+      at: at(1),
+      day: DAY,
+      from: 'todo',
+      to: 'doing',
+    });
+    if (!childEvent.ok || !parentEvent.ok) throw new Error('遷移できません');
+    const result = repo.applyChanges([
+      { taskId: 'c1', expectedVersion: 1, events: [childEvent.value] },
+      { taskId: 't1', expectedVersion: null, events: [parentEvent.value] },
+    ]);
+    expect(result.ok).toBe(true);
+    expect(repo.find('c1')?.status).toBe('doing');
+    expect(repo.find('t1')?.status).toBe('doing');
+  });
+
+  it('後の変更が失敗したら、先に保存した変更も取り消す', () => {
+    createTask();
+    createChild('c1');
+    const childEvent = changeStatus({
+      taskId: 'c1',
+      at: at(1),
+      day: DAY,
+      from: 'todo',
+      to: 'doing',
+    });
+    if (!childEvent.ok) throw new Error('遷移できません');
+    const result = repo.applyChanges([
+      { taskId: 'c1', expectedVersion: 1, events: [childEvent.value] },
+      { taskId: 't1', expectedVersion: 99, events: [] },
+    ]);
+    expect(result).toEqual({
+      ok: false,
+      error: { kind: 'version_conflict', taskId: 't1', currentVersion: 1 },
+    });
+    expect(repo.find('c1')).toMatchObject({ status: 'todo', version: 1 });
+    expect(repo.listEvents('c1')).toHaveLength(1);
+  });
+
+  it('子の一覧を並び順に返す', () => {
+    createTask();
+    createChild('c1');
+    createChild('c2');
+    expect(repo.listChildren('t1').map((t) => t.id)).toEqual(['c1', 'c2']);
+  });
+});
+
+describe('FR-T09 タスクの編集', () => {
+  it('タイトルとメモを変え、編集のイベントを残して version を上げる', () => {
+    createTask('t1', '古いメモ');
+    const result = repo.applyChanges([
+      {
+        taskId: 't1',
+        expectedVersion: 1,
+        events: [{ type: 'edited', taskId: 't1', at: at(3), day: DAY }],
+        edit: { title: '企画書を仕上げる', noteMd: '新しいメモ' },
+      },
+    ]);
+    expect(result).toMatchObject({
+      ok: true,
+      value: [
+        { title: '企画書を仕上げる', noteMd: '新しいメモ', version: 2, lastTouchedAt: at(3) },
+      ],
+    });
+    expect(repo.listEvents('t1').at(-1)).toMatchObject({ type: 'edited' });
+  });
+});
+
+describe('FR-T05 計画への出し入れ', () => {
+  const planned = (day: string) => ({ type: 'planned', taskId: 't1', at: at(1), day }) as const;
+
+  it('作成と同時に計画に入れると、計画のイベントも残す', () => {
+    repo.create({
+      created: { type: 'created', taskId: 't1', at: at(0), day: DAY },
+      parentId: null,
+      title: 'A',
+      noteMd: null,
+      plan: { day: DAY, event: planned(DAY) },
+    });
+    expect(repo.listPlan(DAY).map((t) => t.id)).toEqual(['t1']);
+    expect(repo.listEvents('t1').map((e) => e.type)).toEqual(['created', 'planned']);
+  });
+
+  it('計画に入れた順に並び、あとから入れたものが末尾になる', () => {
+    for (const id of ['a', 'b', 'c']) {
+      repo.create({
+        created: { type: 'created', taskId: id, at: at(0), day: DAY },
+        parentId: null,
+        title: id,
+        noteMd: null,
+        plan: { day: DAY, event: { ...planned(DAY), taskId: id } },
+      });
+    }
+    expect(repo.listPlan(DAY).map((t) => [t.id, t.position])).toEqual([
+      ['a', 1],
+      ['b', 2],
+      ['c', 3],
+    ]);
+  });
+
+  it('計画から外して別の日に入れる', () => {
+    createTask();
+    repo.applyChanges([
+      {
+        taskId: 't1',
+        expectedVersion: 1,
+        events: [planned(DAY)],
+        plan: { removeDays: [], addDay: DAY },
+      },
+    ]);
+    repo.applyChanges([
+      {
+        taskId: 't1',
+        expectedVersion: 2,
+        events: [],
+        plan: { removeDays: [DAY], addDay: '2026-09-24' },
+      },
+    ]);
+    expect(repo.listPlan(DAY)).toEqual([]);
+    expect(repo.listPlannedDays('t1')).toEqual(['2026-09-24']);
+  });
+
+  it('バックログは、今日以降の計画に入っていない未完了のタスク', () => {
+    createTask('past');
+    createTask('today');
+    createTask('tomorrow');
+    createTask('none');
+    createTask('closed');
+    const plan = (taskId: string, day: string) =>
+      repo.applyChanges([
+        { taskId, expectedVersion: null, events: [], plan: { removeDays: [], addDay: day } },
+      ]);
+    plan('past', '2026-09-20');
+    plan('today', DAY);
+    plan('tomorrow', '2026-09-24');
+    const cancel = changeStatus({
+      taskId: 'closed',
+      at: at(1),
+      day: DAY,
+      from: 'todo',
+      to: 'cancelled',
+    });
+    if (!cancel.ok) throw new Error('遷移できません');
+    repo.applyChanges([{ taskId: 'closed', expectedVersion: null, events: [cancel.value] }]);
+
+    expect(repo.listBacklog(DAY).map((t) => t.id)).toEqual(['past', 'none']);
   });
 });
