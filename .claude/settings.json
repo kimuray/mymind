@@ -48,7 +48,6 @@
       "Edit(prompts/**)",
       "Bash(gh issue create:*)",
       "Bash(gh issue close:*)",
-      "Bash(node scripts/issues-to-github.mjs:*)",
       "Bash(node scripts/github-setup.mjs:*)",
       "Bash(docker:*)",
       "Bash(pnpm docker:*)"
@@ -83,7 +82,6 @@
       "git push:*",
       "pnpm run doctor",
       "node scripts/merge-if-allowed.mjs:*",
-      "node scripts/issues-to-github.mjs:*",
       "node scripts/github-setup.mjs:*"
     ],
     "filesystem": {
