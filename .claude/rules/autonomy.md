@@ -14,7 +14,7 @@ description: 自律モードのループ、保留の判断、マージの手順�
 
 ## ループ
 
-1. **再開の確認**：`pnpm doctor` を実行し、`docs/progress.md` の直近の記録と、`status:in-progress` の issue を確認する。作業途中の issue があれば、それを先に仕上げる
+1. **再開の確認**：`pnpm run doctor` を実行し、`docs/progress.md` の直近の記録と、`status:in-progress` の issue を確認する。作業途中の issue があれば、それを先に仕上げる
 2. **選ぶ**：`status:ready` の issue から、優先度（p0 → p2）、マイルストーン（M1 → M5）、番号の順に1つ選ぶ。`depends_on` の issue がすべて閉じているか確認する
 3. **着手を記録する**：ラベルを `status:in-progress` にし、ブランチを作る
 4. **実装する**：`.claude/rules/workflow.md` の手順と AGENTS.md の完了の定義に従う

@@ -22,7 +22,7 @@
       "Bash(gh pr diff:*)",
       "Bash(gh issue list:*)",
       "Bash(gh issue view:*)",
-      "Bash(pnpm doctor)",
+      "Bash(pnpm run doctor)",
       "Bash(git push -u origin:*)",
       "Bash(git push origin:*)",
       "Bash(git switch -c:*)",
@@ -77,16 +77,24 @@
     "autoAllowBashIfSandboxed": true,
     "allowUnsandboxedCommands": true,
     "excludedCommands": [
-      "gh *",
-      "pnpm doctor",
-      "node scripts/merge-if-allowed.mjs *",
-      "node scripts/issues-to-github.mjs *",
-      "node scripts/github-setup.mjs *"
+      "gh",
+      "gh:*",
+      "git push",
+      "git push:*",
+      "pnpm run doctor",
+      "node scripts/merge-if-allowed.mjs:*",
+      "node scripts/issues-to-github.mjs:*",
+      "node scripts/github-setup.mjs:*"
     ],
     "filesystem": {
-      "allowWrite": ["~/Library/pnpm", "~/Library/Caches/ms-playwright"],
+      "allowWrite": [
+        "~/Library/pnpm",
+        "~/Library/Caches/ms-playwright",
+        "~/.npm/_cacache",
+        "./.git"
+      ],
       "denyRead": ["~/.mymind"],
-      "denyWrite": ["./.env"]
+      "denyWrite": ["./.env", "./.git/hooks", "./.git/config"]
     },
     "credentials": {
       "files": [
