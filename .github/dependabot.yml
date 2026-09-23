@@ -12,6 +12,14 @@ updates:
       dev-dependencies:
         dependency-type: development
         update-types: [minor, patch]
+    ignore:
+      # dependency-cruiser は TypeScript の JS API で .ts を解析するが、JS API のない 7 系には未対応。
+      # 7 を入れると deps:check が 0 モジュールのまま成功してしまうため、対応するまで上げない（PR #9）
+      - dependency-name: typescript
+        versions: [">=7"]
+      # 型定義は実行環境の Node（.nvmrc）と揃える。メジャーは Node を上げるときに合わせて上げる（PR #8）
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
     commit-message:
       prefix: chore
       include: scope
