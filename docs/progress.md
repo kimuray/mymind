@@ -13,3 +13,4 @@
 | 2026-09-23 | #28 | #57（#56 の上に積んだ） | 自動ルール（中断・親の着手・完了提案）を、イベントと提案を返す domain の関数にした | #18 の暫定決定は後から追加 |
 | 2026-09-23 | #47 | #58 | CI の check に pnpm audit --audit-level high を追加 | - |
 | 2026-09-23 | #29 | #59 | 今日とバックログの API（追加・編集・ステータス変更・移動・今日・バックログ）。applyChanges で1操作を1トランザクションに。ULID を自前で生成 | 次は #26 |
+| 2026-09-23 | #37 | 下記の PR | apps/web の雛形（Vite・React・TanStack Query・TanStack Router）、tokens.css、Mame、3ペインの枠、@fontsource の同梱、CI の E2E の切り替え。ADR-0012 | 次は #30（#29 と #37 が揃う） |

@@ -28,7 +28,7 @@
 | ランタイム | Node.js（LTS） |
 | サーバー | Hono |
 | DB | SQLite（`node:sqlite`、ADR-0006）、Drizzle ORM（1.0 の rc に固定し、トランザクションは同期で書く。ADR-0011） |
-| フロントエンド | React、Vite、TanStack Query |
+| フロントエンド | React、Vite、TanStack Query、TanStack Router（ADR-0012） |
 | エディタ | CodeMirror 6（Markdown） |
 | 検証と型共有 | zod、Hono RPC |
 | テスト | Vitest、Playwright |
@@ -332,7 +332,7 @@ PCがスリープしていて時刻を過ぎた場合は、復帰後2時間以�
 
 ### 12.1 フォント（NFR-10、NFR-11）
 
-フォントは `apps/web/public/fonts/` に WOFF2 で置き、`@font-face` で読み込みます。Noto Sans JP は、常用漢字、ひらがな、カタカナ、記号、英数字に絞ったサブセットを作り、`font-display: swap` で読み込みます。サブセットにない文字はシステムの和文フォント（ヒラギノ角ゴ）で表示されます。CSP の `font-src 'self'` と一致させ、外部への通信は発生させません。
+フォントは `@fontsource/inter` と `@fontsource/noto-sans-jp` の WOFF2 を、400・500・600・700 の太さだけ同梱します（ADR-0012）。Vite がビルド時にアプリへ含め、`font-display: swap` で読み込みます。WOFF2 は文字の範囲ごとに分かれていて、ブラウザは `unicode-range` で表示する文字を含むファイルだけを読み込みます。CSP の `font-src 'self'` と一致させ、外部への通信は発生させません。
 
 ### 12.2 下書き（NFR-12）
 
