@@ -27,7 +27,7 @@ mymind は、日々のTODOと振り返りを管理し、ローカルのAIエー�
 
 セッションを始めたとき、またはコンテキストが途切れて再開するときは、最初に次を行ってください。
 
-1. `pnpm doctor` で環境を確認する
+1. `pnpm run doctor` で環境を確認する
 2. `docs/progress.md` の直近の記録を読む
 3. `status:in-progress` の issue があれば、それを先に仕上げる
 
@@ -66,7 +66,7 @@ e2e/            Playwright の E2E テスト
 | `pnpm test:e2e` | E2E テスト |
 | `pnpm docs:check` / `pnpm docs:build` | 設計文書のリンク・参照の検査 / 人が読むための HTML の生成 |
 | `pnpm check` | 上記のうち E2E 以外をすべて実行 |
-| `pnpm doctor` | 開発環境の前提を確認 |
+| `pnpm run doctor` | 開発環境の前提を確認（`run` は省略しない。`pnpm doctor` は pnpm 自身の診断コマンドになる） |
 | `pnpm docker:dev` / `docker:check` / `docker:e2e` | Docker で開発サーバー / チェック / E2E を実行（ADR-0010。実行には承認が必要） |
 
 ## 完了の定義
