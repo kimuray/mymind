@@ -54,3 +54,17 @@ export function planMove(input: {
 export function canHaveChildren(task: { parentId: string | null }): boolean {
   return task.parentId === null;
 }
+
+/**
+ * タスクを別のタスクの子にできるか（FR-T02、#18 の暫定決定）。
+ * 自分自身の子にはできず、親は親を持たないタスクだけ、子を持つタスクは子になれない（3階層目になるため）。
+ */
+export function canBecomeChild(input: {
+  taskId: string;
+  taskHasChildren: boolean;
+  parent: { id: string; parentId: string | null };
+}): boolean {
+  return (
+    input.parent.id !== input.taskId && canHaveChildren(input.parent) && !input.taskHasChildren
+  );
+}

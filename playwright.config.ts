@@ -1,7 +1,8 @@
 import { fileURLToPath } from 'node:url';
 import { defineConfig, devices } from '@playwright/test';
 
-const port = 4820;
+// 手元で 4820 が使用中（Docker の開発環境など）のときは MYMIND_E2E_PORT で変えられる
+const port = Number(process.env['MYMIND_E2E_PORT'] ?? 4820);
 // pnpm start は apps/server で動くので、データディレクトリは絶対パスで渡す
 const dataDir = fileURLToPath(new URL('./.data/e2e', import.meta.url));
 

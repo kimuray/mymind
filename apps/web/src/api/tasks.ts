@@ -93,7 +93,8 @@ export function useTransition() {
     onMutate: async ({ task, to }) => {
       await qc.cancelQueries({ queryKey: ['day'] });
       await qc.cancelQueries({ queryKey: queryKeys.backlog });
-      patchCachedTask(qc, task.id, { status: to });
+      // サーバーは変更のたびに version を1つ上げる。続けて操作しても古い version で送らないよう、先に合わせる
+      patchCachedTask(qc, task.id, { status: to, version: task.version + 1 });
     },
     // 失敗（別の画面で変更されていた、など）しても、成功しても、サーバーの状態を読み直す
     onSettled: () => invalidateTasks(qc),
@@ -116,6 +117,34 @@ export function useMove() {
           },
         }),
       ),
+    onSettled: () => invalidateTasks(qc),
+  });
+}
+
+export function useEditTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (
+      input: ScreenState & {
+        task: ListTask;
+        title?: string;
+        parentId?: string | null;
+        order?: { in: 'plan' | 'backlog'; value: number };
+      },
+    ) => {
+      const { task, expectedDay, ...changes } = input;
+      return unwrap(
+        await api.tasks[':id'].$patch({
+          param: { id: task.id },
+          json: { ...changes, expectedVersion: task.version, expectedDay },
+        }),
+      );
+    },
+    onMutate: async ({ task, title }) => {
+      if (title === undefined) return;
+      await qc.cancelQueries({ queryKey: ['day'] });
+      patchCachedTask(qc, task.id, { title, version: task.version + 1 });
+    },
     onSettled: () => invalidateTasks(qc),
   });
 }

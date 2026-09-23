@@ -419,3 +419,18 @@
   color: var(--ink-4);
   font-variant-numeric: tabular-nums;
 }
+
+/* タイトルの編集欄（E キー） */
+.task-title-input {
+  flex: 1;
+  min-width: 0;
+  height: 32px;
+  padding: 0 var(--space-2);
+  border: var(--row-selected-border);
+  border-radius: var(--radius-m);
+  background: var(--row-selected-bg);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-1);
+}

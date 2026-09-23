@@ -6,6 +6,7 @@ import {
   type Suggestion,
   useCreateTask,
   useDayPlan,
+  useEditTask,
   useMove,
   useTransition,
 } from '../api/tasks';
@@ -18,6 +19,7 @@ import { TaskDetail } from '../components/TaskDetail';
 import { TaskRow } from '../components/TaskRow';
 import { currentDay, formatDayHeading } from '../day';
 import { LIST_HINTS, NAVIGATION_KEYS } from '../keymap';
+import { type ListRow, useTaskListKeys } from '../useTaskListKeys';
 
 const isClosed = (s: Status) => s === 'done' || s === 'cancelled';
 
@@ -41,12 +43,21 @@ export function TodayPage() {
   const move = useMove();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const edit = useEditTask();
 
   const tasks = plan.data?.tasks ?? [];
   const open = tasks.filter((t) => !isClosed(t.status));
   const closed = tasks.filter((t) => isClosed(t.status));
   const selected = tasks.find((t) => t.id === selectedId);
   const count = (s: Status) => tasks.filter((t) => t.status === s).length;
+  const positions = new Map((plan.data?.tasks ?? []).map((t) => [t.id, t.position]));
+  const openRows = orderWithChildren(open);
+  // キー操作で移動する順（未完了の欄、完了の欄の順）
+  const rows: ListRow[] = [...openRows, ...closed.map((task) => ({ task, depth: 0 as const }))].map(
+    (r) => ({ ...r, order: positions.get(r.task.id) ?? 0 }),
+  );
   const heading = formatDayHeading(day);
 
   const changeStatus = (task: ListTask, to: Status) =>
@@ -68,6 +79,22 @@ export function TodayPage() {
         },
       },
     );
+
+  useTaskListKeys({
+    rows,
+    selectedId,
+    select: setSelectedId,
+    place: 'today',
+    changeStatus,
+    moveTask,
+    startEdit: setEditingId,
+    edit: (task, change) => edit.mutateAsync({ task, expectedDay: day, ...change }),
+    notify: setNotice,
+  });
+  const endEdit = (task: ListTask) => (title: string | null) => {
+    setEditingId(null);
+    if (title !== null) edit.mutate({ task, title, expectedDay: day });
+  };
 
   const detail =
     selected === undefined ? undefined : (
@@ -111,6 +138,15 @@ export function TodayPage() {
           onSubmit={(title) => create.mutate({ title, planFor: 'today', expectedDay: day })}
         />
 
+        {notice !== null && (
+          <p className="suggestions" aria-live="polite">
+            {notice}
+            <Button kind="text" onClick={() => setNotice(null)}>
+              閉じる
+            </Button>
+          </p>
+        )}
+
         <SuggestionBar
           suggestions={suggestions}
           tasks={tasks}
@@ -120,7 +156,7 @@ export function TodayPage() {
 
         {open.length > 0 && (
           <ul className="task-list glass-2" aria-label="今日やること">
-            {orderWithChildren(open).map(({ task, depth }) => (
+            {openRows.map(({ task, depth }) => (
               <TaskRow
                 key={task.id}
                 task={task}
@@ -129,6 +165,8 @@ export function TodayPage() {
                 selected={task.id === selectedId}
                 onSelect={() => setSelectedId(task.id)}
                 onAdvance={() => advance(task)}
+                editing={task.id === editingId}
+                onEditEnd={endEdit(task)}
               />
             ))}
           </ul>
@@ -150,6 +188,8 @@ export function TodayPage() {
                   selected={task.id === selectedId}
                   onSelect={() => setSelectedId(task.id)}
                   onAdvance={() => advance(task)}
+                  editing={task.id === editingId}
+                  onEditEnd={endEdit(task)}
                 />
               ))}
             </ul>
