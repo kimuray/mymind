@@ -52,14 +52,15 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
-      # apps/server ができるまではジョブを成功扱いのまま中身を省略する（必須チェックを満たすため）
+      # 画面（apps/web）ができるまではジョブを成功扱いのまま中身を省略する（必須チェックを満たすため）。
+      # 本番ビルドの配信と E2E の有効化は #50 で行う
       - id: gate
         run: |
-          if [ -f apps/server/package.json ]; then
+          if [ -f apps/web/package.json ]; then
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
             echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "apps/server がまだないため E2E を省略します"
+            echo "apps/web がまだないため E2E を省略します"
           fi
       - if: steps.gate.outputs.enabled == 'true'
         uses: pnpm/action-setup@v4
