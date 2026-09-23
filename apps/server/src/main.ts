@@ -1,7 +1,14 @@
+import { join } from 'node:path';
+import { createTaskRepository, MIGRATIONS_FOLDER, openDatabase, plainCodec } from '@mymind/db';
+import { createApi } from './api';
 import { createApp } from './app';
 import { type ConfigError, loadConfig } from './config';
 import { acquireLock, ensureDataDir, issueSessionToken } from './dataDir';
 import { listen } from './listen';
+import { createUlidGenerator } from './ulid';
+
+// 業務日の切り替え（FR-D01）。設定画面ができるまでは初期値を使う
+const DAY_OPTIONS = { timeZone: 'Asia/Tokyo', dayStartHour: 5 };
 
 // サーバーのロガーを用意するまでは、起動時の失敗を console.error で表示する
 
@@ -32,9 +39,21 @@ async function main(): Promise<number> {
   }
 
   const sessionToken = issueSessionToken(dataDir);
-  const app = createApp({ ports: [port], sessionToken });
+  const db = openDatabase({
+    path: join(dataDir, 'mymind.db'),
+    migrationsFolder: MIGRATIONS_FOLDER,
+  });
+  const newId = createUlidGenerator(() => Date.now());
+  const api = createApi({
+    tasks: createTaskRepository({ db, codec: plainCodec, newEventId: newId }),
+    now: () => new Date(),
+    dayOptions: DAY_OPTIONS,
+    newId,
+  });
+  const app = createApp({ ports: [port], sessionToken }, api);
   const server = await listen(app, host, port);
   if (!server.ok) {
+    db.$client.close();
     lock.release();
     console.error(
       `ポート ${port} は使用中です。使っているプロセスを止めるか、MYMIND_PORT で別のポートを指定してください`,
@@ -44,6 +63,7 @@ async function main(): Promise<number> {
 
   const shutdown = async () => {
     await server.value.close();
+    db.$client.close();
     lock.release();
     process.exit(0);
   };
