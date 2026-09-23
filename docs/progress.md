@@ -9,3 +9,4 @@
 | 2026-09-23 | #14 | #51 | apps/server の雛形、Host・Origin・トークンの検証、二重起動の防止。web との結合は #50 に切り出し | 次は #27、#28、#37 |
 | 2026-09-23 | #53 | #54 | 依存を持つ open の issue 24件の本文に `依存:` の行を追加。書き方を workflow.md とテンプレートに明記 | - |
 | 2026-09-23 | #38（一部） | 下記の PR | `docs/issues/` と登録スクリプトを削除。issue は GitHub だけで管理する | 次は #27、#28、#37 |
+| 2026-09-23 | #27 | 下記の PR | tasks・day_plans・task_events・settings のスキーマ、SensitiveCodec、ステータス変更をイベントと同じトランザクションで保存するリポジトリ。domain に changeStatus | スキーマの変更なのでレビュー必須の見込み |
