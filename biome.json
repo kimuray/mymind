@@ -12,6 +12,7 @@
       "!**/coverage",
       "!**/playwright-report",
       "!**/*.gen.ts",
+      "!packages/db/**/migrations",
       "!docs/design/mockup-source",
       "!docs-site"
     ]

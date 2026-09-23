@@ -27,7 +27,7 @@
 |---|---|
 | ランタイム | Node.js（LTS） |
 | サーバー | Hono |
-| DB | SQLite（`node:sqlite` を第一候補、ADR-0006）、Drizzle ORM |
+| DB | SQLite（`node:sqlite`、ADR-0006）、Drizzle ORM（1.0 の rc に固定し、トランザクションは同期で書く。ADR-0011） |
 | フロントエンド | React、Vite、TanStack Query |
 | エディタ | CodeMirror 6（Markdown） |
 | 検証と型共有 | zod、Hono RPC |

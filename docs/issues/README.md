@@ -7,7 +7,7 @@ GitHub に登録するまでの間、issue をここで管理します。各フ�
 | No. | タイトル | マイルストーン | 優先度 | 状態 | 依存 |
 |---|---|---|---|---|---|
 | [001](./001.md) | spike: エージェントCLIのヘッドレス起動を実機で検証する | M3 | p0 | needs-human | - |
-| [002](./002.md) | spike: SQLiteドライバ（node:sqlite / better-sqlite3）を検証して確定する | M1 | p0 | ready | - |
+| [002](./002.md) | spike: SQLiteドライバ（node:sqlite / better-sqlite3）を検証して確定する | M1 | p0 | in-progress | - |
 | [003](./003.md) | launchd から起動したサーバーでエージェントとDBが使えるようにする | M5 | p1 | needs-human | 001 |
 | [004](./004.md) | spike: Figma MCP でモックアップを書き出し、デザインの正本にする | M1 | p0 | needs-human | - |
 | [005](./005.md) | 開発時と本番時のサーバー構成と、ローカルサーバーの保護を実装する | M1 | p0 | ready | - |

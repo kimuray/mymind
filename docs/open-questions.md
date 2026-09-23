@@ -9,7 +9,7 @@
 | 1 | モックアップが実装者から見えない | Figma MCP で書き出し、Figma を画面構成の正本にする。書き出し方法は検証する | `docs/design/README.md`、issue 004 |
 | 2 | エージェントCLIの起動方法が未検証 | M3 の前にスパイクで確定する | ADR-0005、issue 001 |
 | 4 | 開発時のサーバー構成とセキュリティの両立 | 入口を1つにする（Vite プロキシ）、Fetch Metadata・Origin・独自ヘッダーのトークンで多層に検証、本番ビルドで厳格な CSP、E2E は本番ビルドに対して実行 | ADR-0007、architecture.md 8章、issue 005 |
-| 5 | SQLite ドライバの選定 | node:sqlite を第一候補とし、drizzle-kit との組み合わせをスパイクで確認して確定する | ADR-0006、issue 002 |
+| 5 | SQLite ドライバの選定 | node:sqlite を採用する。Drizzle は 1.0 の rc に固定し、トランザクションは同期で書く（スパイクで確定） | ADR-0006、ADR-0011、issue 002 |
 | 6 | 記録の訂正 | 日付ごとの詳細に「記録を再生成」ボタンをフォールバックとして置く。記録はスナップショットとして保存し、再生成でイベントから作り直す | requirements.md FR-R07、architecture.md 4.6、issue 008 |
 | 7 | アプリを開かなかった日 | 持ち越しの基準を「最後に計画があった業務日」にし、空白日の扱いを設計に含める | requirements.md FR-D09、architecture.md 4.5、issue 007 |
 | 12 | FB の口調と方針 | コーチとして、新しい観点や気づきを与えることを目的にする。共感と受容を土台にし、必要なときは厳しく指摘する | requirements.md FR-A11、`prompts/coaching-policy.md`、issue 013 |
