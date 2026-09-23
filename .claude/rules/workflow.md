@@ -56,7 +56,7 @@ description: 変更の単位、進め方、文書の更新、issue の運用、C
 | ワークフロー | タイミング | 内容 |
 |---|---|---|
 | `ci.yml` の `check` | PR と main への push | 依存関係の脆弱性（high 以上で失敗）、lint、型チェック、依存方向、デザイントークン、テスト（カバレッジ） |
-| `ci.yml` の `e2e` | `check` の成功後 | 本番ビルドに対する E2E（偽のエージェント）。`apps/web` ができるまでは中身を省略して成功扱い |
+| `ci.yml` の `e2e` | `check` の成功後 | 本番ビルドに対する E2E（偽のエージェント）。`ci.yml` の `E2E_ENABLED` が `true` になるまで（#50）は中身を省略して成功扱い |
 | `pr-policy.yml` の `pr-policy` | PR の作成・更新・編集 | タイトルが Conventional Commits か、本文が issue を参照しているか。レビュー必須の変更なら `review:required` を付ける |
 | `issue-deps.yml` | issue が閉じたとき | 依存していた issue の `status:blocked` を `status:ready` に変え、閉じた issue の `status:in-progress` を外す |
 | `dependabot.yml` | 毎週月曜 | 依存関係と Actions の更新 PR（依存関係の変更なのでレビュー必須） |
