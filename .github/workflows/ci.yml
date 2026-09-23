@@ -25,6 +25,9 @@ jobs:
           node-version-file: .nvmrc
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      # NFR-26：重大度 high 以上の既知の脆弱性があれば失敗させる（moderate 以下は Dependabot の更新で扱う）
+      - name: 依存関係の脆弱性
+        run: pnpm audit --audit-level high
       - name: Lint
         run: pnpm lint
       - name: 型チェック
