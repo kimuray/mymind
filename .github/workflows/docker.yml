@@ -1,0 +1,34 @@
+name: Docker
+
+# Docker の開発環境（ADR-0010）が壊れていないことを確かめる。
+on:
+  pull_request:
+    paths:
+      - "Dockerfile"
+      - "compose.yaml"
+      - ".dockerignore"
+      - ".devcontainer/**"
+      - "package.json"
+      - "pnpm-lock.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  compose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: 設定の検証
+        run: docker compose config --quiet
+      - name: イメージのビルド
+        run: docker compose build dev check e2e
+      # GitHub のランナーはユーザー ID が 1000 ではないため、バインドマウントへの書き込みのために root で実行する
+      - name: コンテナ内で pnpm check
+        run: docker compose run --rm --user root check

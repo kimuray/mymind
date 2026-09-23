@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>調子キャラ：マメ</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans+JP:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F1ECE3;font-family:'Inter','Noto Sans JP','Hiragino Sans',sans-serif;color:#1C1B19}
+</style>
+</helmet>
+<div style="width: 390px; height: 600px; box-sizing: border-box; padding: 24px 20px; display: flex; flex-direction: column; gap: 18px; font-family: 'Inter', 'Noto Sans JP', 'Hiragino Sans', sans-serif; font-feature-settings: 'cv11', 'ss01'; color: #1C1B19; background-color: #F1ECE3; background-image: radial-gradient(circle at 12% 10%, rgba(122, 150, 214, 0.5), transparent 45%), radial-gradient(circle at 92% 40%, rgba(244, 176, 124, 0.5), transparent 42%), radial-gradient(circle at 30% 95%, rgba(138, 192, 146, 0.45), transparent 45%);">
+  <div style="display: flex; flex-direction: column; gap: 4px;">
+    <span style="font-size: 12px; font-weight: 700; color: #4F4A42; letter-spacing: 0.08em;">調子キャラ</span>
+    <h1 style="margin: 0; letter-spacing: -0.025em; font-size: 30px; font-weight: 600;">マメ（仮）</h1>
+    <p style="margin: 0; font-size: 13px; line-height: 1.7; color: #4F4A42;">振り返りの文章から、毎朝の表情と頭の芽が変わる。調子が良いほど芽が伸びて、絶好調の日は花が咲く。</p>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;">
+    <sc-for list="{{moods}}" as="m" hint-placeholder-count="5">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 14px 6px 12px; border-radius: 22px; background: rgba(255, 255, 255, 0.55); backdrop-filter: blur(22px) saturate(170%); -webkit-backdrop-filter: blur(22px) saturate(170%); border: 1px solid rgba(255, 255, 255, 0.8); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.9), 0 10px 26px rgba(38, 34, 28, 0.10);">
+        <dc-import name="Mame" mood="{{m.key}}" size="84" hint-size="84px,84px"></dc-import>
+        <span style="font-size: 14px; font-weight: 700; color: {{m.ink}};">{{m.label}}</span>
+      </div>
+    </sc-for>
+  </div>
+  <p style="margin: 0; font-size: 12px; line-height: 1.7; color: #4F4A42;">色は5段階で固定。AIの判定を自分の感覚で修正した日は、どちらの表情も記録に残る。</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":600}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const two = 'M24 14.5V6.5M24 10.5c2.4-3.6 6.4-3.6 8-1.6c-2.6 2.2-5.6 2.6-8 1.6M24 10.5c-2.4-3.6-6.4-3.6-8-1.6c2.6 2.2 5.6 2.6 8 1.6';
+    const moods = [
+      { key: 'best', label: '絶好調', body: '#F29A86', ink: '#9E2A1F', eyes: 'M16.5 26.5q2.5-3.6 5 0M26.5 26.5q2.5-3.6 5 0', mouth: 'M19 31Q24 38 29 31Z', mouthFill: '#2A2622', sprout: two, flower: 3.2 },
+      { key: 'good', label: '好調', body: '#F5B98A', ink: '#9A4715', eyes: 'M19.5 24.5v3.2M28.5 24.5v3.2', mouth: 'M20 31.5q4 3.8 8 0', mouthFill: 'none', sprout: two, flower: 0 },
+      { key: 'normal', label: '普通', body: '#EAD98A', ink: '#6B5A18', eyes: 'M19.5 24.5v3.2M28.5 24.5v3.2', mouth: 'M21 32.5h6', mouthFill: 'none', sprout: 'M24 14.5V7.5M24 11c2.4-3.6 6.4-3.6 8-1.6c-2.6 2.2-5.6 2.6-8 1.6', flower: 0 },
+      { key: 'bad', label: '不調', body: '#9DBEE0', ink: '#2F5E8C', eyes: 'M17 25l4.5 1.6M31 25l-4.5 1.6', mouth: 'M20 33.5q4-3.2 8 0', mouthFill: 'none', sprout: 'M24 14.5c0-3 1-5.2 3.4-6.4c2 1.4 2.6 4.3 1.2 6.6c-1.9-.7-3.3-2-4.6-.2', flower: 0 },
+      { key: 'worst', label: '絶不調', body: '#B3A6DA', ink: '#5B4A8A', eyes: 'M16.5 26h5M26.5 26h5', mouth: 'M19 33.5q2.5-2.2 5 0t5 0', mouthFill: 'none', sprout: 'M24 14.5c0-3.5 2.2-5 4.6-4c1.4.8 1.2 3.3-.6 4.2', flower: 0 }
+    ];
+    return { moods: moods };
+  }
+}
+</script>
+</body>
+</html>

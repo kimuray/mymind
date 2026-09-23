@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>マメ</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: {{px}}px; height: {{px}}px; display: flex; align-items: center; justify-content: center; font-family: 'Inter', 'Noto Sans JP', sans-serif; color: #1C1B19;">
+  <svg width="100%" height="100%" viewBox="0 0 48 48" aria-hidden="true">
+    <ellipse cx="24" cy="44.4" rx="10.5" ry="1.7" fill="#1C1B19" opacity="0.08"></ellipse>
+    <path d="{{f.stem}}" fill="none" stroke="#3E7A55" stroke-width="1.4" stroke-linecap="round"></path>
+    <path d="{{f.leaf}}" fill="#86BF98" fill-opacity="0.8" stroke="#3E7A55" stroke-width="0.9" stroke-linejoin="round"></path>
+    <circle cx="24" cy="6.2" r="{{f.flower}}" fill="#F4CF62" stroke="#FFFFFF" stroke-width="0.9"></circle>
+    <ellipse cx="24" cy="29.5" rx="15.5" ry="14" fill="{{f.tint}}" fill-opacity="0.86"></ellipse>
+    <ellipse cx="24" cy="35.5" rx="12.5" ry="7.5" fill="{{f.ink}}" opacity="0.12"></ellipse>
+    <ellipse cx="24" cy="29.5" rx="15.5" ry="14" fill="none" stroke="#FFFFFF" stroke-opacity="0.9" stroke-width="1.1"></ellipse>
+    <path d="M12.3 27a12 11 0 0 1 8.6-9.6" fill="none" stroke="#FFFFFF" stroke-width="2.2" stroke-linecap="round" opacity="0.9"></path>
+    <circle cx="31.6" cy="19.6" r="1.2" fill="#FFFFFF" opacity="0.85"></circle>
+    <path d="{{f.eyes}}" fill="none" stroke="#1F1D1A" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></path>
+    <path d="{{f.mouth}}" fill="none" stroke="#1F1D1A" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path>
+    <circle cx="38.5" cy="14" r="{{f.bubble1}}" fill="{{f.ink}}" opacity="0.45"></circle>
+    <circle cx="42" cy="9.5" r="{{f.bubble2}}" fill="{{f.ink}}" opacity="0.45"></circle>
+  </svg>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"mood":{"editor":"enum","options":["best","good","normal","bad","worst","sleep","think"],"default":"good"},"size":{"editor":"int","default":96,"min":16,"max":240},"$preview":{"width":96,"height":96}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const two = 'M24 10.5c1.8-3 5.2-3.4 7-2c-1.8 2.4-4.6 3-7 2zM24 10.5c-1.8-3-5.2-3.4-7-2c1.8 2.4 4.6 3 7 2z';
+    const one = 'M24 11.5c1.8-3 5.2-3.4 7-2c-1.8 2.4-4.6 3-7 2z';
+    const dots = 'M20 26v2.2M28 26v2.2';
+    const table = {
+      best:   { tint: '#F08C78', ink: '#B4432F', stem: 'M24 15.5V7.5', leaf: two, flower: 2.8, eyes: 'M17.8 27.5q2.2-2.6 4.4 0M25.8 27.5q2.2-2.6 4.4 0', mouth: 'M21 31.3q3 3.2 6 0' },
+      good:   { tint: '#F2B27E', ink: '#B0621F', stem: 'M24 15.5V8', leaf: two, flower: 0, eyes: dots, mouth: 'M21.2 31.4q2.8 2.4 5.6 0' },
+      normal: { tint: '#E3CF86', ink: '#8A7422', stem: 'M24 15.5V9', leaf: one, flower: 0, eyes: dots, mouth: 'M22 32h4' },
+      bad:    { tint: '#94B6DB', ink: '#35628F', stem: 'M24 15.5c0-3 .8-5 2.6-6.2', leaf: 'M26.6 9.3c2 .6 3 3 2.2 5.2c-1.8-.8-2.8-2.8-2.2-5.2z', flower: 0, eyes: 'M18.5 26.4l3 1M29.5 26.4l-3 1', mouth: 'M21.2 33q2.8-2 5.6 0' },
+      worst:  { tint: '#AE9FD6', ink: '#5B4A8A', stem: 'M24 15.5c0-2.6 1.4-3.8 3.4-3.6', leaf: 'M27.4 11.9c1.4 1 1.6 3 .6 4.3c-1.2-.9-1.4-2.7-.6-4.3z', flower: 0, eyes: 'M18 27h4M26 27h4', mouth: 'M20.5 33q1.75-1.5 3.5 0t3.5 0' },
+      sleep:  { tint: '#D9D4CB', ink: '#6B665C', stem: 'M24 15.5V9', leaf: one, flower: 0, eyes: 'M18 27q2 1.4 4 0M26 27q2 1.4 4 0', mouth: 'M23 32h2' },
+      think:  { tint: '#E3CF86', ink: '#8A7422', stem: 'M24 15.5V9', leaf: one, flower: 0, eyes: 'M21 24.6v2M29 24.6v2', mouth: 'M23 32.2a1.1 1.1 0 1 0 2.2 0a1.1 1.1 0 1 0 -2.2 0' }
+    };
+    const mood = this.props.mood ?? 'good';
+    const f = Object.assign({ bubble1: 0, bubble2: 0 }, table[mood] || table.good);
+    if (mood === 'think') { f.bubble1 = 1.1; f.bubble2 = 1.6; }
+    return { f: f, px: Number(this.props.size ?? 96) };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+name: Design docs
+
+# 設計文書（Markdown）を HTML に変換し、人が読めるようにアーティファクトとして添付する。
+# リポジトリ変数 DOCS_PAGES が 'true' のときだけ、main への反映で GitHub Pages に公開する。
+on:
+  pull_request:
+    paths:
+      - "docs/**"
+      - "DESIGN.md"
+      - "AGENTS.md"
+      - "prompts/**"
+      - ".claude/rules/**"
+      - ".claude/skills/**"
+      - "scripts/docs-build.mjs"
+      - "scripts/docs-assets/**"
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "DESIGN.md"
+      - "AGENTS.md"
+      - "prompts/**"
+      - ".claude/rules/**"
+      - ".claude/skills/**"
+      - "scripts/docs-build.mjs"
+      - "scripts/docs-assets/**"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: HTML を生成
+        run: pnpm docs:build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: design-docs
+          path: docs-site/
+          retention-days: 14
+      - name: 読み方を表示
+        run: |
+          {
+            echo "## 設計文書の HTML"
+            echo ""
+            echo "このページ下部の Artifacts から **design-docs** をダウンロードし、展開した \`docs/index.html\` を開いてください。"
+          } >> "$GITHUB_STEP_SUMMARY"
+      - if: github.event_name != 'pull_request' && vars.DOCS_PAGES == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs-site/
+
+  deploy:
+    needs: build
+    if: github.event_name != 'pull_request' && vars.DOCS_PAGES == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

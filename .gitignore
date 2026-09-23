@@ -1,0 +1,28 @@
+node_modules/
+dist/
+coverage/
+playwright-report/
+test-results/
+.data/
+.env
+.env.*
+*.sqlite
+*.sqlite-*
+.DS_Store
+docs-site/
+
+# Claude Code の個人設定と作業用ファイル
+.claude/settings.local.json
+.claude/.cc-writes/
+
+# 実データ（MYMIND_DATA_DIR を .data 以外にした場合の保険。ADR-0007 / ADR-0009）
+*.db
+*.db-*
+mymind.lock
+logs/
+*.log
+
+# 鍵
+*.pem
+*.key
+*.p12

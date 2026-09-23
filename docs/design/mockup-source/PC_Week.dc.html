@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>PC：タイムライン</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans+JP:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F1ECE3;font-family:'Inter','Noto Sans JP','Hiragino Sans',sans-serif;color:#1C1B19}
+a{color:#2F4B7C}a:hover{color:#1F355C}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="position: relative; width: 1440px; height: 900px; box-sizing: border-box; padding: 16px; display: flex; gap: 16px; overflow: hidden; font-family: 'Inter', 'Noto Sans JP', 'Hiragino Sans', sans-serif; font-feature-settings: 'cv11', 'ss01'; color: #1C1B19; background-color: #F1ECE3; background-image: radial-gradient(circle at 6% 8%, rgba(122, 150, 214, 0.55), transparent 30%), radial-gradient(circle at 60% 2%, rgba(196, 164, 222, 0.45), transparent 28%), radial-gradient(circle at 40% 98%, rgba(244, 176, 124, 0.42), transparent 32%), radial-gradient(circle at 98% 75%, rgba(138, 192, 146, 0.45), transparent 30%);">
+
+  <aside style="width: 232px; flex-shrink: 0; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px; padding: 20px 12px; border-radius: 24px; background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(24px) saturate(170%); -webkit-backdrop-filter: blur(24px) saturate(170%); border: 1px solid rgba(255, 255, 255, 0.85); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 12px 32px rgba(38, 34, 28, 0.08);">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 0 8px;">
+      <dc-import name="Mame" mood="good" size="32" hint-size="32px,32px"></dc-import>
+      <span style="font-size: 15px; font-weight: 600; letter-spacing: -0.01em;">[アプリ名]</span>
+    </div>
+    <nav aria-label="メイン" style="display: flex; flex-direction: column; gap: 2px;">
+      <span style="padding: 0 10px 6px; font-size: 11px; font-weight: 600; color: #5A554C; letter-spacing: 0.06em;">毎日</span>
+      <a href="PC_Today.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: 12px; text-decoration: none; color: #3F3B34; font-size: 14px; font-weight: 500;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg>今日
+      </a>
+      <a href="PC_Morning.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: 12px; text-decoration: none; color: #3F3B34; font-size: 14px; font-weight: 500;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 18h16M7 18a5 5 0 0 1 10 0M12 7v3M5.6 11.6l1.8 1.4M18.4 11.6l-1.8 1.4"></path></svg>朝の計画
+      </a>
+      <a href="PC_Reflection.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: 12px; text-decoration: none; color: #3F3B34; font-size: 14px; font-weight: 500;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14.5A7.5 7.5 0 1 1 9.5 5a6 6 0 0 0 9.5 9.5z"></path></svg>振り返り
+      </a>
+      <span style="padding: 14px 10px 6px; font-size: 11px; font-weight: 600; color: #5A554C; letter-spacing: 0.06em;">一覧</span>
+      <a href="PC_Backlog.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: 12px; text-decoration: none; color: #3F3B34; font-size: 14px; font-weight: 500;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13l2.5-7.5h11L20 13v5.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5z"></path><path d="M4 13h4.5l1.5 2.5h4l1.5-2.5H20"></path></svg>バックログ
+      </a>
+      <a href="PC_Week.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: 12px; text-decoration: none; background: rgba(47, 75, 124, 0.12); color: #233A63; font-size: 14px; font-weight: 600;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9M7 12h11M4 17h7"></path></svg>タイムライン
+      </a>
+      <a href="PC_Month.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: 12px; text-decoration: none; color: #3F3B34; font-size: 14px; font-weight: 500;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M4 10h16M10 10v10M15 10v10"></path></svg>カレンダー
+      </a>
+    </nav>
+  </aside>
+
+  <main style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; padding: 12px 8px 4px;">
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <h1 style="margin: 0; font-size: 30px; font-weight: 600; letter-spacing: -0.025em;">タイムライン</h1>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <button type="button" aria-label="前の期間" style="width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.9); background: rgba(255, 255, 255, 0.5); display: flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="16" height="16" viewBox="0 0 22 22" aria-hidden="true"><path d="M14 5l-6 6 6 6" fill="none" stroke="#3F3B34" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+        <span style="font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums;">9月9日 – 9月22日</span>
+        <button type="button" aria-label="次の期間" style="width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.9); background: rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="16" height="16" viewBox="0 0 22 22" aria-hidden="true"><path d="M8 5l6 6-6 6" fill="none" stroke="#9A958A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+        <div style="display: flex; padding: 3px; border-radius: 14px; background: rgba(255, 255, 255, 0.45); border: 1px solid rgba(255, 255, 255, 0.85);">
+          <span style="min-height: 34px; padding: 0 14px; display: flex; align-items: center; border-radius: 11px; font-size: 13px; color: #4F4A42;">1週間</span>
+          <span style="min-height: 34px; padding: 0 14px; display: flex; align-items: center; border-radius: 11px; font-size: 13px; font-weight: 600; background: rgba(255, 255, 255, 0.9); box-shadow: 0 2px 8px rgba(38, 34, 28, 0.08);">2週間</span>
+          <a href="PC_Month.dc.html" style="min-height: 34px; padding: 0 14px; display: flex; align-items: center; border-radius: 11px; font-size: 13px; color: #4F4A42; text-decoration: none;">月</a>
+        </div>
+      </div>
+    </div>
+
+    <div style="flex-grow: 1; min-height: 0; overflow-y: auto; border-radius: 22px; padding: 8px 12px 12px; background: rgba(255, 255, 255, 0.55); backdrop-filter: blur(22px) saturate(170%); -webkit-backdrop-filter: blur(22px) saturate(170%); border: 1px solid rgba(255, 255, 255, 0.85); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 10px 28px rgba(38, 34, 28, 0.08);">
+      <div style="display: grid; grid-template-columns: 200px repeat(14, minmax(0, 1fr)); padding: 8px 8px 6px; text-align: center; font-size: 11px; color: #5A554C;">
+        <span></span>
+        <sc-for list="{{days}}" as="d" hint-placeholder-count="14">
+          <span style="display: flex; flex-direction: column; gap: 1px; padding: 4px 0; border-radius: 8px; background: {{d.bg}}; color: {{d.fg}}; font-weight: {{d.weight}};"><span style="font-size: 13px; font-variant-numeric: tabular-nums;">{{d.n}}</span>{{d.w}}</span>
+        </sc-for>
+      </div>
+      <div style="display: grid; grid-template-columns: 200px repeat(14, minmax(0, 1fr)); align-items: center; min-height: 46px; padding: 0 8px; border-radius: 12px; background: rgba(255, 255, 255, 0.4);">
+        <span style="font-size: 12px; font-weight: 600; color: #4F4A42;">調子</span>
+        <sc-for list="{{lane}}" as="m" hint-placeholder-count="14">
+          <span aria-label="{{m.label}}" style="display: flex; justify-content: center;">
+            <dc-import name="Mame" mood="{{m.key}}" size="30" hint-size="30px,30px"></dc-import>
+          </span>
+        </sc-for>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px; margin-top: 6px;">
+        <sc-for list="{{rows}}" as="r" hint-placeholder-count="11">
+          <button type="button" onClick="{{r.select}}" aria-pressed="{{r.pressed}}" style="display: grid; grid-template-columns: 200px repeat(14, minmax(0, 1fr)); align-items: center; min-height: 42px; padding: 0 8px; border-radius: 12px; border: none; cursor: pointer; text-align: left; color: #1C1B19; background: {{r.bg}}; box-shadow: {{r.ring}};">
+            <span style="grid-column: 1; grid-row: 1; font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding-right: 12px; color: {{r.fg}};">{{r.title}}</span>
+            <sc-for list="{{r.segs}}" as="s" hint-placeholder-count="2">
+              <span style="grid-column: {{s.col}}; grid-row: 1; height: 16px; margin: 0 1px; border-radius: 8px; background: {{s.bg}};"></span>
+            </sc-for>
+          </button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 20px; padding: 0 8px; font-size: 12px; color: #3F3B34;">
+      <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 24px; height: 10px; border-radius: 5px; background: #2F4B7C;"></span>着手中</span>
+      <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 24px; height: 10px; border-radius: 5px; background: repeating-linear-gradient(135deg, #8A6D3B 0 3px, #EADFC6 3px 6px);"></span>中断</span>
+      <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 24px; height: 10px; border-radius: 5px; background: repeating-linear-gradient(90deg, #9A4F32 0 2px, #F0D9CD 2px 5px);"></span>待ち</span>
+      <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 24px; height: 10px; border-radius: 5px; background: #3F6B4E;"></span>完了したタスクの期間</span>
+      <span style="margin-left: auto;">行をクリックすると内訳を表示</span>
+    </div>
+  </main>
+
+  <aside aria-label="選択中のタスクの内訳" style="width: 380px; flex-shrink: 0; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px; padding: 24px; border-radius: 24px; overflow-y: auto; background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(26px) saturate(180%); -webkit-backdrop-filter: blur(26px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.9); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1), 0 14px 36px rgba(38, 34, 28, 0.10);">
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <h2 style="margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.35;">{{sel.title}}</h2>
+      <span style="font-size: 13px; color: #4F4A42; font-variant-numeric: tabular-nums;">{{sel.span}}</span>
+    </div>
+    <section style="display: flex; flex-direction: column; gap: 10px;">
+      <h3 style="margin: 0; font-size: 12px; font-weight: 600; color: #4F4A42; letter-spacing: 0.06em;">期間の内訳</h3>
+      <div style="display: flex; height: 14px; border-radius: 7px; overflow: hidden; background: rgba(28, 27, 25, 0.06);">
+        <span style="width: {{sel.doingPct}}%; background: #2F4B7C;"></span>
+        <span style="width: {{sel.pausedPct}}%; background: repeating-linear-gradient(135deg, #8A6D3B 0 3px, #EADFC6 3px 6px);"></span>
+        <span style="width: {{sel.waitingPct}}%; background: repeating-linear-gradient(90deg, #9A4F32 0 2px, #F0D9CD 2px 5px);"></span>
+      </div>
+      <dl style="margin: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
+        <div style="display: flex; flex-direction: column; gap: 2px; padding: 12px; border-radius: 14px; background: rgba(255, 255, 255, 0.55);"><dt style="font-size: 11px; color: #5A554C;">着手中</dt><dd style="margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums;">{{sel.doing}}<span style="font-size: 12px; font-weight: 500; margin-left: 2px;">日</span></dd></div>
+        <div style="display: flex; flex-direction: column; gap: 2px; padding: 12px; border-radius: 14px; background: rgba(255, 255, 255, 0.55);"><dt style="font-size: 11px; color: #5A554C;">中断</dt><dd style="margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums;">{{sel.paused}}<span style="font-size: 12px; font-weight: 500; margin-left: 2px;">日</span></dd></div>
+        <div style="display: flex; flex-direction: column; gap: 2px; padding: 12px; border-radius: 14px; background: rgba(255, 255, 255, 0.55);"><dt style="font-size: 11px; color: #5A554C;">待ち</dt><dd style="margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums;">{{sel.waiting}}<span style="font-size: 12px; font-weight: 500; margin-left: 2px;">日</span></dd></div>
+      </dl>
+      <p style="margin: 0; font-size: 13px; line-height: 1.7; color: #3F3B34;">{{sel.comment}}</p>
+    </section>
+  </aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  moods() {
+    const two = 'M24 14.5V6.5M24 10.5c2.4-3.6 6.4-3.6 8-1.6c-2.6 2.2-5.6 2.6-8 1.6M24 10.5c-2.4-3.6-6.4-3.6-8-1.6c2.6 2.2 5.6 2.6 8 1.6';
+    return [
+      { key: 'worst', label: '絶不調', body: '#B3A6DA', eyes: 'M16.5 26h5M26.5 26h5', mouth: 'M19 33.5q2.5-2.2 5 0t5 0', mouthFill: 'none', sprout: 'M24 14.5c0-3.5 2.2-5 4.6-4c1.4.8 1.2 3.3-.6 4.2', flower: 0 },
+      { key: 'bad', label: '不調', body: '#9DBEE0', eyes: 'M17 25l4.5 1.6M31 25l-4.5 1.6', mouth: 'M20 33.5q4-3.2 8 0', mouthFill: 'none', sprout: 'M24 14.5c0-3 1-5.2 3.4-6.4c2 1.4 2.6 4.3 1.2 6.6c-1.9-.7-3.3-2-4.6-.2', flower: 0 },
+      { key: 'normal', label: '普通', body: '#EAD98A', eyes: 'M19.5 24.5v3.2M28.5 24.5v3.2', mouth: 'M21 32.5h6', mouthFill: 'none', sprout: 'M24 14.5V7.5M24 11c2.4-3.6 6.4-3.6 8-1.6c-2.6 2.2-5.6 2.6-8 1.6', flower: 0 },
+      { key: 'good', label: '好調', body: '#F5B98A', eyes: 'M19.5 24.5v3.2M28.5 24.5v3.2', mouth: 'M20 31.5q4 3.8 8 0', mouthFill: 'none', sprout: two, flower: 0 },
+      { key: 'best', label: '絶好調', body: '#F29A86', eyes: 'M16.5 26.5q2.5-3.6 5 0M26.5 26.5q2.5-3.6 5 0', mouth: 'M19 31Q24 38 29 31Z', mouthFill: '#2A2622', sprout: two, flower: 3.2 },
+      { key: 'sleep', label: 'FBなし', body: '#E8E4DC', eyes: 'M16.5 26.5h5M26.5 26.5h5', mouth: 'M22 32.5h4', mouthFill: 'none', sprout: 'M24 14.5V7.5M24 11c2.4-3.6 6.4-3.6 8-1.6c-2.6 2.2-5.6 2.6-8 1.6', flower: 0 }
+    ];
+  }
+  renderVals() {
+    const M = this.moods();
+    const week = ['水', '木', '金', '土', '日', '月', '火'];
+    const days = [];
+    for (let d = 9; d <= 22; d++) {
+      const w = week[(d - 9) % 7];
+      const today = d === 22;
+      const weekend = w === '土' || w === '日';
+      days.push({ n: String(d), w: today ? '今日' : w, bg: today ? 'rgba(47,75,124,0.12)' : (weekend ? 'rgba(28,27,25,0.04)' : 'transparent'), fg: today ? '#233A63' : '#5A554C', weight: today ? '600' : '400' });
+    }
+    const laneLv = [2, 3, 1, 1, 2, 5, 3, 2, 3, 1, 2, 3, 3, 5];
+    const col = (a, b) => (a - 7) + ' / ' + (b - 6);
+    const C = {
+      doing: '#2F4B7C',
+      paused: 'repeating-linear-gradient(135deg, #8A6D3B 0 3px, #EADFC6 3px 6px)',
+      waiting: 'repeating-linear-gradient(90deg, #9A4F32 0 2px, #F0D9CD 2px 5px)',
+      done: '#3F6B4E'
+    };
+    const src = [
+      { id: 'infra', title: 'インフラ移行計画', segs: [['doing', 9, 10], ['paused', 11, 14], ['doing', 15, 16], ['waiting', 17, 22]], span: '9月9日 着手 → 継続中（14日目）', comment: '着手中は4日だけで、残りは中断と待ち。17日からはレビュー待ちが続いているので、催促のタイミングを決めておくとよさそう。' },
+      { id: 'api', title: 'API設計メモ', done: true, segs: [['done', 9, 12]], span: '9月9日 着手 → 9月12日 完了（4日）', comment: '止まることなく4日で完了。' },
+      { id: 'eval', title: '採用面接の評価シート', done: true, segs: [['done', 10, 11]], span: '9月10日 着手 → 9月11日 完了（2日）', comment: '面接当日と翌日で完了。' },
+      { id: 'vendor', title: 'ベンダー見積もり', done: true, segs: [['doing', 11, 11], ['waiting', 12, 16], ['done', 17, 17]], span: '9月11日 着手 → 9月17日 完了（7日）', comment: '7日のうち5日は先方の返答待ち。自分の作業時間は2日。' },
+      { id: 'blog', title: 'ブログ記事：D1の所感', segs: [['doing', 15, 17], ['paused', 18, 22]], span: '9月15日 着手 → 継続中（8日目）', comment: '18日に中断してバックログへ戻したまま。棚卸しで扱いを決める候補。' },
+      { id: 'comp', title: '競合調査のまとめ', segs: [['doing', 18, 18], ['waiting', 19, 22]], span: '9月18日 着手 → 継続中（5日目）', comment: '着手1日、待ち4日。EMの返答待ちが続いている。' },
+      { id: 'plan', title: '企画書ドラフト', segs: [['doing', 20, 22]], span: '9月20日 着手 → 継続中（3日目）', comment: '3日間、止まらずに進んでいる。' },
+      { id: 'req', title: '要件の洗い出し', done: true, segs: [['done', 21, 22]], span: '9月21日 着手 → 9月22日 完了（2日）', comment: '2日で完了。' },
+      { id: 'weekly', title: 'チームの週報ドラフト', segs: [['doing', 21, 21], ['paused', 22, 22]], span: '9月21日 着手 → 継続中（2日目）', comment: '今日の昼に中断。' },
+      { id: 'd1', title: 'D1のスキーマ設計', segs: [['doing', 22, 22]], span: '9月22日 着手 → 継続中（1日目）', comment: '今日着手したばかり。' },
+      { id: 'pr', title: 'PRレビュー（決済まわり）', done: true, segs: [['done', 22, 22]], span: '9月22日 着手 → 同日完了', comment: '当日中に完了。' }
+    ];
+    const selected = (this.state && this.state.selected) || 'infra';
+    const rows = src.map((r) => {
+      const isSel = r.id === selected;
+      return {
+        title: r.title,
+        fg: r.done ? '#4F4A42' : '#1C1B19',
+        bg: isSel ? 'rgba(255,255,255,0.9)' : 'transparent',
+        ring: isSel ? 'inset 0 0 0 1.5px rgba(47,75,124,0.45)' : 'none',
+        pressed: isSel ? 'true' : 'false',
+        segs: r.segs.map((s) => ({ col: col(s[1], s[2]), bg: C[s[0]] })),
+        select: () => this.setState({ selected: r.id })
+      };
+    });
+    const s = src.find((r) => r.id === selected);
+    const count = { doing: 0, paused: 0, waiting: 0, done: 0 };
+    s.segs.forEach((g) => { count[g[0]] += g[2] - g[1] + 1; });
+    const doing = count.doing + count.done;
+    const total = Math.max(1, doing + count.paused + count.waiting);
+    return {
+      days: days,
+      lane: laneLv.map((i) => M[i]),
+      rows: rows,
+      sel: {
+        title: s.title, span: s.span, comment: s.comment,
+        doing: doing, paused: count.paused, waiting: count.waiting,
+        doingPct: Math.round(doing / total * 100),
+        pausedPct: Math.round(count.paused / total * 100),
+        waitingPct: Math.round(count.waiting / total * 100)
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,362 @@
+/* 設計文書の HTML 用のスタイル。値は DESIGN.md のトークンに合わせる */
+:root {
+  --ink-1: #1c1b19;
+  --ink-2: #3f3b34;
+  --ink-3: #4f4a42;
+  --ink-4: #5a554c;
+  --ground: #f1ece3;
+  --surface: #fbf9f5;
+  --line: rgba(28, 27, 25, 0.1);
+  --accent: #2f4b7c;
+  --accent-strong: #233a63;
+  --accent-soft: rgba(47, 75, 124, 0.1);
+  font-family: "Inter", "Noto Sans JP", "Hiragino Sans", system-ui, sans-serif;
+  font-feature-settings: "cv11", "ss01";
+  color: var(--ink-1);
+  background: var(--ground);
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr) 220px;
+  gap: 32px;
+  min-height: 100vh;
+}
+a {
+  color: var(--accent);
+  text-underline-offset: 3px;
+}
+a:hover {
+  color: var(--accent-strong);
+}
+a:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.sidebar {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow-y: auto;
+  padding: 28px 16px 40px 24px;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+}
+.brand {
+  margin: 0 0 20px;
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.brand span {
+  font-weight: 500;
+  color: var(--ink-3);
+  font-size: 13px;
+  margin-left: 4px;
+}
+.sidebar h2 {
+  margin: 18px 0 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--ink-4);
+}
+.sidebar ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.sidebar li a {
+  display: block;
+  padding: 6px 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--ink-2);
+  text-decoration: none;
+  line-height: 1.4;
+}
+.sidebar li a:hover {
+  background: var(--accent-soft);
+}
+.sidebar li a[aria-current="page"] {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-weight: 600;
+}
+
+main {
+  padding: 40px 0 80px;
+  max-width: 880px;
+  min-width: 0;
+}
+.source {
+  margin: 0 0 20px;
+  font-size: 12px;
+  color: var(--ink-4);
+}
+.generated {
+  margin-top: 48px;
+  font-size: 12px;
+  color: var(--ink-4);
+}
+
+article,
+main > h1 {
+  line-height: 1.8;
+  font-size: 15px;
+}
+h1 {
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.3;
+  margin: 0 0 12px;
+}
+article h2 {
+  font-size: 21px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  margin: 44px 0 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+article h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin: 28px 0 8px;
+}
+article h4 {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 20px 0 6px;
+}
+article p {
+  margin: 0 0 14px;
+}
+article ul,
+article ol {
+  padding-left: 1.4em;
+  margin: 0 0 14px;
+}
+article li {
+  margin: 4px 0;
+}
+:target {
+  scroll-margin-top: 24px;
+}
+tr:target td {
+  background: #fff4c7;
+}
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin: 12px 0 20px;
+  font-size: 13.5px;
+  line-height: 1.65;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  overflow: hidden;
+  display: block;
+  overflow-x: auto;
+}
+th,
+td {
+  padding: 10px 14px;
+  text-align: left;
+  vertical-align: top;
+  border-bottom: 1px solid var(--line);
+}
+th {
+  background: rgba(28, 27, 25, 0.04);
+  font-weight: 600;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+tr:last-child td {
+  border-bottom: none;
+}
+td:first-child {
+  white-space: nowrap;
+}
+
+code {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 0.86em;
+  background: rgba(28, 27, 25, 0.06);
+  padding: 1px 6px;
+  border-radius: 5px;
+}
+pre {
+  background: #22211f;
+  color: #f1ece3;
+  padding: 16px 18px;
+  border-radius: 12px;
+  overflow-x: auto;
+  font-size: 13px;
+  line-height: 1.6;
+  margin: 12px 0 20px;
+}
+pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+blockquote {
+  margin: 12px 0 18px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: var(--accent-soft);
+  color: var(--ink-2);
+}
+blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+.swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  margin-right: 6px;
+  vertical-align: -1px;
+  border-radius: 4px;
+  background: var(--c);
+  border: 1px solid rgba(28, 27, 25, 0.2);
+}
+a.ref {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  margin: 0 0 24px;
+  font-size: 12px;
+}
+.chip {
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-weight: 600;
+  background: rgba(120, 112, 98, 0.14);
+  color: #4a463f;
+}
+.chip.status-ready {
+  background: rgba(63, 107, 78, 0.16);
+  color: #2c4f38;
+}
+.chip.status-in-progress {
+  background: rgba(47, 75, 124, 0.16);
+  color: #233a63;
+}
+.chip.status-blocked {
+  background: rgba(138, 109, 59, 0.18);
+  color: #6e5528;
+}
+.chip.status-needs-decision,
+.chip.status-needs-human {
+  background: rgba(154, 79, 50, 0.16);
+  color: #7e3f26;
+}
+.chip.status-provisional {
+  background: rgba(47, 75, 124, 0.08);
+  color: #233a63;
+  border: 1px dashed rgba(47, 75, 124, 0.4);
+}
+.chip.priority-p0 {
+  background: rgba(154, 79, 50, 0.16);
+  color: #7e3f26;
+}
+.chip.adr {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+}
+.deps {
+  color: var(--ink-3);
+  margin-left: 6px;
+}
+
+.toc {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  max-height: 100vh;
+  overflow-y: auto;
+  padding: 44px 24px 40px 0;
+  font-size: 12.5px;
+}
+.toc h2 {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  color: var(--ink-4);
+  margin: 0 0 8px;
+}
+.toc ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-left: 1px solid var(--line);
+}
+.toc li a {
+  display: block;
+  padding: 4px 0 4px 12px;
+  color: var(--ink-3);
+  text-decoration: none;
+  line-height: 1.45;
+}
+.toc li.h3 a {
+  padding-left: 24px;
+  font-size: 12px;
+}
+.toc li a:hover {
+  color: var(--accent);
+}
+
+@media (max-width: 1200px) {
+  body {
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+  .toc {
+    display: none;
+  }
+}
+@media (max-width: 800px) {
+  body {
+    display: block;
+  }
+  .sidebar {
+    position: static;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+  main {
+    padding: 24px 20px 60px;
+  }
+}
+@media print {
+  body {
+    display: block;
+    background: #fff;
+  }
+  .sidebar,
+  .toc,
+  .source {
+    display: none;
+  }
+  pre {
+    white-space: pre-wrap;
+  }
+}

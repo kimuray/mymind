@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>PC：カレンダー</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans+JP:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F1ECE3;font-family:'Inter','Noto Sans JP','Hiragino Sans',sans-serif;color:#1C1B19}
+a{color:#2F4B7C}a:hover{color:#1F355C}
+button{font-family:inherit}
+</style>
+</helmet>
+<div style="position: relative; width: 1440px; height: 900px; box-sizing: border-box; padding: 16px; display: flex; gap: 16px; overflow: hidden; font-family: 'Inter', 'Noto Sans JP', 'Hiragino Sans', sans-serif; font-feature-settings: 'cv11', 'ss01'; color: #1C1B19; background-color: #F1ECE3; background-image: radial-gradient(circle at 6% 8%, rgba(122, 150, 214, 0.55), transparent 30%), radial-gradient(circle at 70% 4%, rgba(244, 176, 124, 0.45), transparent 28%), radial-gradient(circle at 35% 98%, rgba(138, 192, 146, 0.42), transparent 32%), radial-gradient(circle at 98% 78%, rgba(196, 164, 222, 0.45), transparent 30%);">
+
+  <aside style="width: 232px; flex-shrink: 0; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px; padding: 20px 12px; border-radius: 24px; background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(24px) saturate(170%); -webkit-backdrop-filter: blur(24px) saturate(170%); border: 1px solid rgba(255, 255, 255, 0.85); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 12px 32px rgba(38, 34, 28, 0.08);">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 0 8px;">
+      <dc-import name="Mame" mood="good" size="32" hint-size="32px,32px"></dc-import>
+      <span style="font-size: 15px; font-weight: 600; letter-spacing: -0.01em;">[アプリ名]</span>
+    </div>
+    <nav aria-label="メイン" style="display: flex; flex-direction: column; gap: 2px;">
+      <span style="padding: 0 10px 6px; font-size: 11px; font-weight: 600; color: #5A554C; letter-spacing: 0.06em;">毎日</span>
+      <a href="PC_Today.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: 12px; text-decoration: none; color: #3F3B34; font-size: 14px; font-weight: 500;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg>今日
+      </a>
+      <a href="PC_Morning.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: 12px; text-decoration: none; color: #3F3B34; font-size: 14px; font-weight: 500;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 18h16M7 18a5 5 0 0 1 10 0M12 7v3M5.6 11.6l1.8 1.4M18.4 11.6l-1.8 1.4"></path></svg>朝の計画
+      </a>
+      <a href="PC_Reflection.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: 12px; text-decoration: none; color: #3F3B34; font-size: 14px; font-weight: 500;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14.5A7.5 7.5 0 1 1 9.5 5a6 6 0 0 0 9.5 9.5z"></path></svg>振り返り
+      </a>
+      <span style="padding: 14px 10px 6px; font-size: 11px; font-weight: 600; color: #5A554C; letter-spacing: 0.06em;">一覧</span>
+      <a href="PC_Backlog.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: 12px; text-decoration: none; color: #3F3B34; font-size: 14px; font-weight: 500;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13l2.5-7.5h11L20 13v5.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5z"></path><path d="M4 13h4.5l1.5 2.5h4l1.5-2.5H20"></path></svg>バックログ
+      </a>
+      <a href="PC_Week.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: 12px; text-decoration: none; color: #3F3B34; font-size: 14px; font-weight: 500;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9M7 12h11M4 17h7"></path></svg>タイムライン
+      </a>
+      <a href="PC_Month.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: 12px; text-decoration: none; background: rgba(47, 75, 124, 0.12); color: #233A63; font-size: 14px; font-weight: 600;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M4 10h16M10 10v10M15 10v10"></path></svg>カレンダー
+      </a>
+    </nav>
+  </aside>
+
+  <main style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px; padding: 12px 8px 4px;">
+    <div style="display: flex; align-items: center; justify-content: space-between;">
+      <h1 style="margin: 0; font-size: 30px; font-weight: 600; letter-spacing: -0.025em;">2026年9月</h1>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <button type="button" aria-label="前の月" style="width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.9); background: rgba(255, 255, 255, 0.5); display: flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="16" height="16" viewBox="0 0 22 22" aria-hidden="true"><path d="M14 5l-6 6 6 6" fill="none" stroke="#3F3B34" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+        <button type="button" aria-label="次の月" style="width: 40px; height: 40px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.9); background: rgba(255, 255, 255, 0.3); display: flex; align-items: center; justify-content: center; cursor: pointer;"><svg width="16" height="16" viewBox="0 0 22 22" aria-hidden="true"><path d="M8 5l6 6-6 6" fill="none" stroke="#9A958A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+      </div>
+    </div>
+
+    <div style="flex-grow: 1; min-height: 0; display: flex; flex-direction: column; gap: 8px; padding: 14px; border-radius: 22px; background: rgba(255, 255, 255, 0.55); backdrop-filter: blur(22px) saturate(170%); -webkit-backdrop-filter: blur(22px) saturate(170%); border: 1px solid rgba(255, 255, 255, 0.85); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 10px 28px rgba(38, 34, 28, 0.08);">
+      <div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 8px; text-align: center; font-size: 12px; color: #5A554C;">
+        <span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span><span>日</span>
+      </div>
+      <div style="flex-grow: 1; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-auto-rows: minmax(0, 1fr); gap: 8px;">
+        <sc-for list="{{cells}}" as="c" hint-placeholder-count="35">
+          <sc-if value="{{c.isDay}}" hint-placeholder-val="{{ true }}">
+            <button type="button" onClick="{{c.pick}}" disabled="{{c.future}}" aria-pressed="{{c.pressed}}" aria-label="{{c.aria}}" style="position: relative; border-radius: 16px; border: {{c.border}}; background: {{c.bg}}; opacity: {{c.opacity}}; display: flex; flex-direction: column; align-items: center; justify-content: space-between; padding: 8px 6px; cursor: pointer; color: #1C1B19;">
+              <span style="align-self: flex-start; font-size: 12px; font-weight: 600; font-variant-numeric: tabular-nums; color: {{c.numColor}};">{{c.day}}</span>
+              <sc-if value="{{c.hasFace}}" hint-placeholder-val="{{ true }}">
+                <dc-import name="Mame" mood="{{c.m.key}}" size="44" hint-size="44px,44px"></dc-import>
+              </sc-if>
+              <span style="font-size: 11px; color: #4F4A42; min-height: 14px;">{{c.caption}}</span>
+            </button>
+          </sc-if>
+          <sc-if value="{{c.isBlank}}" hint-placeholder-val="{{ false }}"><span></span></sc-if>
+        </sc-for>
+      </div>
+    </div>
+    <div style="display: flex; gap: 18px; padding: 0 8px; font-size: 12px; color: #3F3B34;">
+      <span>マメの表情＝その日の調子</span>
+      <span>グレーのマメ＝FBをまだもらっていない日</span>
+      <span style="margin-left: auto;">日付をクリックすると右に詳細</span>
+    </div>
+  </main>
+
+  <aside style="width: 400px; flex-shrink: 0; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px; padding: 20px 24px 24px; border-radius: 24px; overflow-y: auto; background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(26px) saturate(180%); -webkit-backdrop-filter: blur(26px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.9); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1), 0 14px 36px rgba(38, 34, 28, 0.10);">
+    <div role="tablist" aria-label="表示の切り替え" style="display: flex; padding: 3px; border-radius: 14px; background: rgba(255, 255, 255, 0.5); border: 1px solid rgba(255, 255, 255, 0.9);">
+      <button type="button" role="tab" aria-selected="{{tabDaySel}}" onClick="{{toDay}}" style="flex: 1; min-height: 36px; border: none; border-radius: 11px; background: {{tabDayBg}}; font-size: 13px; font-weight: 600; color: #1C1B19; cursor: pointer;">この日</button>
+      <button type="button" role="tab" aria-selected="{{tabMonthSel}}" onClick="{{toMonth}}" style="flex: 1; min-height: 36px; border: none; border-radius: 11px; background: {{tabMonthBg}}; font-size: 13px; font-weight: 600; color: #1C1B19; cursor: pointer;">9月の総括</button>
+    </div>
+
+    <sc-if value="{{isDayTab}}" hint-placeholder-val="{{ true }}">
+      <div aria-live="polite" style="display: flex; flex-direction: column; gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <div style="width: 76px; height: 76px; flex-shrink: 0; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(255, 255, 255, 1); box-shadow: inset 0 -5px 12px rgba(38, 34, 28, 0.06), 0 6px 16px rgba(38, 34, 28, 0.10);">
+            <dc-import name="Mame" mood="{{sel.m.key}}" size="62" hint-size="62px,62px"></dc-import>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 2px;">
+            <h2 style="margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.02em;">{{sel.dateLabel}}</h2>
+            <span style="font-size: 14px; font-weight: 600; color: {{sel.m.ink}};">{{sel.moodLabel}}</span>
+          </div>
+        </div>
+
+        <sc-if value="{{sel.hasLog}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <div style="display: flex; gap: 12px; align-items: flex-start;">
+              <span style="flex-shrink: 0; width: 60px; font-size: 11px; font-weight: 600; padding: 3px 0; text-align: center; border-radius: 999px; background: rgba(63, 107, 78, 0.14); color: #2C4F38;">{{sel.doneLabel}}</span>
+              <span style="font-size: 13px; line-height: 1.7;">{{sel.done}}</span>
+            </div>
+            <div style="display: flex; gap: 12px; align-items: flex-start;">
+              <span style="flex-shrink: 0; width: 60px; font-size: 11px; font-weight: 600; padding: 3px 0; text-align: center; border-radius: 999px; background: rgba(154, 79, 50, 0.14); color: #7E3F26;">変化</span>
+              <span style="font-size: 13px; line-height: 1.7;">{{sel.changes}}</span>
+            </div>
+            <div style="height: 1px; background: rgba(28, 27, 25, 0.08);"></div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <h3 style="margin: 0; font-size: 12px; font-weight: 600; color: #4F4A42;">思考の整理</h3>
+              <p style="margin: 0; font-size: 14px; line-height: 1.7;">{{sel.thoughts}}</p>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <h3 style="margin: 0; font-size: 12px; font-weight: 600; color: #4F4A42;">学び</h3>
+              <p style="margin: 0; font-size: 14px; line-height: 1.7;">{{sel.learning}}</p>
+            </div>
+            <sc-if value="{{sel.hasFb}}" hint-placeholder-val="{{ true }}">
+              <div style="display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: 16px; background: rgba(47, 75, 124, 0.08);">
+                <h3 style="margin: 0; font-size: 12px; font-weight: 600; color: #2F4B7C;">この日のFB</h3>
+                <p style="margin: 0; font-size: 14px; line-height: 1.7;">{{sel.fb}}</p>
+              </div>
+            </sc-if>
+            <sc-if value="{{sel.canRequest}}" hint-placeholder-val="{{ false }}">
+              <button type="button" onClick="{{sel.request}}" style="min-height: 44px; border-radius: 22px; border: 1px solid rgba(255, 255, 255, 0.3); background: rgba(28, 27, 25, 0.88); color: #FFFFFF; font-size: 14px; font-weight: 600; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25), 0 10px 24px rgba(28, 27, 25, 0.2);">この日のFBをもらう</button>
+            </sc-if>
+            <sc-if value="{{sel.running}}" hint-placeholder-val="{{ false }}">
+              <div style="display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-radius: 16px; background: rgba(255, 255, 255, 0.6); font-size: 13px; font-weight: 600;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #2F4B7C;"></span>マメが考えています…（Claude Code）</div>
+            </sc-if>
+          </div>
+        </sc-if>
+        <sc-if value="{{sel.noLog}}" hint-placeholder-val="{{ false }}">
+          <p style="margin: 0; padding: 16px; border-radius: 16px; background: rgba(255, 255, 255, 0.5); font-size: 13px; line-height: 1.7; color: #4F4A42;">この日は振り返りの記録がありません。完了したタスクだけ残っています：{{sel.done}}</p>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{isMonthTab}}" hint-placeholder-val="{{ false }}">
+      <div aria-live="polite" style="display: flex; flex-direction: column; gap: 16px;">
+        <dl style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+          <div style="display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 14px; background: rgba(255, 255, 255, 0.55);"><dt style="font-size: 11px; color: #5A554C;">完了</dt><dd style="margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums;">47<span style="font-size: 12px; font-weight: 500; margin-left: 3px;">件</span></dd></div>
+          <div style="display: flex; flex-direction: column; gap: 2px; padding: 12px 14px; border-radius: 14px; background: rgba(255, 255, 255, 0.55);"><dt style="font-size: 11px; color: #5A554C;">FBをもらった日</dt><dd style="margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.02em; font-variant-numeric: tabular-nums;">18<span style="font-size: 12px; font-weight: 500; margin-left: 3px;">/ 22日</span></dd></div>
+        </dl>
+        <sc-if value="{{monthIdle}}" hint-placeholder-val="{{ true }}">
+          <div style="display: flex; flex-direction: column; gap: 12px; padding: 18px; border-radius: 18px; background: rgba(255, 255, 255, 0.5);">
+            <span style="font-size: 14px; font-weight: 600;">9月の総括はまだありません</span>
+            <span style="font-size: 13px; line-height: 1.7; color: #4F4A42;">月の途中でも、ここまでの22日分をもとに「途中経過」として総括できます。</span>
+            <button type="button" onClick="{{requestMonth}}" style="min-height: 44px; border-radius: 22px; border: 1px solid rgba(255, 255, 255, 0.3); background: rgba(28, 27, 25, 0.88); color: #FFFFFF; font-size: 14px; font-weight: 600; cursor: pointer;">この月を総括する（途中経過）</button>
+          </div>
+        </sc-if>
+        <sc-if value="{{monthRunning}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 14px 16px; border-radius: 16px; background: rgba(255, 255, 255, 0.6); font-size: 13px; font-weight: 600;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #2F4B7C;"></span>22日分の記録を読んで総括しています…</div>
+        </sc-if>
+        <sc-if value="{{monthDone}}" hint-placeholder-val="{{ false }}">
+          <div style="display: flex; flex-direction: column; gap: 14px;">
+            <span style="align-self: flex-start; font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: rgba(138, 109, 59, 0.16); color: #6E5528;">途中経過・9月22日時点</span>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <h3 style="margin: 0; font-size: 13px; font-weight: 600; color: #2F5A3D;">ここまでの学び</h3>
+              <p style="margin: 0; font-size: 14px; line-height: 1.7;">設計の判断を「あとで何を見返したいか」から逆算する考え方が、仕事とツール作りの両方で繰り返し出てきている。</p>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px;">
+              <h3 style="margin: 0; font-size: 13px; font-weight: 600; color: #2F4B7C;">傾向</h3>
+              <p style="margin: 0; font-size: 14px; line-height: 1.7;">待ちに入ったタスクが長引きやすい。インフラ移行計画と競合調査で、待ちが全体の半分以上を占めている。</p>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border-radius: 16px; background: rgba(47, 75, 124, 0.08);">
+              <h3 style="margin: 0; font-size: 13px; font-weight: 600; color: #2F4B7C;">残り8日への提案</h3>
+              <p style="margin: 0; font-size: 14px; line-height: 1.7;">待ちのタスクには、催促する日を決めて朝の計画に入れる。</p>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+    </sc-if>
+  </aside>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  st(k, d) {
+    return this.state && this.state[k] !== undefined ? this.state[k] : d;
+  }
+  componentWillUnmount() {
+    if (this._t1) clearTimeout(this._t1);
+    if (this._t2) clearTimeout(this._t2);
+  }
+  moods() {
+    const two = 'M24 14.5V6.5M24 10.5c2.4-3.6 6.4-3.6 8-1.6c-2.6 2.2-5.6 2.6-8 1.6M24 10.5c-2.4-3.6-6.4-3.6-8-1.6c2.6 2.2 5.6 2.6 8 1.6';
+    return [
+      { key: 'worst', label: '絶不調', body: '#B3A6DA', ink: '#5B4A8A', eyes: 'M16.5 26h5M26.5 26h5', mouth: 'M19 33.5q2.5-2.2 5 0t5 0', mouthFill: 'none', sprout: 'M24 14.5c0-3.5 2.2-5 4.6-4c1.4.8 1.2 3.3-.6 4.2', flower: 0 },
+      { key: 'bad', label: '不調', body: '#9DBEE0', ink: '#2F5E8C', eyes: 'M17 25l4.5 1.6M31 25l-4.5 1.6', mouth: 'M20 33.5q4-3.2 8 0', mouthFill: 'none', sprout: 'M24 14.5c0-3 1-5.2 3.4-6.4c2 1.4 2.6 4.3 1.2 6.6c-1.9-.7-3.3-2-4.6-.2', flower: 0 },
+      { key: 'normal', label: '普通', body: '#EAD98A', ink: '#6B5A18', eyes: 'M19.5 24.5v3.2M28.5 24.5v3.2', mouth: 'M21 32.5h6', mouthFill: 'none', sprout: 'M24 14.5V7.5M24 11c2.4-3.6 6.4-3.6 8-1.6c-2.6 2.2-5.6 2.6-8 1.6', flower: 0 },
+      { key: 'good', label: '好調', body: '#F5B98A', ink: '#9A4715', eyes: 'M19.5 24.5v3.2M28.5 24.5v3.2', mouth: 'M20 31.5q4 3.8 8 0', mouthFill: 'none', sprout: two, flower: 0 },
+      { key: 'best', label: '絶好調', body: '#F29A86', ink: '#9E2A1F', eyes: 'M16.5 26.5q2.5-3.6 5 0M26.5 26.5q2.5-3.6 5 0', mouth: 'M19 31Q24 38 29 31Z', mouthFill: '#2A2622', sprout: two, flower: 3.2 }
+    ];
+  }
+  samples() {
+    return [
+      { done: ['1on1の準備', '採用面接の評価シート', 'PRレビュー'], changes: 'API設計メモ：着手（1日目）', thoughts: '面接が続いて集中が細切れ。午後の設計が進まなかったのが引っかかる。', learning: '評価観点を先に書き出しておくと、面接後の記入が速い。', fb: '細切れの日は、設計のような深い作業を翌朝に回す判断もあり。' },
+      { done: ['Q3振り返り資料', '経費精算'], changes: 'ベンダー見積もり：待ちが継続', thoughts: 'CTOとの認識合わせがうまくいった。言葉を揃えるだけで議論が短くなる。', learning: '議論の前に用語集を1枚作ると効く。', fb: '用語を揃えた効果が大きかった日。次の定例でも同じ型が使えそう。' },
+      { done: ['監視アラートの整理'], changes: 'インフラ移行計画：着手中 → 中断', thoughts: '障害対応で予定が崩れた。計画を立て直す余力がなかった。', learning: '崩れた日は「やらないこと」を1つ決めると立て直しやすい。', fb: '予定外の対応が多い日は、完了数より立て直しの速さを見るとよい。' },
+      { done: ['週報', 'ドキュメントのレビュー', '1on1'], changes: 'なし', thoughts: '淡々と進んだ一日。大きな発見はないが、積み残しがないのは気持ちいい。', learning: '定型作業は午後にまとめると午前が空く。', fb: '積み残しゼロは良いリズム。空いた午前を何に使うか決めておくとさらに良い。' }
+    ];
+  }
+  renderVals() {
+    const M = this.moods();
+    const sleep = { key: 'sleep', label: 'FBなし', body: '#E8E4DC', ink: '#4F4A42', eyes: 'M16.5 26.5h5M26.5 26.5h5', mouth: 'M22 32.5h4', mouthFill: 'none', sprout: 'M24 14.5V7.5M24 11c2.4-3.6 6.4-3.6 8-1.6c-2.6 2.2-5.6 2.6-8 1.6', flower: 0 };
+    const lv = { 1: 3, 2: 2, 3: 2, 4: 1, 6: 2, 7: 3, 8: 2, 9: 2, 10: 3, 11: 1, 12: 1, 13: 2, 15: 3, 16: 2, 17: 3, 18: 1, 19: 2, 20: 3, 21: 3 };
+    const noLog = { 14: true };
+    const doneCount = [0, 3, 2, 1, 3, 2, 0, 2, 3, 1, 3, 2, 1, 0, 1, 3, 2, 3, 1, 2, 0, 2, 3];
+    const week = ['月', '火', '水', '木', '金', '土', '日'];
+    const generated = this.st('generated', {});
+    const running = this.st('running', null);
+    const selected = this.st('selected', 5);
+    const tab = this.st('tab', 'day');
+    const moodOf = (d) => (lv[d] !== undefined ? M[lv[d]] : (generated[d] ? M[2] : null));
+
+    const cells = [{ isDay: false, isBlank: true }];
+    for (let d = 1; d <= 30; d++) {
+      const future = d > 22;
+      const m = moodOf(d);
+      const isSel = d === selected;
+      cells.push({
+        isDay: true, isBlank: false, future: future,
+        day: String(d),
+        hasFace: !future,
+        m: m || sleep,
+        caption: future ? '' : (doneCount[d] ? '完了 ' + doneCount[d] : ''),
+        numColor: d === 22 ? '#233A63' : '#3F3B34',
+        bg: isSel ? 'rgba(255,255,255,0.95)' : (future ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.45)'),
+        border: isSel ? '2px solid #2F4B7C' : (d === 22 ? '1.5px solid rgba(47,75,124,0.4)' : '1px solid rgba(255,255,255,0.8)'),
+        opacity: future ? '0.55' : '1',
+        pressed: isSel ? 'true' : 'false',
+        aria: '9月' + d + '日' + (m ? ' ' + m.label : (future ? '' : ' FBなし')),
+        pick: () => this.setState({ selected: d, tab: 'day' })
+      });
+    }
+    while (cells.length % 7 !== 0) cells.push({ isDay: false, isBlank: true });
+
+    const s = this.samples()[selected % 4];
+    const m = moodOf(selected);
+    const hasLog = !noLog[selected];
+    const wd = week[(selected) % 7];
+    const request = () => {
+      this.setState({ running: selected });
+      const d = selected;
+      if (this._t1) clearTimeout(this._t1);
+      this._t1 = setTimeout(() => {
+        const g = Object.assign({}, this.st('generated', {}), { [d]: true });
+        this.setState({ generated: g, running: null });
+      }, 2200);
+    };
+    const monthState = this.st('month', 'idle');
+    return {
+      cells: cells,
+      isDayTab: tab === 'day',
+      isMonthTab: tab === 'month',
+      tabDaySel: tab === 'day' ? 'true' : 'false',
+      tabMonthSel: tab === 'month' ? 'true' : 'false',
+      tabDayBg: tab === 'day' ? 'rgba(255,255,255,0.95)' : 'transparent',
+      tabMonthBg: tab === 'month' ? 'rgba(255,255,255,0.95)' : 'transparent',
+      toDay: () => this.setState({ tab: 'day' }),
+      toMonth: () => this.setState({ tab: 'month' }),
+      sel: {
+        m: m || sleep,
+        dateLabel: '9月' + selected + '日（' + wd + '）',
+        moodLabel: m ? m.label + '（AIが振り返りから判定）' : (hasLog ? 'まだFBをもらっていません' : '記録なし'),
+        hasLog: hasLog,
+        noLog: !hasLog,
+        doneLabel: '完了 ' + s.done.length,
+        done: s.done.join('、'),
+        changes: s.changes,
+        thoughts: s.thoughts,
+        learning: s.learning,
+        fb: s.fb,
+        hasFb: !!m,
+        canRequest: hasLog && !m && running !== selected,
+        running: running === selected,
+        request: request
+      },
+      monthIdle: monthState === 'idle',
+      monthRunning: monthState === 'running',
+      monthDone: monthState === 'done',
+      requestMonth: () => {
+        this.setState({ month: 'running' });
+        if (this._t2) clearTimeout(this._t2);
+        this._t2 = setTimeout(() => this.setState({ month: 'done' }), 2400);
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

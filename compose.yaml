@@ -1,0 +1,54 @@
+# mymind の開発環境（ADR-0010）
+#   docker compose up dev              開発サーバー（http://127.0.0.1:5173）
+#   docker compose run --rm check      lint・型・依存・デザイン・文書・テスト
+#   docker compose run --rm e2e        E2E（本番ビルド、偽のエージェント）
+name: mymind
+
+x-workspace: &workspace
+  working_dir: /workspace
+  volumes:
+    - .:/workspace
+    - node_modules:/workspace/node_modules
+    - pnpm-store:/pnpm/store
+  environment: &env
+    MYMIND_DATA_DIR: /workspace/.data/docker
+    MYMIND_AGENT: fake
+    MYMIND_HOST: 0.0.0.0
+    MYMIND_PORT: "4820"
+    # macOS 以外のホストでファイルの変更検知が効かない場合は 1 にする
+    MYMIND_WATCH_POLLING: ${MYMIND_WATCH_POLLING:-0}
+
+services:
+  dev:
+    <<: *workspace
+    build:
+      context: .
+      target: dev
+    # ホストの 127.0.0.1 にだけ公開する（ADR-0007：外部のマシンから到達させない）
+    ports:
+      - "127.0.0.1:5173:5173"
+      - "127.0.0.1:4820:4820"
+
+  check:
+    <<: *workspace
+    build:
+      context: .
+      target: dev
+    profiles: [tools]
+    command: ["sh", "-c", "pnpm install --frozen-lockfile && pnpm check"]
+
+  e2e:
+    <<: *workspace
+    build:
+      context: .
+      target: e2e
+    profiles: [tools]
+    shm_size: 1gb
+    environment:
+      <<: *env
+      MYMIND_DATA_DIR: /workspace/.data/e2e
+      CI: "true"
+
+volumes:
+  node_modules:
+  pnpm-store:

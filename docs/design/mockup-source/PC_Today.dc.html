@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<title>PC：今日</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Noto+Sans+JP:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#F1ECE3;font-family:'Inter','Noto Sans JP','Hiragino Sans',sans-serif;color:#1C1B19}
+a{color:#2F4B7C}a:hover{color:#1F355C}
+button,input,textarea,select{font-family:inherit}
+input::placeholder,textarea::placeholder{color:#6F695E}
+</style>
+</helmet>
+<div style="position: relative; width: 1440px; height: 900px; box-sizing: border-box; padding: 16px; display: flex; gap: 16px; overflow: hidden; font-family: 'Inter', 'Noto Sans JP', 'Hiragino Sans', sans-serif; font-feature-settings: 'cv11', 'ss01'; color: #1C1B19; background-color: #F1ECE3; background-image: radial-gradient(circle at 6% 8%, rgba(122, 150, 214, 0.55), transparent 30%), radial-gradient(circle at 70% 4%, rgba(244, 176, 124, 0.45), transparent 28%), radial-gradient(circle at 40% 96%, rgba(138, 192, 146, 0.42), transparent 32%), radial-gradient(circle at 98% 80%, rgba(196, 164, 222, 0.45), transparent 30%);">
+
+  <aside style="width: 232px; flex-shrink: 0; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px; padding: 20px 12px; border-radius: 24px; background: rgba(255, 255, 255, 0.5); backdrop-filter: blur(24px) saturate(170%); -webkit-backdrop-filter: blur(24px) saturate(170%); border: 1px solid rgba(255, 255, 255, 0.85); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 12px 32px rgba(38, 34, 28, 0.08);">
+    <div style="display: flex; align-items: center; gap: 10px; padding: 0 8px;">
+      <dc-import name="Mame" mood="good" size="32" hint-size="32px,32px"></dc-import>
+      <span style="font-size: 15px; font-weight: 600; letter-spacing: -0.01em;">[アプリ名]</span>
+    </div>
+    <nav aria-label="メイン" style="display: flex; flex-direction: column; gap: 2px;">
+      <span style="padding: 0 10px 6px; font-size: 11px; font-weight: 600; color: #5A554C; letter-spacing: 0.06em;">毎日</span>
+      <a href="PC_Today.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: 12px; text-decoration: none; background: rgba(47, 75, 124, 0.12); color: #233A63; font-size: 14px; font-weight: 600;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="5" width="17" height="15" rx="2.5"></rect><path d="M3.5 10h17M8 3v4M16 3v4"></path></svg>今日<span style="margin-left: auto; font-size: 11px; color: #4F4A42;">G T</span>
+      </a>
+      <a href="PC_Morning.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: 12px; text-decoration: none; color: #3F3B34; font-size: 14px; font-weight: 500;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 18h16M7 18a5 5 0 0 1 10 0M12 7v3M5.6 11.6l1.8 1.4M18.4 11.6l-1.8 1.4"></path></svg>朝の計画<span style="margin-left: auto; font-size: 11px; color: #5A554C;">済</span>
+      </a>
+      <a href="PC_Reflection.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: 12px; text-decoration: none; color: #3F3B34; font-size: 14px; font-weight: 500;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 14.5A7.5 7.5 0 1 1 9.5 5a6 6 0 0 0 9.5 9.5z"></path></svg>振り返り<span style="margin-left: auto; width: 7px; height: 7px; border-radius: 50%; background: #2F4B7C;" aria-label="未記入"></span>
+      </a>
+      <span style="padding: 14px 10px 6px; font-size: 11px; font-weight: 600; color: #5A554C; letter-spacing: 0.06em;">一覧</span>
+      <a href="PC_Backlog.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: 12px; text-decoration: none; color: #3F3B34; font-size: 14px; font-weight: 500;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13l2.5-7.5h11L20 13v5.5a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 4 18.5z"></path><path d="M4 13h4.5l1.5 2.5h4l1.5-2.5H20"></path></svg>バックログ<span style="margin-left: auto; font-size: 11px; color: #4F4A42; font-variant-numeric: tabular-nums;">18</span>
+      </a>
+      <a href="PC_Week.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: 12px; text-decoration: none; color: #3F3B34; font-size: 14px; font-weight: 500;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h9M7 12h11M4 17h7"></path></svg>タイムライン
+      </a>
+      <a href="PC_Month.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 40px; padding: 0 10px; border-radius: 12px; text-decoration: none; color: #3F3B34; font-size: 14px; font-weight: 500;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3"></rect><path d="M4 10h16M10 10v10M15 10v10"></path></svg>カレンダー
+      </a>
+    </nav>
+    <div style="margin-top: auto; display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: 16px; background: rgba(255, 255, 255, 0.45); border: 1px solid rgba(255, 255, 255, 0.8); font-size: 12px; color: #3F3B34;">
+      <span style="display: flex; justify-content: space-between; align-items: center;">コマンド<kbd style="font-family: inherit; font-size: 11px; padding: 2px 7px; border-radius: 6px; background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(28, 27, 25, 0.12);">⌘K</kbd></span>
+      <span style="display: flex; justify-content: space-between; align-items: center;">新しいタスク<kbd style="font-family: inherit; font-size: 11px; padding: 2px 7px; border-radius: 6px; background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(28, 27, 25, 0.12);">N</kbd></span>
+    </div>
+  </aside>
+
+  <main style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px; padding: 12px 8px 4px;">
+    <div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 16px;">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <h1 style="margin: 0; font-size: 30px; font-weight: 600; letter-spacing: -0.025em;">9月22日 <span style="font-size: 18px; font-weight: 500; color: #4F4A42;">火曜日</span></h1>
+        <div style="display: flex; gap: 8px; font-size: 12px; font-weight: 600;">
+          <span style="padding: 4px 11px; border-radius: 999px; background: rgba(47, 75, 124, 0.12); color: #233A63;">着手中 <span style="font-variant-numeric: tabular-nums;">{{doingCount}}</span></span>
+          <span style="padding: 4px 11px; border-radius: 999px; background: rgba(120, 112, 98, 0.13); color: #4A463F;">未着手 <span style="font-variant-numeric: tabular-nums;">{{todoCount}}</span></span>
+          <span style="padding: 4px 11px; border-radius: 999px; background: rgba(63, 107, 78, 0.13); color: #2C4F38;">完了 <span style="font-variant-numeric: tabular-nums;">{{doneCount}}</span></span>
+        </div>
+      </div>
+      <sc-if value="{{isNight}}" hint-placeholder-val="{{ true }}">
+        <a href="PC_Reflection.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 18px; border-radius: 22px; text-decoration: none; background: rgba(47, 75, 124, 0.9); color: #FFFFFF; font-size: 14px; font-weight: 600; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 8px 20px rgba(47, 75, 124, 0.25);">振り返りを書く<kbd style="font-family: inherit; font-size: 11px; padding: 1px 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.2); color: #FFFFFF;">G R</kbd></a>
+      </sc-if>
+      <sc-if value="{{isMorning}}" hint-placeholder-val="{{ false }}">
+        <a href="PC_Morning.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 18px; border-radius: 22px; text-decoration: none; background: rgba(47, 75, 124, 0.9); color: #FFFFFF; font-size: 14px; font-weight: 600; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 8px 20px rgba(47, 75, 124, 0.25);">朝の計画を立てる<kbd style="font-family: inherit; font-size: 11px; padding: 1px 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.2); color: #FFFFFF;">G M</kbd></a>
+      </sc-if>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 10px; padding: 4px 6px 4px 18px; border-radius: 22px; background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(22px); -webkit-backdrop-filter: blur(22px); border: 1px solid rgba(255, 255, 255, 0.9); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 6px 18px rgba(38, 34, 28, 0.06);">
+      <label for="pc-add" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;">今日のタスクを追加</label>
+      <input id="pc-add" type="text" placeholder="今日のタスクを追加（Enterで確定）" value="{{draft}}" onChange="{{onDraft}}" onKeyDown="{{onAddKey}}" style="flex-grow: 1; min-width: 0; height: 40px; border: none; outline: none; background: transparent; font-size: 14px; color: #1C1B19;">
+      <kbd style="font-family: inherit; font-size: 11px; padding: 2px 7px; border-radius: 6px; background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(28, 27, 25, 0.12); color: #3F3B34;">N</kbd>
+    </div>
+
+    <div tabIndex="0" onKeyDown="{{onListKey}}" aria-label="今日のタスク。j/kで移動、スペースで状態を進める" style="flex-grow: 1; min-height: 0; overflow-y: auto; outline: none; display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; flex-direction: column; gap: 2px; padding: 6px; border-radius: 22px; background: rgba(255, 255, 255, 0.55); backdrop-filter: blur(22px) saturate(170%); -webkit-backdrop-filter: blur(22px) saturate(170%); border: 1px solid rgba(255, 255, 255, 0.85); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 10px 28px rgba(38, 34, 28, 0.08);">
+        <sc-for list="{{active}}" as="t" hint-placeholder-count="7">
+          <div style="display: flex; align-items: center; gap: 2px; padding: 0 12px 0 {{t.pad}}px; border-radius: 14px; background: {{t.rowBg}}; box-shadow: {{t.rowRing}};">
+            <button type="button" onClick="{{t.cycle}}" aria-label="{{t.aria}}" style="width: 40px; height: 40px; flex-shrink: 0; border: none; background: transparent; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+              <sc-if value="{{t.isTodo}}" hint-placeholder-val="{{ true }}"><svg width="20" height="20" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="8.5" fill="rgba(255,255,255,0.7)" stroke="#8A857B" stroke-width="1.6"></circle></svg></sc-if>
+              <sc-if value="{{t.isDoing}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="8.5" fill="rgba(255,255,255,0.7)" stroke="#2F4B7C" stroke-width="1.6"></circle><path d="M11 2.5A8.5 8.5 0 0 1 11 19.5Z" fill="#2F4B7C"></path></svg></sc-if>
+              <sc-if value="{{t.isWaiting}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="8.5" fill="rgba(255,255,255,0.7)" stroke="#9A4F32" stroke-width="1.6"></circle><path d="M11 6.5V11l3 2" fill="none" stroke="#9A4F32" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"></path></svg></sc-if>
+              <sc-if value="{{t.isPaused}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="8.5" fill="rgba(255,255,255,0.7)" stroke="#8A6D3B" stroke-width="1.6"></circle><path d="M9 7.5v7M13 7.5v7" fill="none" stroke="#8A6D3B" stroke-width="1.8" stroke-linecap="round"></path></svg></sc-if>
+              <sc-if value="{{t.isDone}}" hint-placeholder-val="{{ false }}"><svg width="20" height="20" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9.3" fill="#3F6B4E"></circle><path d="M6.8 11.3l2.8 2.8 5.6-5.8" fill="none" stroke="#FFFFFF" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></path></svg></sc-if>
+            </button>
+            <button type="button" onClick="{{t.select}}" style="flex-grow: 1; min-width: 0; min-height: 44px; border: none; background: transparent; padding: 6px 4px; cursor: pointer; display: flex; align-items: center; gap: 12px; text-align: left; color: #1C1B19;">
+              <span style="flex-grow: 1; min-width: 0; display: flex; align-items: baseline; gap: 10px;">
+                <span style="font-size: 14px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; text-decoration: {{t.strike}}; color: {{t.titleColor}};">{{t.title}}</span>
+                <sc-if value="{{t.hasParent}}" hint-placeholder-val="{{ false }}"><span style="font-size: 12px; color: #5A554C; white-space: nowrap;">{{t.parent}}</span></sc-if>
+              </span>
+              <sc-if value="{{t.hasKids}}" hint-placeholder-val="{{ false }}"><span style="font-size: 12px; color: #4F4A42; white-space: nowrap;">{{t.kids}}</span></sc-if>
+              <sc-if value="{{t.hasBadge}}" hint-placeholder-val="{{ true }}"><span style="font-size: 11px; font-weight: 600; padding: 2px 9px; border-radius: 999px; white-space: nowrap; background: {{t.badgeBg}}; color: {{t.badgeFg}};">{{t.statusLabel}}・{{t.badge}}</span></sc-if>
+            </button>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display: flex; flex-direction: column; gap: 2px; padding: 6px; border-radius: 22px; background: rgba(255, 255, 255, 0.35); border: 1px solid rgba(255, 255, 255, 0.7);">
+        <span style="padding: 6px 12px 2px; font-size: 11px; font-weight: 600; color: #4F4A42; letter-spacing: 0.06em;">完了</span>
+        <sc-for list="{{done}}" as="t" hint-placeholder-count="3">
+          <div style="display: flex; align-items: center; gap: 2px; padding: 0 12px 0 4px; border-radius: 14px; background: {{t.rowBg}}; box-shadow: {{t.rowRing}};">
+            <button type="button" onClick="{{t.cycle}}" aria-label="{{t.aria}}" style="width: 40px; height: 40px; flex-shrink: 0; border: none; background: transparent; padding: 0; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+              <svg width="20" height="20" viewBox="0 0 22 22" aria-hidden="true"><circle cx="11" cy="11" r="9.3" fill="#3F6B4E"></circle><path d="M6.8 11.3l2.8 2.8 5.6-5.8" fill="none" stroke="#FFFFFF" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+            </button>
+            <button type="button" onClick="{{t.select}}" style="flex-grow: 1; min-width: 0; min-height: 40px; border: none; background: transparent; padding: 4px; cursor: pointer; display: flex; align-items: baseline; gap: 10px; text-align: left;">
+              <span style="font-size: 14px; color: #4F4A42; text-decoration: line-through; text-decoration-color: #A9A397;">{{t.title}}</span>
+              <sc-if value="{{t.hasParent}}" hint-placeholder-val="{{ false }}"><span style="font-size: 12px; color: #5A554C;">{{t.parent}}</span></sc-if>
+            </button>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 16px; align-items: center; padding: 0 8px; font-size: 12px; color: #4F4A42;">
+      <span><kbd style="font-family: inherit; font-size: 11px; padding: 1px 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(28, 27, 25, 0.12);">J</kbd> <kbd style="font-family: inherit; font-size: 11px; padding: 1px 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(28, 27, 25, 0.12);">K</kbd> 移動</span>
+      <span><kbd style="font-family: inherit; font-size: 11px; padding: 1px 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(28, 27, 25, 0.12);">Space</kbd> 状態を進める</span>
+      <span><kbd style="font-family: inherit; font-size: 11px; padding: 1px 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(28, 27, 25, 0.12);">P</kbd> 中断 <kbd style="font-family: inherit; font-size: 11px; padding: 1px 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(28, 27, 25, 0.12);">W</kbd> 待ち</span>
+      <span><kbd style="font-family: inherit; font-size: 11px; padding: 1px 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(28, 27, 25, 0.12);">T</kbd> 明日へ <kbd style="font-family: inherit; font-size: 11px; padding: 1px 6px; border-radius: 6px; background: rgba(255, 255, 255, 0.7); border: 1px solid rgba(28, 27, 25, 0.12);">B</kbd> バックログへ</span>
+      <span style="margin-left: auto;">リストをクリックしてからキー操作できます</span>
+    </div>
+  </main>
+
+  <aside aria-label="選択中のタスク" style="width: 400px; flex-shrink: 0; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px; padding: 24px; border-radius: 24px; overflow-y: auto; background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(26px) saturate(180%); -webkit-backdrop-filter: blur(26px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.9); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1), 0 14px 36px rgba(38, 34, 28, 0.10);">
+    <div style="display: flex; flex-direction: column; gap: 8px;">
+      <sc-if value="{{sel.hasParent}}" hint-placeholder-val="{{ true }}"><span style="font-size: 12px; color: #5A554C;">{{sel.parent}} ›</span></sc-if>
+      <h2 style="margin: 0; font-size: 22px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.35;">{{sel.title}}</h2>
+      <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+        <span style="font-size: 12px; font-weight: 600; padding: 3px 10px; border-radius: 999px; background: {{sel.badgeBg}}; color: {{sel.badgeFg}};">{{sel.statusLabel}}</span>
+        <span style="font-size: 12px; color: #4F4A42;">{{sel.dayText}}</span>
+      </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+      <button type="button" onClick="{{sel.cycle}}" style="min-height: 44px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.4); background: rgba(47, 75, 124, 0.9); color: #FFFFFF; font-size: 13px; font-weight: 600; cursor: pointer; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);">{{sel.nextLabel}}</button>
+      <button type="button" style="min-height: 44px; border-radius: 14px; border: 1px solid rgba(255, 255, 255, 0.95); background: rgba(255, 255, 255, 0.6); color: #1C1B19; font-size: 13px; font-weight: 600; cursor: pointer;">その他の状態…</button>
+    </div>
+
+    <sc-if value="{{sel.hasKids}}" hint-placeholder-val="{{ false }}">
+      <section style="display: flex; flex-direction: column; gap: 8px;">
+        <h3 style="margin: 0; font-size: 12px; font-weight: 600; color: #4F4A42; letter-spacing: 0.06em;">子タスク</h3>
+        <sc-for list="{{sel.kidList}}" as="k" hint-placeholder-count="3">
+          <div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; border-radius: 12px; background: rgba(255, 255, 255, 0.55); font-size: 13px;">
+            <span>{{k.title}}</span><span style="font-size: 11px; font-weight: 600; color: {{k.fg}};">{{k.label}}</span>
+          </div>
+        </sc-for>
+      </section>
+    </sc-if>
+
+    <section style="display: flex; flex-direction: column; gap: 10px;">
+      <h3 style="margin: 0; font-size: 12px; font-weight: 600; color: #4F4A42; letter-spacing: 0.06em;">状態の履歴</h3>
+      <ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 0;">
+        <sc-for list="{{sel.history}}" as="h" hint-placeholder-count="3">
+          <li style="display: flex; gap: 12px; align-items: stretch;">
+            <span style="display: flex; flex-direction: column; align-items: center; width: 12px;">
+              <span style="width: 9px; height: 9px; border-radius: 50%; margin-top: 5px; background: #2F4B7C; box-shadow: 0 0 0 3px rgba(47, 75, 124, 0.15);"></span>
+              <span style="flex-grow: 1; width: 1.5px; background: rgba(47, 75, 124, 0.2);"></span>
+            </span>
+            <span style="display: flex; flex-direction: column; gap: 1px; padding-bottom: 14px;">
+              <span style="font-size: 11px; color: #5A554C; font-variant-numeric: tabular-nums;">{{h.at}}</span>
+              <span style="font-size: 13px;">{{h.text}}</span>
+            </span>
+          </li>
+        </sc-for>
+      </ol>
+    </section>
+  </aside>
+
+  <sc-if value="{{showPalette}}" hint-placeholder-val="{{ false }}">
+    <div style="position: absolute; inset: 0; background: rgba(28, 27, 25, 0.18); display: flex; justify-content: center; align-items: flex-start; padding-top: 140px;">
+      <div role="dialog" aria-label="コマンドパレット" style="width: 580px; border-radius: 22px; overflow: hidden; background: rgba(255, 255, 255, 0.78); backdrop-filter: blur(30px) saturate(180%); -webkit-backdrop-filter: blur(30px) saturate(180%); border: 1px solid rgba(255, 255, 255, 0.95); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 1), 0 30px 80px rgba(28, 27, 25, 0.25);">
+        <div style="display: flex; align-items: center; gap: 10px; padding: 16px 20px; border-bottom: 1px solid rgba(28, 27, 25, 0.08);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4F4A42" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"></circle><path d="M16 16l4 4"></path></svg>
+          <label for="palette-input" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;">コマンドを検索</label>
+          <input id="palette-input" type="text" placeholder="コマンドやタスクを検索…" style="flex-grow: 1; border: none; outline: none; background: transparent; font-size: 16px; color: #1C1B19;">
+        </div>
+        <div style="display: flex; flex-direction: column; padding: 8px;">
+          <div style="display: flex; align-items: center; justify-content: space-between; min-height: 44px; padding: 0 12px; border-radius: 12px; background: rgba(47, 75, 124, 0.1); font-size: 14px; font-weight: 500;">選択中のタスクを「待ち」にする<kbd style="font-family: inherit; font-size: 11px; padding: 2px 7px; border-radius: 6px; background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(28, 27, 25, 0.12);">W</kbd></div>
+          <div style="display: flex; align-items: center; justify-content: space-between; min-height: 44px; padding: 0 12px; border-radius: 12px; font-size: 14px;">タスクを追加<kbd style="font-family: inherit; font-size: 11px; padding: 2px 7px; border-radius: 6px; background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(28, 27, 25, 0.12);">N</kbd></div>
+          <div style="display: flex; align-items: center; justify-content: space-between; min-height: 44px; padding: 0 12px; border-radius: 12px; font-size: 14px;">振り返りを書く<kbd style="font-family: inherit; font-size: 11px; padding: 2px 7px; border-radius: 6px; background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(28, 27, 25, 0.12);">G R</kbd></div>
+          <div style="display: flex; align-items: center; justify-content: space-between; min-height: 44px; padding: 0 12px; border-radius: 12px; font-size: 14px;">今日のFBをもらう</div>
+          <div style="display: flex; align-items: center; justify-content: space-between; min-height: 44px; padding: 0 12px; border-radius: 12px; font-size: 14px;">タイムラインを開く<kbd style="font-family: inherit; font-size: 11px; padding: 2px 7px; border-radius: 6px; background: rgba(255, 255, 255, 0.8); border: 1px solid rgba(28, 27, 25, 0.12);">G L</kbd></div>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"phase":{"editor":"enum","options":["朝","日中","夜"],"default":"夜"},"showPalette":{"editor":"boolean","default":false},"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  baseTasks() {
+    return [
+      { id: 1, title: '企画書ドラフトを書く', parent: 'Q4プロダクト計画', status: 'doing', days: 3, history: [['9/18', '作成（バックログ）'], ['9/20', '未着手 → 着手中'], ['9/21', '今日に持ち越し'], ['9/22', '今日に持ち越し']] },
+      { id: 2, title: '競合調査のまとめ', parent: 'Q4プロダクト計画', status: 'waiting', days: 5, history: [['9/15', '作成（バックログ）'], ['9/18', '未着手 → 着手中'], ['9/19', '着手中 → 待ち（EMの返答待ち）'], ['9/20 – 9/22', '待ちが継続']] },
+      { id: 3, title: 'TODOツール MVP', status: 'doing', days: 2, isParent: true, history: [['9/19', '作成'], ['9/21', '子タスクの着手に連動して着手中']] },
+      { id: 4, title: 'D1のスキーマ設計', parent: 'TODOツール MVP', parentId: 3, child: true, status: 'doing', days: 1, history: [['9/21', '作成'], ['9/22', '未着手 → 着手中']] },
+      { id: 5, title: 'Honoでルーティング', parent: 'TODOツール MVP', parentId: 3, child: true, status: 'todo', history: [['9/21', '作成']] },
+      { id: 6, title: 'CTOとの1on1アジェンダ', status: 'todo', history: [['9/22', '作成（今日に直接追加）']] },
+      { id: 7, title: 'チームの週報ドラフト', status: 'paused', days: 2, history: [['9/21', '未着手 → 着手中'], ['9/22', '着手中 → 中断']] },
+      { id: 10, title: '要件の洗い出し', parent: 'TODOツール MVP', parentId: 3, child: true, status: 'done', days: 2, history: [['9/21', '未着手 → 着手中'], ['9/22', '着手中 → 完了']] },
+      { id: 8, title: 'PRレビュー（決済まわり）', status: 'done', days: 1, history: [['9/22', '未着手 → 着手中'], ['9/22', '着手中 → 完了']] },
+      { id: 9, title: '経費精算', status: 'done', days: 1, history: [['9/22', '未着手 → 着手中'], ['9/22', '着手中 → 完了']] }
+    ];
+  }
+  meta(s) {
+    return {
+      todo: { label: '未着手', bg: 'rgba(120,112,98,0.14)', fg: '#4A463F', next: '着手する' },
+      doing: { label: '着手中', bg: 'rgba(47,75,124,0.14)', fg: '#233A63', next: '完了にする' },
+      waiting: { label: '待ち', bg: 'rgba(154,79,50,0.14)', fg: '#7E3F26', next: '再開する' },
+      paused: { label: '中断', bg: 'rgba(138,109,59,0.16)', fg: '#6E5528', next: '再開する' },
+      done: { label: '完了', bg: 'rgba(63,107,78,0.14)', fg: '#2C4F38', next: '未完了に戻す' }
+    }[s];
+  }
+  st(k, d) {
+    return this.state && this.state[k] !== undefined ? this.state[k] : d;
+  }
+  tasks() {
+    return this.st('tasks', null) || this.baseTasks();
+  }
+  cycle(id) {
+    const next = { todo: 'doing', doing: 'done', done: 'todo', paused: 'doing', waiting: 'doing' };
+    const tasks = this.tasks().map((t) => {
+      if (t.id !== id) return t;
+      const s = next[t.status];
+      const h = t.history.concat([['今', this.meta(t.status).label + ' → ' + this.meta(s).label]]);
+      return Object.assign({}, t, { status: s, days: s === 'doing' && !t.days ? 1 : t.days, history: h });
+    });
+    this.setState({ tasks: tasks, selected: id });
+  }
+  addTask() {
+    const text = (this.st('draft', '') || '').trim();
+    if (!text) return;
+    const id = this.st('nextId', 100);
+    const t = { id: id, title: text, status: 'todo', history: [['今', '作成（今日に直接追加）']] };
+    this.setState({ tasks: this.tasks().concat([t]), draft: '', nextId: id + 1, selected: id });
+  }
+  decorate(t, all, selected) {
+    const m = this.meta(t.status);
+    let kids = '';
+    if (t.isParent) {
+      const ch = all.filter((c) => c.parentId === t.id);
+      kids = '子 ' + ch.filter((c) => c.status === 'done').length + '/' + ch.length;
+    }
+    const indented = t.child && t.status !== 'done';
+    const isSel = t.id === selected;
+    return Object.assign({}, t, {
+      isTodo: t.status === 'todo', isDoing: t.status === 'doing', isWaiting: t.status === 'waiting', isPaused: t.status === 'paused', isDone: t.status === 'done',
+      statusLabel: m.label, badgeBg: m.bg, badgeFg: m.fg,
+      hasBadge: t.status !== 'todo' && t.status !== 'done' && !!t.days,
+      badge: t.days ? t.days + '日目' : '',
+      hasParent: !!t.parent && !indented,
+      parent: t.parent || '',
+      hasKids: !!kids, kids: kids,
+      pad: indented ? 36 : 4,
+      rowBg: isSel ? 'rgba(255,255,255,0.85)' : 'transparent',
+      rowRing: isSel ? 'inset 0 0 0 1.5px rgba(47,75,124,0.45)' : 'none',
+      strike: 'none', titleColor: '#1C1B19',
+      aria: t.title + '：' + m.label + '（クリックで次の状態へ）',
+      cycle: () => this.cycle(t.id),
+      select: () => this.setState({ selected: t.id })
+    });
+  }
+  renderVals() {
+    const phase = this.props.phase ?? '夜';
+    const all = this.tasks();
+    const activeRaw = all.filter((t) => t.status !== 'done');
+    const doneRaw = all.filter((t) => t.status === 'done');
+    const order = activeRaw.concat(doneRaw).map((t) => t.id);
+    const selected = this.st('selected', 1);
+    const s = all.find((t) => t.id === selected) || all[0];
+    const sm = this.meta(s.status);
+    const kidList = all.filter((c) => c.parentId === s.id).map((c) => ({ title: c.title, label: this.meta(c.status).label, fg: this.meta(c.status).fg }));
+    const move = (d) => {
+      const i = order.indexOf(selected);
+      const n = order[Math.max(0, Math.min(order.length - 1, i + d))];
+      this.setState({ selected: n });
+    };
+    return {
+      isMorning: phase === '朝',
+      isNight: phase === '夜',
+      showPalette: this.props.showPalette ?? false,
+      active: activeRaw.map((t) => this.decorate(t, all, selected)),
+      done: doneRaw.map((t) => this.decorate(t, all, selected)),
+      doingCount: all.filter((t) => t.status === 'doing').length,
+      todoCount: all.filter((t) => t.status === 'todo').length,
+      doneCount: doneRaw.length,
+      sel: {
+        title: s.title,
+        hasParent: !!s.parent,
+        parent: s.parent || '',
+        statusLabel: sm.label, badgeBg: sm.bg, badgeFg: sm.fg,
+        dayText: s.status === 'todo' ? 'まだ着手していません' : (s.status === 'done' ? '完了済み' : '着手から' + (s.days || 1) + '日目'),
+        nextLabel: sm.next,
+        cycle: () => this.cycle(s.id),
+        hasKids: kidList.length > 0,
+        kidList: kidList,
+        history: s.history.slice().reverse().map((h) => ({ at: h[0], text: h[1] }))
+      },
+      draft: this.st('draft', ''),
+      onDraft: (e) => this.setState({ draft: e.target.value }),
+      onAddKey: (e) => {
+        const composing = (e.nativeEvent && e.nativeEvent.isComposing) || e.isComposing;
+        if (e.key === 'Enter' && !composing) this.addTask();
+      },
+      onListKey: (e) => {
+        if (e.key === 'j' || e.key === 'ArrowDown') { e.preventDefault(); move(1); }
+        else if (e.key === 'k' || e.key === 'ArrowUp') { e.preventDefault(); move(-1); }
+        else if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); this.cycle(selected); }
+      }
+    };
+  }
+}
+</script>
+</body>
+</html>

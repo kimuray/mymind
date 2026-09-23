@@ -1,0 +1,42 @@
+{
+  "name": "mymind",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@10.34.5",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "pnpm -r --parallel --if-present dev",
+    "build": "pnpm -r --if-present build",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "deps:check": "depcruise --config .dependency-cruiser.cjs packages $(test -d apps && echo apps)",
+    "design:check": "node scripts/check-design-tokens.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "check": "pnpm lint && pnpm typecheck && pnpm deps:check && pnpm design:check && pnpm docs:check && pnpm test",
+    "doctor": "node scripts/doctor.mjs",
+    "start": "pnpm --filter @mymind/server start",
+    "docs:build": "node scripts/docs-build.mjs",
+    "docs:check": "node scripts/docs-build.mjs --check",
+    "docs:open": "node scripts/docs-build.mjs && open docs-site/docs/index.html",
+    "docker:dev": "docker compose up dev",
+    "docker:check": "docker compose run --rm check",
+    "docker:e2e": "docker compose run --rm e2e",
+    "docker:down": "docker compose down",
+    "docker:reset": "docker compose down --volumes"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.2.0",
+    "@playwright/test": "^1.55.0",
+    "@vitest/coverage-v8": "^3.2.0",
+    "dependency-cruiser": "^17.0.0",
+    "markdown-it": "^14.3.2",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  }
+}
