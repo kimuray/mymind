@@ -19,7 +19,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
@@ -68,7 +68,7 @@ jobs:
             echo "E2E は無効です（ci.yml の E2E_ENABLED。#50 で有効にする）"
           fi
       - if: steps.gate.outputs.enabled == 'true'
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
       - if: steps.gate.outputs.enabled == 'true'
         uses: actions/setup-node@v7
         with:
