@@ -1,4 +1,5 @@
 import { DatabaseSync } from 'node:sqlite';
+import { fileURLToPath } from 'node:url';
 import { drizzle, type NodeSQLiteDatabase } from 'drizzle-orm/node-sqlite';
 import { migrate } from 'drizzle-orm/node-sqlite/migrator';
 
@@ -7,6 +8,9 @@ import { migrate } from 'drizzle-orm/node-sqlite/migrator';
  * 中のクエリは .run() / .all() / .get() で実行する。await すると取り消せなくなる（ADR-0011）
  */
 export type Database = NodeSQLiteDatabase & { $client: DatabaseSync };
+
+/** アプリのマイグレーション（drizzle-kit generate の出力先） */
+export const MIGRATIONS_FOLDER = fileURLToPath(new URL('../migrations', import.meta.url));
 
 export type OpenDatabaseOptions = {
   /** DB ファイルのパス。テストでは ':memory:' を渡す */
