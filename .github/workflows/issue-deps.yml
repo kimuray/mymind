@@ -1,7 +1,7 @@
 name: Issue dependencies
 
 # issue が閉じたら、その issue に依存していた issue の status:blocked を見直す。
-# 依存は issue 本文の「依存: #12, #13」の行で表す（scripts/issues-to-github.mjs が書き込む）。
+# 依存は issue 本文の「依存: #12, #13」の行で表す（書き方は .claude/rules/workflow.md の「Issue の運用」）。
 on:
   issues:
     types: [closed]

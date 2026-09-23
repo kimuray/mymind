@@ -15,3 +15,6 @@ labels: ["type:spike", "status:needs-decision"]
 - 結果を ADR に記録している
 
 ## 関連
+
+<!-- 依存する issue があれば、次の形の行を残す（issue-deps.yml が読む）。なければ行ごと消す -->
+依存: #
