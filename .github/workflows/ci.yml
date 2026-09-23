@@ -55,15 +55,17 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-      # 画面（apps/web）ができるまではジョブを成功扱いのまま中身を省略する（必須チェックを満たすため）。
-      # 本番ビルドの配信と E2E の有効化は #50 で行う
+      # サーバーが画面の本番ビルドを配信できるようになるまで（#50）は、ジョブを成功扱いのまま中身を省略する
+      # （必須チェックを満たすため）。#50 でこの値を true にする
       - id: gate
+        env:
+          E2E_ENABLED: "false"
         run: |
-          if [ -f apps/web/package.json ]; then
+          if [ "$E2E_ENABLED" = "true" ]; then
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
             echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "apps/web がまだないため E2E を省略します"
+            echo "E2E は無効です（ci.yml の E2E_ENABLED。#50 で有効にする）"
           fi
       - if: steps.gate.outputs.enabled == 'true'
         uses: pnpm/action-setup@v6

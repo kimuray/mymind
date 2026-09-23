@@ -1,0 +1,303 @@
+/* 画面の土台（DESIGN.md 1〜3章、Figma「PC/今日」の枠）。色・角・余白は tokens.css の変数だけを使う */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-feature-settings: "cv11", "ss01";
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--ink-1);
+  background-color: var(--ground);
+  /* 色のにじみは画面の角に置き、中心付近には置かない（DESIGN.md 2.1） */
+  background-image:
+    radial-gradient(ellipse 60% 70% at 15% 15%, var(--blob-indigo), transparent 100%),
+    radial-gradient(ellipse 55% 65% at 95% 5%, var(--blob-apricot), transparent 100%),
+    radial-gradient(ellipse 60% 60% at 25% 95%, var(--blob-sage), transparent 100%),
+    radial-gradient(ellipse 50% 60% at 98% 90%, var(--blob-lilac), transparent 100%);
+  background-attachment: fixed;
+}
+
+h1,
+h2,
+p,
+ul {
+  margin: 0;
+}
+
+ul {
+  padding: 0;
+  list-style: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* 書体（DESIGN.md 2.6） */
+.text-display {
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+  line-height: 1.3;
+}
+
+.text-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+/* ガラスの面（DESIGN.md 2.3）。backdrop-filter は面にだけ使い、リストの行には使わない */
+.glass-1,
+.glass-3 {
+  border: var(--glass-border);
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-1 {
+  background: var(--glass-1);
+  backdrop-filter: var(--glass-1-blur);
+}
+
+.glass-3 {
+  background: var(--glass-3);
+  backdrop-filter: var(--glass-3-blur);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  body {
+    background-image: none;
+  }
+
+  .glass-1,
+  .glass-3 {
+    background: var(--glass-opaque);
+    border: var(--glass-opaque-border);
+    backdrop-filter: none;
+  }
+}
+
+/* 3ペイン（DESIGN.md 3章）。外周とペインの間隔は 16px */
+.shell {
+  display: grid;
+  grid-template-columns: 232px minmax(0, 1fr) 400px;
+  gap: var(--space-4);
+  height: 100%;
+  padding: var(--space-4);
+}
+
+.pane {
+  min-height: 0;
+  border-radius: var(--radius-2xl);
+}
+
+.pane-main {
+  overflow-y: auto;
+  padding: var(--space-6);
+}
+
+.pane-detail {
+  overflow-y: auto;
+  padding: var(--space-6);
+}
+
+/* 1280px 未満では、詳細ペインを右からのオーバーレイにする。開く操作は各画面の issue で加える */
+@media (max-width: 1279px) {
+  .shell {
+    grid-template-columns: 232px minmax(0, 1fr);
+  }
+
+  .pane-detail {
+    position: fixed;
+    top: var(--space-4);
+    right: var(--space-4);
+    bottom: var(--space-4);
+    width: 380px;
+    transform: translateX(calc(100% + var(--space-4)));
+  }
+
+  .pane-detail[data-open="true"] {
+    transform: none;
+  }
+}
+
+/* サイドバー（Figma「PC/今日」のサイドバー） */
+.pane-sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5) var(--space-3);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding-left: var(--space-2);
+}
+
+.brand-name {
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.nav-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nav-group-title {
+  padding-left: var(--space-1);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--ink-4);
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  height: 40px;
+  padding: 0 var(--space-3);
+  border-radius: var(--radius-m);
+  color: var(--ink-2);
+  text-decoration: none;
+}
+
+.nav-item:hover {
+  background: var(--accent-soft);
+}
+
+.nav-item.is-active {
+  background: var(--accent-soft);
+  color: var(--accent-strong);
+  font-weight: 500;
+}
+
+.nav-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--radius-full);
+  background: var(--status-todo);
+  opacity: 0.6;
+}
+
+.nav-item.is-active .nav-dot {
+  background: var(--accent);
+  opacity: 1;
+}
+
+.nav-label {
+  flex: 1;
+}
+
+/* キーの案内は、選択中の項目にだけ出す（Figma のとおり） */
+.nav-hint {
+  font-size: 11px;
+  color: var(--ink-4);
+  visibility: hidden;
+}
+
+.nav-item.is-active .nav-hint {
+  visibility: visible;
+}
+
+.sidebar-spacer {
+  flex: 1;
+}
+
+.sidebar-hints {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: var(--glass-border);
+  border-radius: var(--radius-l);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.sidebar-hints li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* kbd（DESIGN.md 4.5） */
+.kbd {
+  display: inline-block;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-s);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.kbd-light {
+  background: var(--kbd-bg);
+  border: var(--kbd-border);
+  color: var(--ink-2);
+}
+
+/* 画面の中身 */
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.empty-note {
+  font-size: 13px;
+  color: var(--ink-4);
+}
+
+.mame-gallery {
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.mame-gallery th,
+.mame-gallery td {
+  padding: var(--space-2) var(--space-4);
+  text-align: center;
+  vertical-align: middle;
+}
+
+.mame-gallery tbody th {
+  text-align: left;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+/* 考え中の泡だけ、ゆっくり点滅させる。「視差効果を減らす」設定では止める（DESIGN.md 2.3、NFR-22） */
+.mame-bubbles {
+  animation: mame-think 1.6s ease-in-out infinite;
+}
+
+@keyframes mame-think {
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mame-bubbles {
+    animation: none;
+  }
+}

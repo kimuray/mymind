@@ -1,0 +1,102 @@
+/*
+ * デザイントークン（DESIGN.md 2章、4.1）。値は DESIGN.md の表と完全に一致させる。
+ * 色の直書きはこのファイルだけに許される（pnpm design:check）。新しい値は先に DESIGN.md に追加する。
+ */
+:root {
+  /* 2.1 色 */
+  --ink-1: #1c1b19;
+  --ink-2: #3f3b34;
+  --ink-3: #4f4a42;
+  --ink-4: #5a554c;
+  --ground: #f1ece3;
+  --ground-evening: #e9e6ee;
+  --accent: #2f4b7c;
+  --accent-strong: #233a63;
+  --accent-soft: rgba(47, 75, 124, 0.12);
+
+  --blob-indigo: rgba(122, 150, 214, 0.55);
+  --blob-apricot: rgba(244, 176, 124, 0.5);
+  --blob-sage: rgba(138, 192, 146, 0.42);
+  --blob-lilac: rgba(196, 164, 222, 0.45);
+
+  /* 2.2 状態色 */
+  --status-todo: #8a857b;
+  --status-todo-bg: rgba(120, 112, 98, 0.14);
+  --status-todo-text: #4a463f;
+  --status-doing: #2f4b7c;
+  --status-doing-bg: rgba(47, 75, 124, 0.14);
+  --status-doing-text: #233a63;
+  --status-paused: #8a6d3b;
+  --status-paused-bg: rgba(138, 109, 59, 0.16);
+  --status-paused-text: #6e5528;
+  --status-waiting: #9a4f32;
+  --status-waiting-bg: rgba(154, 79, 50, 0.14);
+  --status-waiting-text: #7e3f26;
+  --status-done: #3f6b4e;
+  --status-done-bg: rgba(63, 107, 78, 0.14);
+  --status-done-text: #2c4f38;
+  --status-cancelled: #8a857b;
+  --status-cancelled-bg: rgba(120, 112, 98, 0.14);
+  --status-cancelled-text: #4a463f;
+
+  /* 2.3 ガラス（背景とぼかしを別の変数に分ける） */
+  --glass-1: rgba(255, 255, 255, 0.5);
+  --glass-1-blur: blur(24px) saturate(170%);
+  --glass-2: rgba(255, 255, 255, 0.55);
+  --glass-2-blur: blur(22px) saturate(170%);
+  --glass-3: rgba(255, 255, 255, 0.6);
+  --glass-3-blur: blur(26px) saturate(180%);
+  --glass-4: rgba(255, 255, 255, 0.78);
+  --glass-4-blur: blur(30px) saturate(180%);
+  --glass-border: 1px solid rgba(255, 255, 255, 0.85);
+  --glass-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.95), 0 12px 32px rgba(38, 34, 28, 0.1);
+  /* 「透明度を下げる」設定のときの不透明な面 */
+  --glass-opaque: #fbf9f5;
+  --glass-opaque-border: 1px solid rgba(28, 27, 25, 0.1);
+
+  /* 2.4 角の丸み */
+  --radius-s: 6px;
+  --radius-m: 12px;
+  --radius-l: 14px;
+  --radius-xl: 22px;
+  --radius-2xl: 24px;
+  --radius-full: 999px;
+
+  /* 2.5 余白 */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  /* 2.6 書体 */
+  --font-sans: "Inter", "Noto Sans JP", "Hiragino Sans", sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", "Menlo", monospace;
+
+  /* 4.1 マメ */
+  --mame-best: #f08c78;
+  --mame-good: #f2b27e;
+  --mame-normal: #e3cf86;
+  --mame-bad: #94b6db;
+  --mame-worst: #ae9fd6;
+  --mame-sleep: #d9d4cb;
+  --mame-think: #e3cf86;
+  --mame-best-ink: #b4432f;
+  --mame-good-ink: #b0621f;
+  --mame-normal-ink: #8a7422;
+  --mame-bad-ink: #35628f;
+  --mame-worst-ink: #5b4a8a;
+  --mame-sleep-ink: #6b665c;
+  --mame-think-ink: #8a7422;
+  --mame-face: #1f1d1a;
+  --mame-stem: #3e7a55;
+  --mame-leaf: #86bf98;
+  --mame-flower: #f4cf62;
+  --mame-highlight: #ffffff;
+
+  /* 4.5 kbd */
+  --kbd-bg: rgba(255, 255, 255, 0.8);
+  --kbd-border: 1px solid rgba(28, 27, 25, 0.12);
+}
