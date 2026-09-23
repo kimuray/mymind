@@ -8,5 +8,7 @@
 | 2026-09-23 | #11 | -（main に直接マージ） | node:sqlite を採用（ADR-0011）。packages/db の雛形 | #15・#27 が ready。次は #14、#27、#28、#37 |
 | 2026-09-23 | #14 | #51 | apps/server の雛形、Host・Origin・トークンの検証、二重起動の防止。web との結合は #50 に切り出し | 次は #27、#28、#37 |
 | 2026-09-23 | #53 | #54 | 依存を持つ open の issue 24件の本文に `依存:` の行を追加。書き方を workflow.md とテンプレートに明記 | - |
-| 2026-09-23 | #38（一部） | 下記の PR | `docs/issues/` と登録スクリプトを削除。issue は GitHub だけで管理する | 次は #27、#28、#37 |
-| 2026-09-23 | #47 | 下記の PR | CI の check に pnpm audit --audit-level high を追加 | - |
+| 2026-09-23 | #38（一部） | #55（3e8781d として main に反映） | `docs/issues/` と登録スクリプトを削除。issue は GitHub だけで管理する | 次は #27、#28、#37 |
+| 2026-09-23 | #27 | #56 | tasks・day_plans・task_events・settings のスキーマ、SensitiveCodec、ステータス変更をイベントと同じトランザクションで保存するリポジトリ。domain に changeStatus | レビューを経てマージ |
+| 2026-09-23 | #28 | #57（#56 の上に積んだ） | 自動ルール（中断・親の着手・完了提案）を、イベントと提案を返す domain の関数にした | #18 の暫定決定は後から追加 |
+| 2026-09-23 | #47 | #58 | CI の check に pnpm audit --audit-level high を追加 | - |
