@@ -87,10 +87,11 @@ const adrFiles = new Map();
 for (const f of sources.filter((s) => /^docs\/adr\/\d{4}-/.test(s))) {
   adrFiles.set(posix.basename(f).slice(0, 4), f);
 }
-const issueFiles = new Map();
-for (const f of sources.filter((s) => /^docs\/issues\/\d{3}\.md$/.test(s))) {
-  issueFiles.set(posix.basename(f).slice(0, 3), f);
-}
+// issue は GitHub で管理する。文書に残る「issue 002」（GitHub 登録前の番号）は対応表で GitHub の番号に変える
+const ISSUE_URL = 'https://github.com/kimuray/mymind/issues/';
+const issueNumbers = new Map(
+  Object.entries(JSON.parse(readFileSync(join(root, 'docs/issue-numbers.json'), 'utf8'))),
+);
 
 // ---------- Markdown の変換 ----------
 const md = new MarkdownIt({ html: false, linkify: false, typographer: false });
@@ -218,12 +219,12 @@ function decorate(html, src, out) {
         return f === src ? all : `<a class="ref" href="${relTo(f)}">${all}</a>`;
       })
       .replace(/issue (\d{3})/g, (all, n) => {
-        const f = issueFiles.get(n);
-        if (!f) {
+        const number = issueNumbers.get(n);
+        if (!number) {
           problems.push(`${src}: 存在しない issue → ${all}`);
           return all;
         }
-        return f === src ? all : `<a class="ref" href="${relTo(f)}">${all}</a>`;
+        return `<a class="ref" href="${ISSUE_URL}${number}" title="#${number}">${all}</a>`;
       });
   }
   return parts.join('');
@@ -251,51 +252,11 @@ const NAV = [
   ['ルール（.claude/rules）', [/^\.claude\/rules\//]],
   ['スキル（.claude/skills）', [/^\.claude\/skills\//]],
   ['FB の方針とプロンプト', [/^prompts\//]],
-  ['課題（issue）', [/^docs\/issues\/README\.md$/]],
 ];
 
-const STATUS_LABEL = {
-  ready: '着手可',
-  blocked: '依存待ち',
-  'needs-decision': '判断待ち',
-  'needs-human': '人の作業待ち',
-  provisional: '暫定決定',
-  'in-progress': '作業中',
-};
-
 function metaHtml(page) {
-  const m = page.meta;
-  if (!m) {
-    const status = page.html.match(/<li>ステータス：([^<]+)<\/li>/);
-    return status ? `<p class="meta"><span class="chip adr">${status[1]}</span></p>` : '';
-  }
-  const labels = (m.labels ?? '')
-    .replace(/^\[|\]$/g, '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-  const chips = labels.map((l) => {
-    const [k, v] = l.split(':');
-    const text = k === 'status' ? (STATUS_LABEL[v] ?? v) : v;
-    return `<span class="chip ${k} ${k}-${v}">${text}</span>`;
-  });
-  if (m.milestone) chips.push(`<span class="chip milestone">${m.milestone}</span>`);
-  const deps = (m.depends_on ?? '')
-    .replace(/^\[|\]$/g, '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean);
-  const depHtml = deps.length
-    ? `<span class="deps">依存：${deps
-        .map((d) => {
-          const f = issueFiles.get(d);
-          return f
-            ? `<a href="${posix.relative(posix.dirname(page.out), outPathOf(f))}">${d}</a>`
-            : d;
-        })
-        .join('、')}</span>`
-    : '';
-  return `<p class="meta">${chips.join('')}${depHtml}</p>`;
+  const status = page.html.match(/<li>ステータス：([^<]+)<\/li>/);
+  return status ? `<p class="meta"><span class="chip adr">${status[1]}</span></p>` : '';
 }
 
 function navHtml(page) {

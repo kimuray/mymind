@@ -14,7 +14,7 @@ export const REVIEW_REQUIRED = [
   /^\.github\//,
   /^biome\.json$/,
   /^\.dependency-cruiser\.cjs$/,
-  /^scripts\/(merge-if-allowed|review-policy|pr-policy|doctor|github-setup|issues-to-github)\.mjs$/,
+  /^scripts\/(merge-if-allowed|review-policy|pr-policy|doctor|github-setup)\.mjs$/,
   /(^|\/)package\.json$/,
   /^pnpm-lock\.yaml$/,
   /^pnpm-workspace\.yaml$/,

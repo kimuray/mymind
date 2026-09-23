@@ -12,8 +12,8 @@ mymind は、日々のTODOと振り返りを1か所で扱い、ローカルのAI
 | [roadmap.md](./roadmap.md) | マイルストーンと完了条件 | 次に何をやるか決めるとき |
 | [adr/](./adr/) | 設計判断の記録 | 判断の理由を確認するとき、判断を変えるとき |
 | [open-questions.md](./open-questions.md) | 未決定・検討中の事項と、その扱い | 仕様の穴に気づいたとき |
-| [issues/](./issues/) | GitHub 登録前の issue | 取り組む課題を選ぶとき |
 | [design/](./design/) | デザインの正本（Figma）と参照手順 | 画面を実装するとき |
+| `issue-numbers.json` | GitHub に登録する前の issue の番号と、GitHub の番号の対応表。文書中の「issue 002」は GitHub の #11 を指す（HTML では自動でリンクになる） | 古い番号の issue を探すとき |
 | [../.claude/rules/](../.claude/rules/README.md) | コーディング・アーキテクチャ・テスト・UI・作業の進め方・自律モードのルール（エージェントのハーネスの一部） | 実装するとき |
 | [../.claude/skills/](../.claude/skills/README.md) | エージェントの手順（issue-pick / issue-work / autopilot） | 課題に着手するとき |
 | [../prompts/](../prompts/) | FB の方針とプロンプト | FB に関わる変更をするとき |

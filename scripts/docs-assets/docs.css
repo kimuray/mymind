@@ -252,41 +252,10 @@ a.ref {
   background: rgba(120, 112, 98, 0.14);
   color: #4a463f;
 }
-.chip.status-ready {
-  background: rgba(63, 107, 78, 0.16);
-  color: #2c4f38;
-}
-.chip.status-in-progress {
-  background: rgba(47, 75, 124, 0.16);
-  color: #233a63;
-}
-.chip.status-blocked {
-  background: rgba(138, 109, 59, 0.18);
-  color: #6e5528;
-}
-.chip.status-needs-decision,
-.chip.status-needs-human {
-  background: rgba(154, 79, 50, 0.16);
-  color: #7e3f26;
-}
-.chip.status-provisional {
-  background: rgba(47, 75, 124, 0.08);
-  color: #233a63;
-  border: 1px dashed rgba(47, 75, 124, 0.4);
-}
-.chip.priority-p0 {
-  background: rgba(154, 79, 50, 0.16);
-  color: #7e3f26;
-}
 .chip.adr {
   background: var(--accent-soft);
   color: var(--accent-strong);
 }
-.deps {
-  color: var(--ink-3);
-  margin-left: 6px;
-}
-
 .toc {
   position: sticky;
   top: 0;

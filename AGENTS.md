@@ -37,7 +37,7 @@ mymind は、日々のTODOと振り返りを管理し、ローカルのAIエー�
 
 ## 取り組む課題の選び方
 
-特に指示がなければ、GitHub の issue（登録前は `docs/issues/`）から `status:ready` のものを選びます。選び方と着手の手順は `.claude/rules/workflow.md` の「Issue の運用」に従ってください。`status:needs-decision` の issue には着手しないでください。未決定の事項の一覧は `docs/open-questions.md` にあります。
+特に指示がなければ、GitHub の issue から `status:ready` のものを選びます。選び方と着手の手順は `.claude/rules/workflow.md` の「Issue の運用」に従ってください。`status:needs-decision` の issue には着手しないでください。未決定の事項の一覧は `docs/open-questions.md` にあります。
 
 ## リポジトリの構成
 

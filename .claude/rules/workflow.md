@@ -27,7 +27,7 @@ description: 変更の単位、進め方、文書の更新、issue の運用、C
 
 ## Issue の運用
 
-課題はすべて GitHub の issue で管理します（GitHub に登録するまでは `docs/issues/`）。人の確認を待たずに連続して進める場合は、`.claude/rules/autonomy.md`（自律モード）に従います。エージェントは、ユーザーから特に指示がなければ、次の手順で取り組む issue を選びます。手順はスキル（`.claude/skills/issue-pick`、`.claude/skills/issue-work`）にもしてあります。
+課題はすべて GitHub の issue で管理します。人の確認を待たずに連続して進める場合は、`.claude/rules/autonomy.md`（自律モード）に従います。エージェントは、ユーザーから特に指示がなければ、次の手順で取り組む issue を選びます。手順はスキル（`.claude/skills/issue-pick`、`.claude/skills/issue-work`）にもしてあります。
 
 1. `status:ready` の issue だけを候補にする。`status:needs-decision`（人の判断待ち）と `status:blocked`（他の issue 待ち）には着手しない
 2. 優先度（`priority:p0` → `p1` → `p2`）、マイルストーン（M1 → M5）、番号の順に選ぶ
