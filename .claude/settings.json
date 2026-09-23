@@ -79,6 +79,8 @@
     "excludedCommands": [
       "gh",
       "gh:*",
+      "git push",
+      "git push:*",
       "pnpm run doctor",
       "node scripts/merge-if-allowed.mjs:*",
       "node scripts/issues-to-github.mjs:*",
