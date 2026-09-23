@@ -91,7 +91,7 @@ function NavGroup({ title, items }: { title: string; items: NavItem[] }) {
   );
 }
 
-/** 3ペインの枠（DESIGN.md 3章）。メインに各画面を表示する。詳細ペインの中身は各画面の issue で作る */
+/** 3ペインの枠（DESIGN.md 3章）。メインと詳細ペインは、各画面が PageLayout で置く */
 export function AppShell() {
   return (
     <div className="shell">
@@ -112,12 +112,7 @@ export function AppShell() {
           ))}
         </ul>
       </nav>
-      <main className="pane pane-main">
-        <Outlet />
-      </main>
-      <aside className="pane pane-detail glass-3" aria-label="詳細">
-        <p className="empty-note">項目を選ぶと、ここに詳細が表示されます</p>
-      </aside>
+      <Outlet />
     </div>
   );
 }

@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test';
 
-// M1 で実装する主要フロー。実装が入った時点で fixme を外す。
+// 主要フロー。実装が入った時点で fixme を外す（今日のタスクは #30、FB の依頼は M3）。
 test.describe('FR-T01 / FR-T03 今日のタスク', () => {
-  test.fixme('タスクを追加して、Space で未着手→着手中→完了に進められる', async ({ page }) => {
+  test('タスクを追加して、Space で未着手→着手中→完了に進められる', async ({ page }) => {
     await page.goto('/');
     await page.getByLabel('今日のタスクを追加').fill('企画書ドラフトを書く');
     await page.keyboard.press('Enter');

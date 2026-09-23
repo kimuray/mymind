@@ -8,6 +8,7 @@ import '@fontsource/noto-sans-jp/600.css';
 import '@fontsource/noto-sans-jp/700.css';
 import './styles/tokens.css';
 import './styles/base.css';
+import './styles/components.css';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RouterProvider } from '@tanstack/react-router';
 import { StrictMode } from 'react';

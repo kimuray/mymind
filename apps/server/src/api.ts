@@ -1,4 +1,4 @@
-import type { TaskRepository } from '@mymind/db';
+import type { Task, TaskRepository } from '@mymind/db';
 import {
   type BusinessDayOptions,
   canHaveChildren,
@@ -8,10 +8,12 @@ import {
   rulesOnMoveToBacklog,
   rulesOnStatusChange,
   STATUSES,
+  statusSinceDay,
   toBusinessDay,
 } from '@mymind/domain';
 import { type Context, Hono } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
+import { validator } from 'hono/validator';
 import { z } from 'zod';
 
 export type ApiDeps = {
@@ -65,9 +67,10 @@ type ErrorCode =
   | 'INVALID_TRANSITION'
   | 'DEPTH_EXCEEDED';
 
-function fail(
+/** エラーの応答。状態コードを型に残し、Hono RPC のクライアントが成功と失敗を区別できるようにする */
+function fail<S extends ContentfulStatusCode>(
   c: Context,
-  status: ContentfulStatusCode,
+  status: S,
   code: ErrorCode,
   message: string,
   extra = {},
@@ -75,34 +78,51 @@ function fail(
   return c.json({ error: { code, message, ...extra } }, status);
 }
 
-/** JSON の本文を読んで検証する。読めない・形が違う場合は 400 の応答を返す */
-async function parseBody<T extends z.ZodType>(
-  c: Context,
-  schema: T,
-): Promise<{ ok: true; value: z.infer<T> } | { ok: false; response: Response }> {
-  let raw: unknown;
-  try {
-    raw = await c.req.json();
-  } catch {
-    return { ok: false, response: fail(c, 400, 'INVALID_REQUEST', '本文が JSON ではありません') };
-  }
-  const parsed = schema.safeParse(raw);
-  if (!parsed.success) {
-    return {
-      ok: false,
-      response: fail(c, 400, 'INVALID_REQUEST', '入力が正しくありません', {
+/**
+ * JSON の本文を zod で検証するミドルウェア。形が違えば 400 を返す。
+ * 入力の型は Hono RPC で画面と共有される（architecture.md 6章）。
+ */
+const jsonBody = <T extends z.ZodType>(schema: T) =>
+  validator('json', (value, c) => {
+    const parsed = schema.safeParse(value);
+    if (!parsed.success) {
+      return fail(c, 400, 'INVALID_REQUEST', '入力が正しくありません', {
         issues: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
-      }),
-    };
-  }
-  return { ok: true, value: parsed.data };
-}
+      });
+    }
+    return parsed.data as z.infer<T>;
+  });
 
 /**
  * 今日とバックログの API（architecture.md 6章）。
  * 状態の変更はすべて domain の関数でイベントにし、リポジトリが1つのトランザクションで保存する（ADR-0004）。
  */
 export function createApi({ tasks, now, dayOptions, newId }: ApiDeps) {
+  /**
+   * 一覧の各行に、画面で必要な値を加える。日数や件数はここで計算し、画面や AI には計算させない。
+   * - statusSince：今の状態になった業務日（「着手から何日目」FR-T12）
+   * - parentTitle：親の名前（親が同じ一覧にないときにラベルとして出す）
+   * - children：子の数と、そのうち完了・中止の数（「子 1/3」）
+   */
+  const withListInfo = <T extends Task>(list: T[]) => {
+    const parentIds = [...new Set(list.flatMap((t) => (t.parentId === null ? [] : [t.parentId])))];
+    const parents = new Map(tasks.findMany(parentIds).map((p) => [p.id, p.title]));
+    return list.map((t) => {
+      const children = tasks.listChildren(t.id);
+      return {
+        ...t,
+        statusSince:
+          statusSinceDay(tasks.listEvents(t.id)) ??
+          toBusinessDay(new Date(t.createdAt), dayOptions),
+        parentTitle: t.parentId === null ? null : (parents.get(t.parentId) ?? null),
+        children: {
+          total: children.length,
+          closed: children.filter((ch) => ch.status === 'done' || ch.status === 'cancelled').length,
+        },
+      };
+    });
+  };
+
   /** 画面が想定する業務日と、現在の業務日を比べる（NFR-14） */
   const checkDay = (
     c: Context,
@@ -132,18 +152,24 @@ export function createApi({ tasks, now, dayOptions, newId }: ApiDeps) {
       const day = dayParam.safeParse(c.req.param('day'));
       if (!day.success) return fail(c, 400, 'INVALID_REQUEST', '業務日の形式が正しくありません');
       // ログ・FB・調子は、それぞれのテーブルを作る issue で加える
-      return c.json({ day: day.data, tasks: tasks.listPlan(day.data) });
+      return c.json({ day: day.data, tasks: withListInfo(tasks.listPlan(day.data)) });
     })
 
     .get('/backlog', (c) => {
       const today = toBusinessDay(now(), dayOptions);
-      return c.json({ today, tasks: tasks.listBacklog(today) });
+      return c.json({ today, tasks: withListInfo(tasks.listBacklog(today)) });
     })
 
-    .post('/tasks', async (c) => {
-      const body = await parseBody(c, createTaskBody);
-      if (!body.ok) return body.response;
-      const input = body.value;
+    .get('/tasks/:id/events', (c) => {
+      const taskId = c.req.param('id');
+      if (tasks.find(taskId) === undefined) {
+        return fail(c, 404, 'NOT_FOUND', 'タスクが見つかりません', { taskId });
+      }
+      return c.json({ events: tasks.listEvents(taskId) });
+    })
+
+    .post('/tasks', jsonBody(createTaskBody), (c) => {
+      const input = c.req.valid('json');
       const dayError = checkDay(c, input);
       if (dayError) return dayError;
 
@@ -175,10 +201,8 @@ export function createApi({ tasks, now, dayOptions, newId }: ApiDeps) {
       return c.json({ task }, 201);
     })
 
-    .patch('/tasks/:id', async (c) => {
-      const body = await parseBody(c, editTaskBody);
-      if (!body.ok) return body.response;
-      const input = body.value;
+    .patch('/tasks/:id', jsonBody(editTaskBody), (c) => {
+      const input = c.req.valid('json');
       const dayError = checkDay(c, input);
       if (dayError) return dayError;
 
@@ -198,10 +222,8 @@ export function createApi({ tasks, now, dayOptions, newId }: ApiDeps) {
       return c.json({ task: result.value[0] });
     })
 
-    .post('/tasks/:id/transition', async (c) => {
-      const body = await parseBody(c, transitionBody);
-      if (!body.ok) return body.response;
-      const input = body.value;
+    .post('/tasks/:id/transition', jsonBody(transitionBody), (c) => {
+      const input = c.req.valid('json');
       const dayError = checkDay(c, input);
       if (dayError) return dayError;
 
@@ -240,10 +262,8 @@ export function createApi({ tasks, now, dayOptions, newId }: ApiDeps) {
       return c.json({ task: updated, affected, suggestions: outcome.suggestions });
     })
 
-    .post('/tasks/:id/move', async (c) => {
-      const body = await parseBody(c, moveBody);
-      if (!body.ok) return body.response;
-      const input = body.value;
+    .post('/tasks/:id/move', jsonBody(moveBody), (c) => {
+      const input = c.req.valid('json');
       const dayError = checkDay(c, input);
       if (dayError) return dayError;
 

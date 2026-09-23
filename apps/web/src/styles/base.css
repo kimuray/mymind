@@ -60,6 +60,11 @@ ul {
   letter-spacing: 0.06em;
 }
 
+.glass-2 {
+  background: var(--glass-2);
+  backdrop-filter: var(--glass-2-blur);
+}
+
 /* ガラスの面（DESIGN.md 2.3）。backdrop-filter は面にだけ使い、リストの行には使わない */
 .glass-1,
 .glass-3 {
@@ -83,6 +88,7 @@ ul {
   }
 
   .glass-1,
+  .glass-2,
   .glass-3 {
     background: var(--glass-opaque);
     border: var(--glass-opaque-border);
