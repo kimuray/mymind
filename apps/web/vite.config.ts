@@ -1,5 +1,7 @@
+import { existsSync, readFileSync } from 'node:fs';
+import { join, resolve } from 'node:path';
 import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 
 // 開発サーバーの設定（ADR-0007、ADR-0010）
 const LOOPBACK = '127.0.0.1';
@@ -11,9 +13,31 @@ if (host !== LOOPBACK && !(host === '0.0.0.0' && process.env['MYMIND_IN_CONTAINE
   );
 }
 const apiPort = process.env['MYMIND_PORT'] ?? '4820';
+// サーバーの pnpm dev と同じデータディレクトリ（実データの ~/.mymind には触れない）
+const dataDir = resolve(process.env['MYMIND_DATA_DIR'] ?? '../../.data');
+
+/**
+ * 開発時に、サーバーが書き出したセッショントークンを meta タグで画面に渡す（ADR-0007）。
+ * 本番では Hono が同じ名前の meta タグを埋め込む。トークンを返す API は作らない。
+ */
+function sessionTokenPlugin(): Plugin {
+  return {
+    name: 'mymind-session-token',
+    apply: 'serve',
+    transformIndexHtml() {
+      const path = join(dataDir, 'session-token');
+      if (!existsSync(path)) {
+        console.warn(`セッショントークンがありません（${path}）。先にサーバーを起動してください`);
+        return [];
+      }
+      const token = readFileSync(path, 'utf8').trim();
+      return [{ tag: 'meta', attrs: { name: 'mymind-token', content: token }, injectTo: 'head' }];
+    },
+  };
+}
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), sessionTokenPlugin()],
   server: {
     host,
     port: 5173,

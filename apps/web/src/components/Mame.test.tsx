@@ -1,6 +1,9 @@
+import { readFileSync } from 'node:fs';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import { Mame, MOOD_LABELS, MOODS } from './Mame';
+
+const css = readFileSync(new URL('./Mame.css', import.meta.url), 'utf8');
 
 const render = (mood: (typeof MOODS)[number], label?: string) =>
   renderToStaticMarkup(<Mame mood={mood} size={48} {...(label === undefined ? {} : { label })} />);
@@ -10,10 +13,17 @@ describe('DESIGN.md 4.1 マメの表情', () => {
     expect(MOODS).toEqual(['best', 'good', 'normal', 'bad', 'worst', 'sleep', 'think']);
   });
 
-  it.each(MOODS)('%s は、その表情の体の色と影の色をトークンで塗る', (mood) => {
+  it.each(MOODS)('%s は、style 属性を使わず、表情を data-mood で示す', (mood) => {
     const svg = render(mood);
-    expect(svg).toContain(`fill:var(--mame-${mood})`);
-    expect(svg).toContain(`fill:var(--mame-${mood}-ink)`);
+    expect(svg).toContain(`data-mood="${mood}"`);
+    expect(svg).not.toContain('style=');
+  });
+
+  it.each(MOODS)('%s の体の色と影の色は、Mame.css でトークンから当てる', (mood) => {
+    const rule = new RegExp(
+      `\\.mame\\[data-mood="${mood}"\\]\\s*\\{[^}]*--mame-tint: var\\(--mame-${mood}\\);[^}]*--mame-tone: var\\(--mame-${mood}-ink\\);`,
+    );
+    expect(css).toMatch(rule);
   });
 
   it.each(MOODS)('%s は、色を直書きしない', (mood) => {
@@ -22,7 +32,7 @@ describe('DESIGN.md 4.1 マメの表情', () => {
 
   it('絶好調だけ芽に花が咲く', () => {
     for (const mood of MOODS) {
-      expect(render(mood).includes('var(--mame-flower)')).toBe(mood === 'best');
+      expect(render(mood).includes('mame-flower')).toBe(mood === 'best');
     }
   });
 

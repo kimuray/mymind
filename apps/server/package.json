@@ -6,7 +6,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "dev": "MYMIND_DATA_DIR=${MYMIND_DATA_DIR:-../../.data} tsx watch src/main.ts",
+    "dev": "MYMIND_DATA_DIR=${MYMIND_DATA_DIR:-../../.data} MYMIND_VITE_PORT=${MYMIND_VITE_PORT:-5173} tsx watch src/main.ts",
     "start": "node --import tsx src/main.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

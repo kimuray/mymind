@@ -1,6 +1,9 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig, devices } from '@playwright/test';
 
 const port = 4820;
+// pnpm start は apps/server で動くので、データディレクトリは絶対パスで渡す
+const dataDir = fileURLToPath(new URL('./.data/e2e', import.meta.url));
 
 export default defineConfig({
   testDir: 'e2e',
@@ -18,14 +21,14 @@ export default defineConfig({
     },
   ],
   webServer: {
-    // ADR-0007：E2E は本番ビルドに対して実行する（start スクリプトは issue 005 で用意）
-    command: 'pnpm build && pnpm start',
+    // ADR-0007：E2E は本番ビルドに対して実行する。毎回空のデータディレクトリから始める
+    command: `rm -rf "${dataDir}" && pnpm build && pnpm start`,
     url: `http://127.0.0.1:${port}`,
     reuseExistingServer: !process.env['CI'],
     env: {
       MYMIND_PORT: String(port),
       MYMIND_AGENT: 'fake',
-      MYMIND_DATA_DIR: './.data/e2e',
+      MYMIND_DATA_DIR: dataDir,
     },
   },
 });

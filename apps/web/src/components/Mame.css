@@ -1,0 +1,67 @@
+/*
+ * マメの色（DESIGN.md 4.1）。本番の CSP は style 属性を許さないので、色は data-mood とクラスで付ける。
+ * --mame-tint と --mame-tone は、表情ごとの体の色と影・泡の色。
+ */
+.mame[data-mood="best"] {
+  --mame-tint: var(--mame-best);
+  --mame-tone: var(--mame-best-ink);
+}
+.mame[data-mood="good"] {
+  --mame-tint: var(--mame-good);
+  --mame-tone: var(--mame-good-ink);
+}
+.mame[data-mood="normal"] {
+  --mame-tint: var(--mame-normal);
+  --mame-tone: var(--mame-normal-ink);
+}
+.mame[data-mood="bad"] {
+  --mame-tint: var(--mame-bad);
+  --mame-tone: var(--mame-bad-ink);
+}
+.mame[data-mood="worst"] {
+  --mame-tint: var(--mame-worst);
+  --mame-tone: var(--mame-worst-ink);
+}
+.mame[data-mood="sleep"] {
+  --mame-tint: var(--mame-sleep);
+  --mame-tone: var(--mame-sleep-ink);
+}
+.mame[data-mood="think"] {
+  --mame-tint: var(--mame-think);
+  --mame-tone: var(--mame-think-ink);
+}
+
+.mame-ground {
+  fill: var(--ink-1);
+}
+.mame-stem {
+  fill: none;
+  stroke: var(--mame-stem);
+}
+.mame-leaf {
+  fill: var(--mame-leaf);
+  stroke: var(--mame-stem);
+}
+.mame-flower {
+  fill: var(--mame-flower);
+  stroke: var(--mame-highlight);
+}
+.mame-body {
+  fill: var(--mame-tint);
+}
+.mame-under,
+.mame-bubbles circle {
+  fill: var(--mame-tone);
+}
+.mame-rim,
+.mame-shine {
+  fill: none;
+  stroke: var(--mame-highlight);
+}
+.mame-spark {
+  fill: var(--mame-highlight);
+}
+.mame-face {
+  fill: none;
+  stroke: var(--mame-face);
+}

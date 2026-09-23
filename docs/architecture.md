@@ -288,6 +288,7 @@ CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 - 状態を変更するリクエストでは `Sec-Fetch-Site: same-origin`、`Origin` の許可リスト、`X-Mymind-Token` のすべてを確認する
 - セッショントークンは起動ごとに生成し、HTMLの meta タグで渡す（開発時は Vite のプラグインが埋め込む）。トークンを返すAPIは作らない
 - 開発時は Vite のプロキシで `/api` を転送し、ブラウザから見て画面とAPIを同一オリジンにする
+- 開発時は、サーバーの `pnpm dev` が `MYMIND_VITE_PORT`（既定 5173）を渡し、Vite のポートを Host・Origin の許可リストに加える。本番では加えない
 - 本番ビルドでは厳格なCSPを付け、E2E は本番ビルドに対して実行する
 - Markdownの表示では生のHTMLを無効にし、変換結果をサニタイズする
 
