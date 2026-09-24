@@ -34,8 +34,14 @@ export type TaskChange = {
   expectedVersion: number | null;
   /** domain の関数が作ったイベント。ステータスの変更は、最後の変更後のステータスを tasks.status に写す */
   events: TaskEvent[];
-  edit?: { title?: string; noteMd?: string | null };
-  plan?: { removeDays: string[]; addDay: string | null };
+  /** 編集。parentId は親の付け替え（FR-T02）、sortOrder はバックログでの並び順（FR-T10） */
+  edit?: { title?: string; noteMd?: string | null; parentId?: string | null; sortOrder?: number };
+  /** 計画の出し入れ。position は、その業務日の計画の中での並び順の変更（FR-T10） */
+  plan?: {
+    removeDays: string[];
+    addDay: string | null;
+    position?: { day: string; value: number };
+  };
 };
 
 export type ApplyChangesError =
@@ -143,6 +149,13 @@ export function createTaskRepository({ db, codec, newEventId }: TaskRepositoryDe
           .where(and(eq(dayPlans.day, day), eq(dayPlans.taskId, change.taskId)))
           .run();
       }
+      if (change.plan.position !== undefined) {
+        const { day, value } = change.plan.position;
+        tx.update(dayPlans)
+          .set({ position: value })
+          .where(and(eq(dayPlans.day, day), eq(dayPlans.taskId, change.taskId)))
+          .run();
+      }
       if (change.plan.addDay !== null) {
         const day = change.plan.addDay;
         tx.insert(dayPlans)
@@ -164,6 +177,8 @@ export function createTaskRepository({ db, codec, newEventId }: TaskRepositoryDe
           status,
           ...(edit.title === undefined ? {} : { title: edit.title }),
           ...(edit.noteMd === undefined ? {} : { noteMd: encodeNote(edit.noteMd) }),
+          ...(edit.parentId === undefined ? {} : { parentId: edit.parentId }),
+          ...(edit.sortOrder === undefined ? {} : { sortOrder: edit.sortOrder }),
           lastTouchedAt: lastAt > current.lastTouchedAt ? lastAt : current.lastTouchedAt,
           version: current.version + 1,
         })

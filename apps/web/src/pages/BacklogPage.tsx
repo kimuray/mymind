@@ -1,11 +1,20 @@
 import { daysBetween, nextOnAdvance, type Status } from '@mymind/domain';
 import { useState } from 'react';
-import { type ListTask, useBacklog, useCreateTask, useMove, useTransition } from '../api/tasks';
+import {
+  type ListTask,
+  useBacklog,
+  useCreateTask,
+  useEditTask,
+  useMove,
+  useTransition,
+} from '../api/tasks';
 import { AddTaskInput } from '../components/AddTaskInput';
+import { Button } from '../components/Button';
 import { PageLayout } from '../components/PageLayout';
 import { TaskDetail } from '../components/TaskDetail';
 import { TaskRow } from '../components/TaskRow';
 import { currentDay, dayOf } from '../day';
+import { type ListRow, useTaskListKeys } from '../useTaskListKeys';
 
 /** 最後に触れてからの日数（「3日前」）。日数は domain で数える */
 function touchedAgo(task: ListTask, today: string): string {
@@ -40,6 +49,9 @@ export function BacklogPage() {
   const transition = useTransition();
   const move = useMove();
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
+  const edit = useEditTask();
 
   const today = backlog.data?.today ?? screenDay;
   const tasks = backlog.data?.tasks ?? [];
@@ -47,6 +59,23 @@ export function BacklogPage() {
 
   const changeStatus = (task: ListTask, to: Status) =>
     transition.mutate({ task, to, expectedDay: screenDay });
+  const moveTask = (task: ListTask, to: 'today' | 'tomorrow' | 'backlog') =>
+    move.mutate({ task, to, expectedDay: screenDay }, { onSuccess: () => setSelectedId(null) });
+  const groups = groupByParent(tasks);
+  const rows: ListRow[] = groups.flatMap((g) =>
+    g.tasks.map((task) => ({ task, depth: 0 as const, order: task.sortOrder })),
+  );
+  useTaskListKeys({
+    rows,
+    selectedId,
+    select: setSelectedId,
+    place: 'backlog',
+    changeStatus,
+    moveTask,
+    startEdit: setEditingId,
+    edit: (task, change) => edit.mutateAsync({ task, expectedDay: screenDay, ...change }),
+    notify: setNotice,
+  });
   const detail =
     selected === undefined ? undefined : (
       <TaskDetail
@@ -54,12 +83,7 @@ export function BacklogPage() {
         today={today}
         place="backlog"
         onTransition={(to) => changeStatus(selected, to)}
-        onMove={(to) =>
-          move.mutate(
-            { task: selected, to, expectedDay: screenDay },
-            { onSuccess: () => setSelectedId(null) },
-          )
-        }
+        onMove={(to) => moveTask(selected, to)}
       />
     );
 
@@ -77,7 +101,16 @@ export function BacklogPage() {
           onSubmit={(title) => create.mutate({ title, expectedDay: screenDay })}
         />
 
-        {groupByParent(tasks).map((group) => (
+        {notice !== null && (
+          <p className="suggestions" aria-live="polite">
+            {notice}
+            <Button kind="text" onClick={() => setNotice(null)}>
+              閉じる
+            </Button>
+          </p>
+        )}
+
+        {groups.map((group) => (
           <section key={group.key} className="task-list glass-2" aria-label={group.title}>
             <h2 className="text-label">{group.title}</h2>
             <ul>
@@ -95,6 +128,11 @@ export function BacklogPage() {
                     if (to !== null) changeStatus(task, to);
                   }}
                   aside={touchedAgo(task, today)}
+                  editing={task.id === editingId}
+                  onEditEnd={(title) => {
+                    setEditingId(null);
+                    if (title !== null) edit.mutate({ task, title, expectedDay: screenDay });
+                  }}
                 />
               ))}
             </ul>

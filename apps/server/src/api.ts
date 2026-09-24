@@ -1,6 +1,7 @@
 import type { Task, TaskRepository } from '@mymind/db';
 import {
   type BusinessDayOptions,
+  canBecomeChild,
   canHaveChildren,
   changeStatus,
   nextDay,
@@ -50,10 +51,19 @@ const editTaskBody = z
     ...withVersion,
     title: z.string().trim().min(1, 'タイトルを入力してください').optional(),
     noteMd: z.string().nullable().optional(),
+    /** 親の付け替え（FR-T02）。null で親から外す */
+    parentId: z.string().min(1).nullable().optional(),
+    /** 並べ替え（FR-T10）。plan は画面の業務日の計画の中、backlog はバックログの中での並び順 */
+    order: z.strictObject({ in: z.enum(['plan', 'backlog']), value: z.number() }).optional(),
   })
-  .refine((b) => b.title !== undefined || b.noteMd !== undefined, {
-    message: 'title か noteMd のどちらかを指定してください',
-  });
+  .refine(
+    (b) =>
+      b.title !== undefined ||
+      b.noteMd !== undefined ||
+      b.parentId !== undefined ||
+      b.order !== undefined,
+    { message: 'title、noteMd、parentId、order のどれかを指定してください' },
+  );
 
 const transitionBody = z.strictObject({ ...withVersion, to: z.enum(STATUSES) });
 
@@ -207,6 +217,19 @@ export function createApi({ tasks, now, dayOptions, newId }: ApiDeps) {
       if (dayError) return dayError;
 
       const taskId = c.req.param('id');
+      if (input.parentId !== undefined && input.parentId !== null) {
+        const parent = tasks.find(input.parentId);
+        if (parent === undefined) {
+          return fail(c, 404, 'NOT_FOUND', '親のタスクが見つかりません', {
+            taskId: input.parentId,
+          });
+        }
+        const taskHasChildren = tasks.listChildren(taskId).length > 0;
+        if (!canBecomeChild({ taskId, taskHasChildren, parent })) {
+          return fail(c, 422, 'DEPTH_EXCEEDED', 'タスクの親子は2階層までです');
+        }
+      }
+      const order = input.order;
       const result = tasks.applyChanges([
         {
           taskId,
@@ -215,7 +238,18 @@ export function createApi({ tasks, now, dayOptions, newId }: ApiDeps) {
           edit: {
             ...(input.title === undefined ? {} : { title: input.title }),
             ...(input.noteMd === undefined ? {} : { noteMd: input.noteMd }),
+            ...(input.parentId === undefined ? {} : { parentId: input.parentId }),
+            ...(order?.in === 'backlog' ? { sortOrder: order.value } : {}),
           },
+          ...(order?.in === 'plan'
+            ? {
+                plan: {
+                  removeDays: [],
+                  addDay: null,
+                  position: { day: input.expectedDay, value: order.value },
+                },
+              }
+            : {}),
         },
       ]);
       if (!result.ok) return conflict(c, result.error);

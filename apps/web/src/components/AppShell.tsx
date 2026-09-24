@@ -1,5 +1,6 @@
 import { toBusinessDay } from '@mymind/domain';
-import { Link, Outlet } from '@tanstack/react-router';
+import { Link, Outlet, useNavigate } from '@tanstack/react-router';
+import { useKeyBindings } from '../keyboard';
 import { NAVIGATION_KEYS, type NavigationTarget, SIDEBAR_HINTS } from '../keymap';
 import { Kbd } from './Kbd';
 import { Mame } from './Mame';
@@ -93,6 +94,33 @@ function NavGroup({ title, items }: { title: string; items: NavItem[] }) {
 
 /** 3ペインの枠（DESIGN.md 3章）。メインと詳細ペインは、各画面が PageLayout で置く */
 export function AppShell() {
+  const navigate = useNavigate();
+  const go = (to: () => Promise<void>) => {
+    to();
+    return true;
+  };
+  // どの画面でも使えるキー（DESIGN.md 5.1）
+  useKeyBindings({
+    'nav.today': () => go(() => navigate({ to: '/' })),
+    'nav.morning': () => go(() => navigate({ to: '/morning' })),
+    'nav.reflection': () =>
+      go(() => navigate({ to: '/reflection/{-$day}', params: { day: undefined } })),
+    'nav.backlog': () => go(() => navigate({ to: '/backlog' })),
+    'nav.timeline': () => go(() => navigate({ to: '/timeline' })),
+    'nav.calendar': () =>
+      go(() =>
+        navigate({
+          to: '/calendar/$ym/{-$day}',
+          params: { ym: toBusinessDay(new Date(), DAY_OPTIONS).slice(0, 7), day: undefined },
+        }),
+      ),
+    'task.new': () => {
+      const input = document.querySelector<HTMLInputElement>('[data-add-task] input');
+      if (input === null) return false;
+      input.focus();
+      return true;
+    },
+  });
   return (
     <div className="shell">
       <nav className="pane pane-sidebar glass-1" aria-label="画面">

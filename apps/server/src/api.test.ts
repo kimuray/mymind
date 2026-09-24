@@ -372,3 +372,61 @@ describe('FR-T12 一覧に表示する日数と親子の情報', () => {
     expect((await get('/tasks/missing/events')).status).toBe(404);
   });
 });
+
+describe('FR-T02 親の付け替え', () => {
+  const patch = (task: TaskJson, body: Record<string, unknown>) =>
+    send('PATCH', `/tasks/${task.id}`, {
+      expectedVersion: task.version,
+      expectedDay: TODAY,
+      ...body,
+    });
+
+  it('別のタスクの子にでき、親から外すこともできる', async () => {
+    const parent = await addTask({ title: '親' });
+    const task = await addTask({ title: '子になる' });
+    const res = await patch(task, { parentId: parent.id });
+    expect(res.status).toBe(200);
+    const moved = ((await res.json()) as { task: TaskJson }).task;
+    expect(moved.parentId).toBe(parent.id);
+    const back = await patch(moved, { parentId: null });
+    expect(((await back.json()) as { task: TaskJson }).task.parentId).toBeNull();
+  });
+
+  it('子を持つタスクは、別のタスクの子にできない（3階層目は 422）', async () => {
+    const a = await addTask({ title: 'A' });
+    const b = await addTask({ title: 'B' });
+    await addTask({ title: 'Bの子', parentId: b.id });
+    const res = await patch(b, { parentId: a.id });
+    expect(res.status).toBe(422);
+    expect(await res.json()).toMatchObject({ error: { code: 'DEPTH_EXCEEDED' } });
+  });
+
+  it('存在しない親は 404', async () => {
+    const task = await addTask();
+    expect((await patch(task, { parentId: 'missing' })).status).toBe(404);
+  });
+});
+
+describe('FR-T10 並べ替え', () => {
+  const patch = (task: TaskJson, body: Record<string, unknown>) =>
+    send('PATCH', `/tasks/${task.id}`, {
+      expectedVersion: task.version,
+      expectedDay: TODAY,
+      ...body,
+    });
+
+  it('今日の計画の中の並び順を変える', async () => {
+    const a = await addTask({ title: 'A', planFor: 'today' });
+    const b = await addTask({ title: 'B', planFor: 'today' });
+    expect(await planIds(TODAY)).toEqual([a.id, b.id]);
+    await patch(b, { order: { in: 'plan', value: 0.5 } });
+    expect(await planIds(TODAY)).toEqual([b.id, a.id]);
+  });
+
+  it('バックログの中の並び順を変える', async () => {
+    const a = await addTask({ title: 'A' });
+    const b = await addTask({ title: 'B' });
+    await patch(b, { order: { in: 'backlog', value: 0.5 } });
+    expect(await backlogIds()).toEqual([b.id, a.id]);
+  });
+});

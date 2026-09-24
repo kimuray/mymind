@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { canHaveChildren, nextDay, planMove } from './plans';
+import { canBecomeChild, canHaveChildren, nextDay, planMove } from './plans';
 
 const at = '2026-09-23T01:00:00.000Z';
 const base = { taskId: 't1', today: '2026-09-23', at };
@@ -67,5 +67,31 @@ describe('FR-T02 親子は2階層まで', () => {
 
   it('子タスクは子を持てない（3階層目は作れない）', () => {
     expect(canHaveChildren({ parentId: 'p1' })).toBe(false);
+  });
+});
+
+describe('FR-T02 子タスクにする', () => {
+  const parent = { id: 'p1', parentId: null };
+
+  it('子を持たないタスクは、親を持たないタスクの子にできる', () => {
+    expect(canBecomeChild({ taskId: 't1', taskHasChildren: false, parent })).toBe(true);
+  });
+
+  it('子を持つタスクは子にできない（3階層目になる）', () => {
+    expect(canBecomeChild({ taskId: 't1', taskHasChildren: true, parent })).toBe(false);
+  });
+
+  it('子タスクの子にはできない', () => {
+    expect(
+      canBecomeChild({
+        taskId: 't1',
+        taskHasChildren: false,
+        parent: { id: 'c1', parentId: 'p1' },
+      }),
+    ).toBe(false);
+  });
+
+  it('自分自身の子にはできない', () => {
+    expect(canBecomeChild({ taskId: 'p1', taskHasChildren: false, parent })).toBe(false);
   });
 });
