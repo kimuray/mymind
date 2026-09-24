@@ -64,10 +64,19 @@ e2e/            Playwright の E2E テスト
 | `pnpm design:check` | デザイントークン以外の色の直書きを検出 |
 | `pnpm test` | 単体テストと結合テスト |
 | `pnpm test:e2e` | E2E テスト |
+| `pnpm screenshots` | 各画面のスクリーンショットを `.data/screenshots/` に出力（先に `pnpm build`。Claude Code のサンドボックスの中では Chromium が起動しないので外で実行） |
 | `pnpm docs:check` / `pnpm docs:build` | 設計文書のリンク・参照の検査 / 人が読むための HTML の生成 |
 | `pnpm check` | 上記のうち E2E 以外をすべて実行 |
 | `pnpm run doctor` | 開発環境の前提を確認（`run` は省略しない。`pnpm doctor` は pnpm 自身の診断コマンドになる） |
 | `pnpm docker:dev` / `docker:check` / `docker:e2e` | Docker で開発サーバー / チェック / E2E を実行（ADR-0010。実行には承認が必要） |
+
+## 画面を実装したときの確認
+
+画面を作ったり直したりしたら、見た目を Figma のフレームと並べて確かめてください。
+
+1. `docs/design/README.md` の表で、対象のフレーム名（`PC/今日` など）と node-id を確認し、Figma MCP の `get_screenshot` で画像を取得する
+2. `pnpm build && pnpm screenshots` で、同じ 1440×900 の画像を `.data/screenshots/` に出力する（詳細ペインを開いた状態は `today-selected.png`）
+3. 2つを並べて、構成・寸法・状態の表現の違いを確かめる。違いが DESIGN.md のトークンやルールによるもの（DESIGN.md が正本）なら、PR に差分として書く。それ以外は直す
 
 ## 完了の定義
 
