@@ -1,5 +1,6 @@
 // マメ（DESIGN.md 4.1）。形は docs/design/mockup-source/Mame.dc.html を 48×48 の座標系のまま写したもの。
-// 色は tokens.css の --mame-* だけを使う（SVG の属性では CSS 変数が効かないブラウザがあるので style で渡す）。
+// 色は Mame.css のクラスで tokens.css の --mame-* を当てる（本番の CSP は style 属性を許さない。ADR-0007）。
+import './Mame.css';
 
 export const MOODS = ['best', 'good', 'normal', 'bad', 'worst', 'sleep', 'think'] as const;
 export type Mood = (typeof MOODS)[number];
@@ -84,12 +85,9 @@ type MameProps = {
 /** 調子を表すキャラクター。画面ごとに描き直さず、必ずこのコンポーネントを使う（ui.md） */
 export function Mame({ mood, size = 44, label }: MameProps) {
   const s = SHAPES[mood];
-  const tint = `var(--mame-${mood})`;
-  const ink = `var(--mame-${mood}-ink)`;
-  const face = { stroke: 'var(--mame-face)' };
-  const white = 'var(--mame-highlight)';
   return (
     <svg
+      className="mame"
       width={size}
       height={size}
       viewBox="0 0 48 48"
@@ -97,78 +95,55 @@ export function Mame({ mood, size = 44, label }: MameProps) {
       role="img"
       aria-label={label ?? MOOD_LABELS[mood]}
     >
-      <ellipse
-        cx="24"
-        cy="44.4"
-        rx="10.5"
-        ry="1.7"
-        style={{ fill: 'var(--ink-1)' }}
-        opacity="0.08"
-      />
+      <ellipse className="mame-ground" cx="24" cy="44.4" rx="10.5" ry="1.7" opacity="0.08" />
+      <path className="mame-stem" d={s.stem} strokeWidth="1.4" strokeLinecap="round" />
       <path
-        d={s.stem}
-        fill="none"
-        style={{ stroke: 'var(--mame-stem)' }}
-        strokeWidth="1.4"
-        strokeLinecap="round"
-      />
-      <path
+        className="mame-leaf"
         d={s.leaf}
-        style={{ fill: 'var(--mame-leaf)', stroke: 'var(--mame-stem)' }}
         fillOpacity="0.8"
         strokeWidth="0.9"
         strokeLinejoin="round"
       />
       {s.flower > 0 && (
-        <circle
-          cx="24"
-          cy="6.2"
-          r={s.flower}
-          style={{ fill: 'var(--mame-flower)', stroke: white }}
-          strokeWidth="0.9"
-        />
+        <circle className="mame-flower" cx="24" cy="6.2" r={s.flower} strokeWidth="0.9" />
       )}
-      <ellipse cx="24" cy="29.5" rx="15.5" ry="14" style={{ fill: tint }} fillOpacity="0.86" />
-      <ellipse cx="24" cy="35.5" rx="12.5" ry="7.5" style={{ fill: ink }} opacity="0.12" />
+      <ellipse className="mame-body" cx="24" cy="29.5" rx="15.5" ry="14" fillOpacity="0.86" />
+      <ellipse className="mame-under" cx="24" cy="35.5" rx="12.5" ry="7.5" opacity="0.12" />
       <ellipse
+        className="mame-rim"
         cx="24"
         cy="29.5"
         rx="15.5"
         ry="14"
-        fill="none"
-        style={{ stroke: white }}
         strokeOpacity="0.9"
         strokeWidth="1.1"
       />
       <path
+        className="mame-shine"
         d="M12.3 27a12 11 0 0 1 8.6-9.6"
-        fill="none"
-        style={{ stroke: white }}
         strokeWidth="2.2"
         strokeLinecap="round"
         opacity="0.9"
       />
-      <circle cx="31.6" cy="19.6" r="1.2" style={{ fill: white }} opacity="0.85" />
+      <circle className="mame-spark" cx="31.6" cy="19.6" r="1.2" opacity="0.85" />
       <path
+        className="mame-face"
         d={s.eyes}
-        fill="none"
-        style={face}
         strokeWidth="1.9"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
+        className="mame-face"
         d={s.mouth}
-        fill="none"
-        style={face}
         strokeWidth="1.5"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       {mood === 'think' && (
         <g className="mame-bubbles">
-          <circle cx="38.5" cy="14" r="1.1" style={{ fill: ink }} opacity="0.45" />
-          <circle cx="42" cy="9.5" r="1.6" style={{ fill: ink }} opacity="0.45" />
+          <circle cx="38.5" cy="14" r="1.1" opacity="0.45" />
+          <circle cx="42" cy="9.5" r="1.6" opacity="0.45" />
         </g>
       )}
     </svg>

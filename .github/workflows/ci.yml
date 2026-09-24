@@ -55,17 +55,17 @@ jobs:
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@v7
-      # サーバーが画面の本番ビルドを配信できるようになるまで（#50）は、ジョブを成功扱いのまま中身を省略する
-      # （必須チェックを満たすため）。#50 でこの値を true にする
+      # E2E を止める必要があるとき（配信の構成を作り直している間など）は false にする。
+      # false のあいだはジョブを成功扱いのまま中身を省略する（必須チェックを満たすため）
       - id: gate
         env:
-          E2E_ENABLED: "false"
+          E2E_ENABLED: "true"
         run: |
           if [ "$E2E_ENABLED" = "true" ]; then
             echo "enabled=true" >> "$GITHUB_OUTPUT"
           else
             echo "enabled=false" >> "$GITHUB_OUTPUT"
-            echo "E2E は無効です（ci.yml の E2E_ENABLED。#50 で有効にする）"
+            echo "E2E は無効です（ci.yml の E2E_ENABLED）"
           fi
       - if: steps.gate.outputs.enabled == 'true'
         uses: pnpm/action-setup@v6

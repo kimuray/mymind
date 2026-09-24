@@ -1,4 +1,5 @@
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createTaskRepository, MIGRATIONS_FOLDER, openDatabase, plainCodec } from '@mymind/db';
 import { createApi } from './api';
 import { createApp } from './app';
@@ -6,6 +7,10 @@ import { type ConfigError, loadConfig } from './config';
 import { acquireLock, ensureDataDir, issueSessionToken } from './dataDir';
 import { listen } from './listen';
 import { createUlidGenerator } from './ulid';
+import { createWebRoutes } from './web';
+
+// 画面の本番ビルド（apps/web の vite build の出力）
+const WEB_DIST = fileURLToPath(new URL('../../web/dist', import.meta.url));
 
 // 業務日の切り替え（FR-D01）。設定画面ができるまでは初期値を使う
 const DAY_OPTIONS = { timeZone: 'Asia/Tokyo', dayStartHour: 5 };
@@ -27,7 +32,7 @@ async function main(): Promise<number> {
     console.error(describeConfigError(config.error));
     return 1;
   }
-  const { dataDir, host, port } = config.value;
+  const { dataDir, host, port, devPorts } = config.value;
 
   ensureDataDir(dataDir);
   const lock = acquireLock(dataDir, process.pid);
@@ -50,7 +55,8 @@ async function main(): Promise<number> {
     dayOptions: DAY_OPTIONS,
     newId,
   });
-  const app = createApp({ ports: [port], sessionToken }, api);
+  const web = createWebRoutes({ distDir: WEB_DIST, sessionToken });
+  const app = createApp({ ports: [port, ...devPorts], sessionToken }, api, web);
   const server = await listen(app, host, port);
   if (!server.ok) {
     db.$client.close();

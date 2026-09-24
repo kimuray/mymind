@@ -14,3 +14,4 @@
 | 2026-09-23 | #47 | #58 | CI の check に pnpm audit --audit-level high を追加 | - |
 | 2026-09-23 | #29 | #59 | 今日とバックログの API（追加・編集・ステータス変更・移動・今日・バックログ）。applyChanges で1操作を1トランザクションに。ULID を自前で生成 | 次は #26 |
 | 2026-09-23 | #37 | 下記の PR | apps/web の雛形（Vite・React・TanStack Query・TanStack Router）、tokens.css、Mame、3ペインの枠、@fontsource の同梱、CI の E2E の切り替え。ADR-0012 | 次は #30（#29 と #37 が揃う） |
+| 2026-09-23 | #50 | なし（ローカルの feat/50-web-security-integration） | 本番ビルドの配信（トークンとノンスの埋め込み、CSP）、開発時の Vite のポートの許可、Vite のトークン埋め込み、E2E の有効化。Mame の色を CSS クラスに移した | GitHub への反映は指示待ち。次は #30（このブランチの上に積む） |

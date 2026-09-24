@@ -11,12 +11,16 @@ const envSchema = z.object({
   MYMIND_HOST: z.enum([LOOPBACK, ALL_INTERFACES]).default(LOOPBACK),
   MYMIND_PORT: z.coerce.number().int().min(1).max(65535).default(DEFAULT_PORT),
   MYMIND_IN_CONTAINER: z.enum(['0', '1']).default('0'),
+  /** 開発時の Vite のポート。指定したときだけ、Host・Origin の許可リストに加える（ADR-0007） */
+  MYMIND_VITE_PORT: z.coerce.number().int().min(1).max(65535).optional(),
 });
 
 export type ServerConfig = {
   dataDir: string;
   host: typeof LOOPBACK | typeof ALL_INTERFACES;
   port: number;
+  /** 開発時に Vite 経由で開く場合のポート。本番（Hono が画面も配信する）では空 */
+  devPorts: number[];
 };
 
 export type ConfigError =
@@ -50,6 +54,7 @@ export function loadConfig(
       dataDir: resolve(e.MYMIND_DATA_DIR ?? join(homedir(), '.mymind')),
       host: e.MYMIND_HOST,
       port: e.MYMIND_PORT,
+      devPorts: e.MYMIND_VITE_PORT === undefined ? [] : [e.MYMIND_VITE_PORT],
     },
   };
 }

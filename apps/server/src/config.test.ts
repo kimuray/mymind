@@ -7,7 +7,7 @@ describe('NFR-02 起動の設定', () => {
   it('何も指定しなければ 127.0.0.1:4820 で待ち受け、~/.mymind を使う', () => {
     expect(loadConfig({})).toEqual({
       ok: true,
-      value: { dataDir: join(homedir(), '.mymind'), host: '127.0.0.1', port: 4820 },
+      value: { dataDir: join(homedir(), '.mymind'), host: '127.0.0.1', port: 4820, devPorts: [] },
     });
   });
 
@@ -15,7 +15,7 @@ describe('NFR-02 起動の設定', () => {
     const result = loadConfig({ MYMIND_DATA_DIR: './.data', MYMIND_PORT: '5000' });
     expect(result).toEqual({
       ok: true,
-      value: { dataDir: resolve('./.data'), host: '127.0.0.1', port: 5000 },
+      value: { dataDir: resolve('./.data'), host: '127.0.0.1', port: 5000, devPorts: [] },
     });
   });
 
@@ -40,6 +40,19 @@ describe('NFR-02 起動の設定', () => {
 
   it.each(['0', '65536', 'abc', '80.5'])('MYMIND_PORT=%s は受け付けない', (port) => {
     expect(loadConfig({ MYMIND_PORT: port })).toMatchObject({
+      ok: false,
+      error: { kind: 'invalid_env' },
+    });
+  });
+  it('開発時は MYMIND_VITE_PORT で Vite のポートを受け取る', () => {
+    expect(loadConfig({ MYMIND_VITE_PORT: '5173' })).toMatchObject({
+      ok: true,
+      value: { port: 4820, devPorts: [5173] },
+    });
+  });
+
+  it('MYMIND_VITE_PORT が不正なら受け付けない', () => {
+    expect(loadConfig({ MYMIND_VITE_PORT: 'vite' })).toMatchObject({
       ok: false,
       error: { kind: 'invalid_env' },
     });
