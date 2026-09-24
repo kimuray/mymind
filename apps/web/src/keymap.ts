@@ -24,3 +24,12 @@ export const SIDEBAR_HINTS: readonly { label: string; keys: readonly string[] }[
   { label: 'コマンド', keys: ['⌘K'] },
   { label: '新しいタスク', keys: ['N'] },
 ];
+
+/** タスクのリストの下に案内するキー（DESIGN.md 5.2。処理は #31） */
+export const LIST_HINTS: readonly string[] = [
+  'J K 移動',
+  'Space 状態を進める',
+  'P 中断 / W 待ち',
+  'T 明日へ / B バックログへ',
+  '⌘K コマンド',
+];

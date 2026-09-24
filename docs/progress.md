@@ -15,3 +15,4 @@
 | 2026-09-23 | #29 | #59 | 今日とバックログの API（追加・編集・ステータス変更・移動・今日・バックログ）。applyChanges で1操作を1トランザクションに。ULID を自前で生成 | 次は #26 |
 | 2026-09-23 | #37 | 下記の PR | apps/web の雛形（Vite・React・TanStack Query・TanStack Router）、tokens.css、Mame、3ペインの枠、@fontsource の同梱、CI の E2E の切り替え。ADR-0012 | 次は #30（#29 と #37 が揃う） |
 | 2026-09-23 | #50 | なし（ローカルの feat/50-web-security-integration） | 本番ビルドの配信（トークンとノンスの埋め込み、CSP）、開発時の Vite のポートの許可、Vite のトークン埋め込み、E2E の有効化。Mame の色を CSS クラスに移した | GitHub への反映は指示待ち。次は #30（このブランチの上に積む） |
+| 2026-09-24 | #30 | なし（ローカルの feat/30-today-backlog-ui、#50 の上） | 今日とバックログの画面（Figma に沿う）、StatusIcon・バッジ・詳細ペイン・状態の履歴・提案、楽観的更新、Hono RPC の型共有。API に一覧の日数・親子の情報と履歴を追加。e2e/today.spec の1件目を有効化 | スクリーンショットは .data/screenshots/。次は #31 |

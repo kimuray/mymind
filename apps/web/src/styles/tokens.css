@@ -96,7 +96,18 @@
   --mame-flower: #f4cf62;
   --mame-highlight: #ffffff;
 
+  /* 4.2 ステータスアイコンと行 */
+  --row-selected-bg: rgba(255, 255, 255, 0.5);
+  --row-selected-border: 1.5px solid rgba(47, 75, 124, 0.5);
+
+  /* 4.4 ボタン */
+  --text-on-accent: #ffffff;
+  --accent-shadow: 0 8px 20px rgba(47, 75, 124, 0.28);
+  --button-secondary-bg: rgba(255, 255, 255, 0.4);
+  --button-secondary-border: 1px solid rgba(255, 255, 255, 0.95);
+
   /* 4.5 kbd */
   --kbd-bg: rgba(255, 255, 255, 0.8);
   --kbd-border: 1px solid rgba(28, 27, 25, 0.12);
+  --kbd-bg-on-dark: rgba(255, 255, 255, 0.18);
 }

@@ -72,6 +72,9 @@ importers:
       '@tanstack/react-router':
         specifier: ^1.170.38
         version: 1.170.38(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
+      hono:
+        specifier: ^4.13.8
+        version: 4.13.8
       react:
         specifier: ^19.3.0
         version: 19.3.0
@@ -79,6 +82,9 @@ importers:
         specifier: ^19.3.0
         version: 19.3.0(react@19.3.0)
     devDependencies:
+      '@mymind/server':
+        specifier: workspace:*
+        version: link:../server
       '@types/node':
         specifier: ^24.13.6
         version: 24.13.6

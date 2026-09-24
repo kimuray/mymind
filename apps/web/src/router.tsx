@@ -1,13 +1,13 @@
 import { createRootRoute, createRoute, createRouter } from '@tanstack/react-router';
 import { AppShell } from './components/AppShell';
+import { BacklogPage } from './pages/BacklogPage';
+import { TodayPage } from './pages/TodayPage';
 import {
-  BacklogPage,
   CalendarPage,
   MameGalleryPage,
   MorningPage,
   ReflectionPage,
   TimelinePage,
-  TodayPage,
 } from './routes/pages';
 
 // 画面の URL（#20 の暫定決定）。ルートはコードで定義する（ADR-0012）

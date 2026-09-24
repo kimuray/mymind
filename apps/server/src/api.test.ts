@@ -315,3 +315,60 @@ describe('NFR-02 入力の検証', () => {
     expect(res.status).toBe(403);
   });
 });
+
+describe('FR-T12 一覧に表示する日数と親子の情報', () => {
+  type ListItem = TaskJson & {
+    statusSince: string;
+    parentTitle: string | null;
+    children: { total: number; closed: number };
+  };
+  const planItems = async (day: string) =>
+    ((await (await get(`/days/${day}`)).json()) as { tasks: ListItem[] }).tasks;
+
+  it('今の状態になった業務日を返す（着手から何日目の計算に使う）', async () => {
+    const task = await addTask({ planFor: 'today' });
+    now = new Date('2026-09-24T01:00:00.000Z'); // 翌日
+    expect((await transition(task, 'doing', { expectedDay: TOMORROW })).status).toBe(200);
+    const res = await send('POST', `/tasks/${task.id}/move`, {
+      to: 'today',
+      expectedVersion: 2,
+      expectedDay: TOMORROW,
+    });
+    expect(res.status).toBe(200);
+    const [item] = await planItems(TOMORROW);
+    expect(item).toMatchObject({ status: 'doing', statusSince: TOMORROW });
+  });
+
+  it('親の名前と、子の数・終わった子の数を返す', async () => {
+    const parent = await addTask({ title: 'TODOツール MVP', planFor: 'today' });
+    const child = await addTask({
+      title: 'D1のスキーマ設計',
+      parentId: parent.id,
+      planFor: 'today',
+    });
+    await addTask({ title: 'Honoでルーティング', parentId: parent.id });
+    await transition(child, 'cancelled');
+    const items = await planItems(TODAY);
+    expect(items.find((t) => t.id === parent.id)).toMatchObject({
+      parentTitle: null,
+      children: { total: 2, closed: 1 },
+    });
+    expect(items.find((t) => t.id === child.id)).toMatchObject({
+      parentTitle: 'TODOツール MVP',
+      children: { total: 0, closed: 0 },
+    });
+  });
+
+  it('タスクの履歴を記録した順に返す', async () => {
+    const task = await addTask({ planFor: 'today' });
+    await transition(task, 'doing');
+    const res = await get(`/tasks/${task.id}/events`);
+    expect(res.status).toBe(200);
+    const { events } = (await res.json()) as { events: { type: string }[] };
+    expect(events.map((e) => e.type)).toEqual(['created', 'planned', 'status_changed']);
+  });
+
+  it('存在しないタスクの履歴は 404', async () => {
+    expect((await get('/tasks/missing/events')).status).toBe(404);
+  });
+});
