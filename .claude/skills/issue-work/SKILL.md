@@ -14,5 +14,5 @@ description: 特定の issue に着手するとき、「issue 19 をやって」
 5. `pnpm check` を通し、必要なら E2E も実行する
 6. PR を作る。本文に `Closes #<issue番号>`、要件ID、確認方法を書く（PR テンプレートに従う）
 7. CI が通ったら `node scripts/merge-if-allowed.mjs <PR番号>` でマージを試みる。レビュー必須と判定された場合はそのまま開いておく
-8. 閉じた issue に依存していた issue のラベルを見直し、`docs/progress.md` に1行追記する
+8. 閉じた issue に依存していた issue のラベルを見直し、`docs/progress/` に1件の記録を1ファイルで追加する（書き方は `docs/progress/README.md`）
 9. 作業中に見つけた別の課題は、新しい issue の案として PR の説明に列挙する（勝手に作らない）

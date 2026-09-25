@@ -18,7 +18,7 @@ mymind は、日々のTODOと振り返りを管理し、ローカルのAIエー�
 | 守るルール | `.claude/rules/`（coding / architecture / testing / ui / workflow / autonomy） |
 | 画面の構成 | Figma「mymind view design」（fileKey `VLCoEFLm1ujvYPq8xyEQFg`）。どのフレームを見るかと手順は `docs/design/README.md`。接続できないときは `docs/design/mockup-source/` |
 | 暫定決定 | `docs/requirements.md` 5章（エージェントはこれに従って実装してよい） |
-| 作業記録 | `docs/progress.md` |
+| 作業記録 | `docs/progress/`（1件1ファイル。`pnpm progress` で直近の記録を表示） |
 | FB の方針 | `prompts/coaching-policy.md` |
 
 タスクに対応する要件IDを最初に特定してください。要件IDが見つからない変更は、実装する前に `docs/requirements.md` への追加を提案してください。
@@ -28,7 +28,7 @@ mymind は、日々のTODOと振り返りを管理し、ローカルのAIエー�
 セッションを始めたとき、またはコンテキストが途切れて再開するときは、最初に次を行ってください。
 
 1. `pnpm run doctor` で環境を確認する
-2. `docs/progress.md` の直近の記録を読む
+2. `pnpm progress` で直近の作業記録を読む
 3. `status:in-progress` の issue があれば、それを先に仕上げる
 
 ## 自律モード
@@ -67,6 +67,7 @@ e2e/            Playwright の E2E テスト
 | `pnpm screenshots` | 各画面のスクリーンショットを `.data/screenshots/` に出力（先に `pnpm build`。Claude Code のサンドボックスの中では Chromium が起動しないので外で実行） |
 | `pnpm docs:check` / `pnpm docs:build` | 設計文書のリンク・参照の検査 / 人が読むための HTML の生成 |
 | `pnpm check` | 上記のうち E2E 以外をすべて実行 |
+| `pnpm progress` | 直近の作業記録（`docs/progress/`）を新しい順に表示（件数は `pnpm progress 20` のように指定） |
 | `pnpm run doctor` | 開発環境の前提を確認（`run` は省略しない。`pnpm doctor` は pnpm 自身の診断コマンドになる） |
 | `pnpm docker:dev` / `docker:check` / `docker:e2e` | Docker で開発サーバー / チェック / E2E を実行（ADR-0010。実行には承認が必要） |
 
