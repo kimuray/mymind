@@ -61,7 +61,9 @@ check('推奨', 'ディスクの暗号化（FileVault、ADR-0009）', () => {
     status = run('fdesetup', ['status']);
   } catch {
     // Claude Code のサンドボックスの中ではディスクの情報を読めず失敗する
-    throw new Error('確認できませんでした（サンドボックスの外で pnpm run doctor を実行してください）');
+    throw new Error(
+      '確認できませんでした（サンドボックスの外で pnpm run doctor を実行してください）',
+    );
   }
   if (!/FileVault is On/.test(status)) throw new Error(`有効になっていません（${status}）`);
   return '有効';
