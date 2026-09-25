@@ -53,6 +53,19 @@ check('推奨', 'Playwright のブラウザ', () => {
   if (!dirs.some(existsSync))
     throw new Error('pnpm exec playwright install chromium を実行してください');
 });
+check('推奨', 'ディスクの暗号化（FileVault、ADR-0009）', () => {
+  // 振り返りなどの機微データを守るのは、ディスク全体の暗号化を前提にしている
+  if (process.platform !== 'darwin') return 'macOS 以外のため確認していません';
+  let status;
+  try {
+    status = run('fdesetup', ['status']);
+  } catch {
+    // Claude Code のサンドボックスの中ではディスクの情報を読めず失敗する
+    throw new Error('確認できませんでした（サンドボックスの外で pnpm run doctor を実行してください）');
+  }
+  if (!/FileVault is On/.test(status)) throw new Error(`有効になっていません（${status}）`);
+  return '有効';
+});
 check('任意', 'Docker Compose（コンテナで開発する場合）', () =>
   run('docker', ['compose', 'version', '--short']),
 );

@@ -13,6 +13,7 @@ import { createApi } from './api';
 import { createApp } from './app';
 import { createEventBus, type ServerEvent } from './events';
 import { createJobRunner } from './jobRunner';
+import { createLogger } from './logger';
 import { TOKEN_HEADER } from './security';
 
 const PORT = 4820;
@@ -275,5 +276,43 @@ describe('ADR-0008 GET /api/events', () => {
     expect(text).toContain('event: job.updated');
     expect(text).toContain('"status":"running"');
     expect(text).toContain('"status":"succeeded"');
+  });
+});
+
+describe('NFR-16 エージェントの入出力のログ', () => {
+  it('入力と各回の出力を、ジョブごとにローカルのログへ残し、ロガーには本文を出さない', async () => {
+    const written: {
+      day: string;
+      record: { input: string; attempts: unknown[]; status: string };
+    }[] = [];
+    const lines: string[] = [];
+    const tasks = createTaskRepository({ db, codec: plainCodec, newEventId: newId });
+    const runner = createJobRunner({
+      jobs,
+      tasks,
+      runner: createFakeAgentRunner({ mode: 'invalid' }),
+      events: createEventBus(),
+      prompt: { text: 'プロンプト', version: '0.1.0' },
+      now: () => now,
+      newId,
+      timeoutMs: 1000,
+      agentLog: {
+        write: (day, record) => {
+          written.push({ day, record });
+          return '';
+        },
+        prune: () => [],
+      },
+      logger: createLogger({ write: (line) => lines.push(line) }),
+    });
+    runner.enqueue('daily_feedback', DAY);
+    await runner.idle();
+    expect(written).toHaveLength(1);
+    expect(written[0]).toMatchObject({ day: DAY, record: { status: 'failed' } });
+    expect(written[0]?.record.input).toContain('<data>');
+    expect(written[0]?.record.attempts).toHaveLength(2);
+    expect(lines.join('\n')).toContain('FB の生成に失敗しました');
+    expect(lines.join('\n')).not.toContain('<data>');
+    expect(lines.join('\n')).not.toContain('JSON ではない出力');
   });
 });

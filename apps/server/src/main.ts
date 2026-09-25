@@ -14,6 +14,7 @@ import {
   openDatabase,
   plainCodec,
 } from '@mymind/db';
+import { createAgentLog } from './agentLog';
 import { createApi } from './api';
 import { createApp } from './app';
 import { type ConfigError, loadConfig } from './config';
@@ -21,6 +22,7 @@ import { acquireLock, ensureDataDir, issueSessionToken } from './dataDir';
 import { createEventBus } from './events';
 import { createJobRunner } from './jobRunner';
 import { listen } from './listen';
+import { createLogger } from './logger';
 import { createUlidGenerator } from './ulid';
 import { createWebRoutes } from './web';
 
@@ -81,7 +83,13 @@ async function main(): Promise<number> {
           agent.name,
           `${agent.name} のアダプタはまだ使えません（MYMIND_AGENT=fake で偽のアダプタを使えます）`,
         );
+  const logger = createLogger();
+  // エージェントの入出力の全文は、データディレクトリの中にだけ残し、30 日で消す（ADR-0009）
+  const agentLog = createAgentLog(join(dataDir, 'logs/agent'));
+  agentLog.prune(new Date().toISOString().slice(0, 10));
   const jobRunner = createJobRunner({
+    agentLog,
+    logger,
     jobs,
     tasks,
     runner,
