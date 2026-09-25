@@ -35,6 +35,10 @@
       "Bash(gh run view:*)",
       "Bash(gh issue edit:*)",
       "Bash(gh issue comment:*)",
+      "Bash(gh pr comment:*)",
+      "Bash(gh pr update-branch:*)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
       "Bash(node scripts/merge-if-allowed.mjs:*)"
     ],
     "ask": [
@@ -80,6 +84,10 @@
       "gh:*",
       "git push",
       "git push:*",
+      "git fetch",
+      "git fetch:*",
+      "git pull",
+      "git pull:*",
       "pnpm run doctor",
       "node scripts/merge-if-allowed.mjs:*",
       "node scripts/github-setup.mjs:*"
@@ -155,7 +163,8 @@
         "codeload.github.com",
         "objects.githubusercontent.com",
         "cdn.playwright.dev",
-        "playwright.download.prss.microsoft.com"
+        "playwright.download.prss.microsoft.com",
+        "malware-list.aikido.dev"
       ],
       "allowLocalBinding": true
     }

@@ -269,7 +269,7 @@ CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 - 作業ディレクトリは、ジョブごとに作る空の一時ディレクトリにする
 - タイムアウト（初期値120秒）を設け、キャンセル時とタイムアウト時はプロセスを終了させる
 
-テストとE2Eのために、決まったJSONを返す偽のアダプタも用意します。
+テストとE2Eのために、決まったJSONを返す偽のアダプタも用意します。使うアダプタは環境変数 `MYMIND_AGENT`（`claude` / `codex` / `fake`）で選びます。偽のアダプタの振る舞いは `MYMIND_FAKE_AGENT_MODE`（`success` / `invalid` / `invalid-once` / `hang`）と、答えるまでの時間 `MYMIND_FAKE_AGENT_DELAY_MS`（初期値 800）で切り替えます。同じ期間の FB のジョブがまだ終わっていないあいだは、新しく依頼しても同じジョブを返します。
 
 ### 7.5 プロンプト
 

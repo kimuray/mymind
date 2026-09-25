@@ -1,16 +1,36 @@
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { createTaskRepository, MIGRATIONS_FOLDER, openDatabase, plainCodec } from '@mymind/db';
+import {
+  type AgentRunner,
+  createFakeAgentRunner,
+  readPromptVersion,
+  unavailableRunner,
+} from '@mymind/agent';
+import {
+  createJobRepository,
+  createTaskRepository,
+  MIGRATIONS_FOLDER,
+  openDatabase,
+  plainCodec,
+} from '@mymind/db';
 import { createApi } from './api';
 import { createApp } from './app';
 import { databasePath, snapshotBeforeMigration } from './backups';
 import { type ConfigError, loadConfig } from './config';
 import { acquireLock, ensureDataDir, issueSessionToken } from './dataDir';
+import { createEventBus } from './events';
+import { createJobRunner } from './jobRunner';
 import { listen } from './listen';
 import { createUlidGenerator } from './ulid';
 import { createWebRoutes } from './web';
 
 // 画面の本番ビルド（apps/web の vite build の出力）
 const WEB_DIST = fileURLToPath(new URL('../../web/dist', import.meta.url));
+
+// 日次 FB のプロンプト（architecture.md 7.5）
+const DAILY_PROMPT = fileURLToPath(new URL('../../../prompts/daily-feedback.md', import.meta.url));
+// エージェントの待ち時間の上限（architecture.md 7.4 の初期値）
+const AGENT_TIMEOUT_MS = 120_000;
 
 // 業務日の切り替え（FR-D01）。設定画面ができるまでは初期値を使う
 const DAY_OPTIONS = { timeZone: 'Asia/Tokyo', dayStartHour: 5 };
@@ -32,7 +52,7 @@ async function main(): Promise<number> {
     console.error(describeConfigError(config.error));
     return 1;
   }
-  const { dataDir, host, port, devPorts } = config.value;
+  const { dataDir, host, port, devPorts, agent } = config.value;
 
   ensureDataDir(dataDir);
   const lock = acquireLock(dataDir, process.pid);
@@ -56,11 +76,35 @@ async function main(): Promise<number> {
     },
   });
   const newId = createUlidGenerator(() => Date.now());
+  const tasks = createTaskRepository({ db, codec: plainCodec, newEventId: newId });
+  const jobs = createJobRepository({ db, codec: plainCodec });
+  const events = createEventBus();
+  const promptText = readFileSync(DAILY_PROMPT, 'utf8');
+  const runner: AgentRunner =
+    agent.name === 'fake'
+      ? createFakeAgentRunner({ mode: agent.fakeMode, delayMs: agent.fakeDelayMs })
+      : // 実物のエージェントのアダプタは、起動方法のスパイク（#10、ADR-0005）の後で作る
+        unavailableRunner(
+          agent.name,
+          `${agent.name} のアダプタはまだ使えません（MYMIND_AGENT=fake で偽のアダプタを使えます）`,
+        );
+  const jobRunner = createJobRunner({
+    jobs,
+    tasks,
+    runner,
+    events,
+    prompt: { text: promptText, version: readPromptVersion(promptText) ?? 'unknown' },
+    now: () => new Date(),
+    newId,
+    timeoutMs: AGENT_TIMEOUT_MS,
+  });
+  jobRunner.start();
   const api = createApi({
-    tasks: createTaskRepository({ db, codec: plainCodec, newEventId: newId }),
+    tasks,
     now: () => new Date(),
     dayOptions: DAY_OPTIONS,
     newId,
+    jobs: { runner: jobRunner, jobs, events },
   });
   const web = createWebRoutes({ distDir: WEB_DIST, sessionToken });
   const app = createApp({ ports: [port, ...devPorts], sessionToken }, api, web);

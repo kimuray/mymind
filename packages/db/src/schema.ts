@@ -1,5 +1,5 @@
 // アプリのスキーマ（docs/architecture.md 5章）。変更したら pnpm --filter @mymind/db db:generate でマイグレーションを作る。
-import { STATUSES } from '@mymind/domain';
+import { JOB_KINDS, JOB_STATUSES, STATUSES } from '@mymind/domain';
 import {
   type AnySQLiteColumn,
   integer,
@@ -61,4 +61,38 @@ export const taskEvents = sqliteTable('task_events', {
 export const settings = sqliteTable('settings', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),
+});
+
+export const agentJobs = sqliteTable('agent_jobs', {
+  id: text('id').primaryKey(), // ULID
+  kind: text('kind', { enum: JOB_KINDS }).notNull(),
+  period: text('period').notNull(), // 2026-09-22 / 2026-09
+  agent: text('agent').notNull(), // claude / codex / fake
+  status: text('status', { enum: JOB_STATUSES }).notNull(),
+  error: text('error'),
+  createdAt: text('created_at').notNull(),
+  startedAt: text('started_at'),
+  finishedAt: text('finished_at'),
+});
+
+export const feedbacks = sqliteTable('feedbacks', {
+  id: text('id').primaryKey(), // ULID
+  scope: text('scope', { enum: ['daily', 'monthly'] }).notNull(),
+  period: text('period').notNull(),
+  jobId: text('job_id').references(() => agentJobs.id),
+  // 機微データ。読み書きは必ず SensitiveCodec を通す（ADR-0009）
+  contentJson: text('content_json').notNull(),
+  agent: text('agent').notNull(),
+  promptVersion: text('prompt_version').notNull(),
+  isPartial: integer('is_partial', { mode: 'boolean' }).notNull().default(false),
+  createdAt: text('created_at').notNull(),
+});
+
+export const conditions = sqliteTable('conditions', {
+  day: text('day').primaryKey(),
+  aiLevel: integer('ai_level'), // 0:絶不調 〜 4:絶好調
+  // 機微データ。読み書きは必ず SensitiveCodec を通す（ADR-0009）
+  aiReason: text('ai_reason'),
+  userLevel: integer('user_level'),
+  updatedAt: text('updated_at').notNull(),
 });
