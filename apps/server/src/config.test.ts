@@ -7,7 +7,13 @@ describe('NFR-02 起動の設定', () => {
   it('何も指定しなければ 127.0.0.1:4820 で待ち受け、~/.mymind を使う', () => {
     expect(loadConfig({})).toEqual({
       ok: true,
-      value: { dataDir: join(homedir(), '.mymind'), host: '127.0.0.1', port: 4820, devPorts: [] },
+      value: {
+        dataDir: join(homedir(), '.mymind'),
+        host: '127.0.0.1',
+        port: 4820,
+        devPorts: [],
+        agent: { name: 'claude', fakeMode: 'success', fakeDelayMs: 800 },
+      },
     });
   });
 
@@ -15,7 +21,13 @@ describe('NFR-02 起動の設定', () => {
     const result = loadConfig({ MYMIND_DATA_DIR: './.data', MYMIND_PORT: '5000' });
     expect(result).toEqual({
       ok: true,
-      value: { dataDir: resolve('./.data'), host: '127.0.0.1', port: 5000, devPorts: [] },
+      value: {
+        dataDir: resolve('./.data'),
+        host: '127.0.0.1',
+        port: 5000,
+        devPorts: [],
+        agent: { name: 'claude', fakeMode: 'success', fakeDelayMs: 800 },
+      },
     });
   });
 
@@ -53,6 +65,26 @@ describe('NFR-02 起動の設定', () => {
 
   it('MYMIND_VITE_PORT が不正なら受け付けない', () => {
     expect(loadConfig({ MYMIND_VITE_PORT: 'vite' })).toMatchObject({
+      ok: false,
+      error: { kind: 'invalid_env' },
+    });
+  });
+
+  it('FB のエージェントと、偽のアダプタの振る舞いを選べる（FR-A07）', () => {
+    expect(
+      loadConfig({
+        MYMIND_AGENT: 'fake',
+        MYMIND_FAKE_AGENT_MODE: 'hang',
+        MYMIND_FAKE_AGENT_DELAY_MS: '0',
+      }),
+    ).toMatchObject({
+      ok: true,
+      value: { agent: { name: 'fake', fakeMode: 'hang', fakeDelayMs: 0 } },
+    });
+  });
+
+  it('知らないエージェントは受け付けない', () => {
+    expect(loadConfig({ MYMIND_AGENT: 'gpt' })).toMatchObject({
       ok: false,
       error: { kind: 'invalid_env' },
     });
