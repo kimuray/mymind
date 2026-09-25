@@ -1,7 +1,16 @@
-import { createTaskRepository, MIGRATIONS_FOLDER, openDatabase, plainCodec } from '@mymind/db';
+import { createFakeAgentRunner } from '@mymind/agent';
+import {
+  createJobRepository,
+  createTaskRepository,
+  MIGRATIONS_FOLDER,
+  openDatabase,
+  plainCodec,
+} from '@mymind/db';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createApi } from './api';
 import { createApp } from './app';
+import { createEventBus } from './events';
+import { createJobRunner } from './jobRunner';
 import { TOKEN_HEADER } from './security';
 
 const PORT = 4820;
@@ -18,11 +27,25 @@ beforeEach(() => {
   const db = openDatabase({ path: ':memory:', migrationsFolder: MIGRATIONS_FOLDER });
   let seq = 0;
   const newId = () => `id${String(++seq).padStart(5, '0')}`;
+  const tasks = createTaskRepository({ db, codec: plainCodec, newEventId: newId });
+  const jobs = createJobRepository({ db, codec: plainCodec });
+  const events = createEventBus();
+  const runner = createJobRunner({
+    jobs,
+    tasks,
+    runner: createFakeAgentRunner(),
+    events,
+    prompt: { text: 'プロンプト', version: '0.1.0' },
+    now: () => now,
+    newId,
+    timeoutMs: 1000,
+  });
   const api = createApi({
-    tasks: createTaskRepository({ db, codec: plainCodec, newEventId: newId }),
+    tasks,
     now: () => now,
     dayOptions: { timeZone: 'Asia/Tokyo', dayStartHour: 5 },
     newId,
+    jobs: { runner, jobs, events },
   });
   app = createApp({ ports: [PORT], sessionToken: TOKEN }, api);
 });

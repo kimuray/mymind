@@ -13,6 +13,11 @@ const envSchema = z.object({
   MYMIND_IN_CONTAINER: z.enum(['0', '1']).default('0'),
   /** 開発時の Vite のポート。指定したときだけ、Host・Origin の許可リストに加える（ADR-0007） */
   MYMIND_VITE_PORT: z.coerce.number().int().min(1).max(65535).optional(),
+  /** FB を作るエージェント（FR-A07）。fake はテストと開発用の偽のアダプタ */
+  MYMIND_AGENT: z.enum(['claude', 'codex', 'fake']).default('claude'),
+  /** 偽のアダプタの振る舞いと、答えるまでの時間（生成中の表示やキャンセルを確かめるため） */
+  MYMIND_FAKE_AGENT_MODE: z.enum(['success', 'invalid', 'invalid-once', 'hang']).default('success'),
+  MYMIND_FAKE_AGENT_DELAY_MS: z.coerce.number().int().min(0).max(60_000).default(800),
 });
 
 export type ServerConfig = {
@@ -21,6 +26,11 @@ export type ServerConfig = {
   port: number;
   /** 開発時に Vite 経由で開く場合のポート。本番（Hono が画面も配信する）では空 */
   devPorts: number[];
+  agent: {
+    name: 'claude' | 'codex' | 'fake';
+    fakeMode: 'success' | 'invalid' | 'invalid-once' | 'hang';
+    fakeDelayMs: number;
+  };
 };
 
 export type ConfigError =
@@ -55,6 +65,11 @@ export function loadConfig(
       host: e.MYMIND_HOST,
       port: e.MYMIND_PORT,
       devPorts: e.MYMIND_VITE_PORT === undefined ? [] : [e.MYMIND_VITE_PORT],
+      agent: {
+        name: e.MYMIND_AGENT,
+        fakeMode: e.MYMIND_FAKE_AGENT_MODE,
+        fakeDelayMs: e.MYMIND_FAKE_AGENT_DELAY_MS,
+      },
     },
   };
 }

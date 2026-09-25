@@ -29,6 +29,8 @@ export default defineConfig({
     env: {
       MYMIND_PORT: String(port),
       MYMIND_AGENT: 'fake',
+      // 生成中の表示とキャンセルを確かめられるよう、偽のアダプタは少し待ってから答える
+      MYMIND_FAKE_AGENT_DELAY_MS: '1500',
       MYMIND_DATA_DIR: dataDir,
     },
   },
