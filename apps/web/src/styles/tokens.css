@@ -106,6 +106,9 @@
   --button-secondary-bg: rgba(255, 255, 255, 0.4);
   --button-secondary-border: 1px solid rgba(255, 255, 255, 0.95);
 
+  /* 4.9 ダイアログ */
+  --overlay: rgba(28, 27, 25, 0.18);
+
   /* 4.5 kbd */
   --kbd-bg: rgba(255, 255, 255, 0.8);
   --kbd-border: 1px solid rgba(28, 27, 25, 0.12);

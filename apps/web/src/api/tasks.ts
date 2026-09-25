@@ -60,7 +60,8 @@ function patchCachedTask(qc: QueryClient, taskId: string, patch: Partial<ListTas
   qc.setQueryData<{ tasks: ListTask[] }>(queryKeys.backlog, apply);
 }
 
-type ScreenState = { expectedDay: string };
+/** 画面が想定している業務日（NFR-14）。前の日として続けると決めた画面では allowPastDay を付ける */
+type ScreenState = { expectedDay: string; allowPastDay?: boolean };
 
 export function useCreateTask() {
   const qc = useQueryClient();

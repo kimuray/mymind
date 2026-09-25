@@ -434,3 +434,35 @@
   font-weight: 500;
   color: var(--ink-1);
 }
+
+/* ダイアログ（DESIGN.md 4.9） */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-4);
+  background: var(--overlay);
+}
+
+.dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  width: min(480px, 100%);
+  padding: var(--space-6);
+  border-radius: var(--radius-2xl);
+}
+
+.dialog p {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.dialog-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

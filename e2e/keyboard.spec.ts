@@ -21,7 +21,8 @@ test.describe('FR-U01 タスクのリストのキー操作', () => {
     await page.goto('/');
     await addTasks(page, ['キー操作A', 'キー操作B']);
 
-    await page.keyboard.press('j');
+    // 他のテストのタスクが先に並んでいることがあるので、自分のタスクを選んでから J / K で移る
+    await row(page, 'キー操作A').locator('.task-title').click();
     await expect(row(page, 'キー操作A')).toHaveAttribute('data-selected', 'true');
     await page.keyboard.press('j');
     await expect(row(page, 'キー操作B')).toHaveAttribute('data-selected', 'true');
