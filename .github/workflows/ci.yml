@@ -40,7 +40,7 @@ jobs:
         run: pnpm docs:check
       - name: テスト（カバレッジ付き）
         run: pnpm test:coverage
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage
@@ -91,7 +91,7 @@ jobs:
         run: pnpm test:e2e
         env:
           MYMIND_AGENT: fake
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: failure() && steps.gate.outputs.enabled == 'true'
         with:
           name: playwright-report
