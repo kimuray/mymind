@@ -3,7 +3,7 @@ import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { validator } from 'hono/validator';
 import { z } from 'zod';
-import type { EventBus } from './events';
+import type { EventBus, NumberedEvent } from './events';
 import type { JobRunner } from './jobRunner';
 
 export type JobsApiDeps = { runner: JobRunner; jobs: JobRepository; events: EventBus };
@@ -76,16 +76,42 @@ export function createJobsApi({ runner, jobs, events }: JobsApiDeps) {
       },
     )
 
-    .get('/events', (c) =>
-      streamSSE(c, async (stream) => {
-        const unsubscribe = events.subscribe((event) => {
-          stream.writeSSE({ event: event.type, data: JSON.stringify(event) });
+    .get('/events', (c) => {
+      // 再接続のとき、EventSource は最後に受け取った id を Last-Event-ID で送ってくる（ADR-0008）
+      const lastId = Number.parseInt(c.req.header('Last-Event-ID') ?? '', 10);
+      return streamSSE(c, async (stream) => {
+        const send = ({ id, event }: NumberedEvent) =>
+          stream.writeSSE({ id: String(id), event: event.type, data: JSON.stringify(event) });
+        // 購読を先に始めてから取りこぼしを送る。その間に起きた出来事は id で重複を除く
+        let sentUpTo = Number.isInteger(lastId) ? lastId : 0;
+        const pending: NumberedEvent[] = [];
+        let replaying = true;
+        const unsubscribe = events.subscribe((e) => {
+          if (replaying) {
+            pending.push(e);
+            return;
+          }
+          sentUpTo = e.id;
+          send(e);
         });
         stream.onAbort(unsubscribe);
+        if (Number.isInteger(lastId)) {
+          for (const e of events.since(lastId)) {
+            await send(e);
+            sentUpTo = e.id;
+          }
+        }
+        for (const e of pending) {
+          if (e.id > sentUpTo) {
+            await send(e);
+            sentUpTo = e.id;
+          }
+        }
+        replaying = false;
         while (!stream.aborted) {
           await stream.sleep(KEEP_ALIVE_MS);
           if (!stream.aborted) await stream.write(': keep-alive\n\n');
         }
-      }),
-    );
+      });
+    });
 }

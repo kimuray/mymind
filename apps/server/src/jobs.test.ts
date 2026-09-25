@@ -36,7 +36,7 @@ const newId = () => `id${String(++seq).padStart(5, '0')}`;
 function setup(mode: FakeMode = 'success', timeoutMs = 1000) {
   const tasks = createTaskRepository({ db, codec: plainCodec, newEventId: newId });
   const events = createEventBus();
-  events.subscribe((e) => published.push(e));
+  events.subscribe((e) => published.push(e.event));
   const agent = createFakeAgentRunner({ mode });
   const runner = createJobRunner({
     jobs,
@@ -275,5 +275,35 @@ describe('ADR-0008 GET /api/events', () => {
     expect(text).toContain('event: job.updated');
     expect(text).toContain('"status":"running"');
     expect(text).toContain('"status":"succeeded"');
+  });
+});
+
+describe('ADR-0008 再接続のときの取りこぼしの補完', () => {
+  it('Last-Event-ID より後の出来事を、先に送り直す', async () => {
+    const { app, runner } = setup();
+    const first = runner.enqueue('daily_feedback', DAY).job;
+    await runner.idle();
+    const second = runner.enqueue('daily_feedback', '2026-09-22').job;
+    await runner.idle();
+    // 1件目のジョブの出来事（queued・running・succeeded）までは受け取っていた
+    const res = await app.request('/api/events', {
+      headers: { Host: `127.0.0.1:${PORT}`, 'Last-Event-ID': '3' },
+    });
+    const reader = res.body?.getReader();
+    if (reader === undefined) throw new Error('本文がありません');
+    let text = '';
+    while (
+      !text.includes(
+        `"id":"${second.id}","kind":"daily_feedback","period":"2026-09-22","agent":"fake","status":"succeeded"`,
+      )
+    ) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      text += new TextDecoder().decode(value);
+    }
+    await reader.cancel();
+    expect(text).toContain('id: 4');
+    expect(text).not.toContain('id: 3\n');
+    expect(text).not.toContain(first.id);
   });
 });

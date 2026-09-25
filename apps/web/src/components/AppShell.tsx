@@ -2,6 +2,7 @@ import { toBusinessDay } from '@mymind/domain';
 import { Link, Outlet, useNavigate } from '@tanstack/react-router';
 import { useKeyBindings } from '../keyboard';
 import { NAVIGATION_KEYS, type NavigationTarget, SIDEBAR_HINTS } from '../keymap';
+import { useRealtimeSync } from '../realtime';
 import { Kbd } from './Kbd';
 import { Mame } from './Mame';
 
@@ -95,6 +96,8 @@ function NavGroup({ title, items }: { title: string; items: NavItem[] }) {
 /** 3ペインの枠（DESIGN.md 3章）。メインと詳細ペインは、各画面が PageLayout で置く */
 export function AppShell() {
   const navigate = useNavigate();
+  // 他のタブとサーバーからの変更を受け取る（ADR-0008）
+  useRealtimeSync();
   const go = (to: () => Promise<void>) => {
     to();
     return true;
