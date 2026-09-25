@@ -310,8 +310,18 @@ ul {
   }
 }
 
+/* 「視差効果を減らす」設定では、マメの表情や画面の切り替えの動きを止める（DESIGN.md 2.3、NFR-22） */
 @media (prefers-reduced-motion: reduce) {
   .mame-bubbles {
     animation: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
