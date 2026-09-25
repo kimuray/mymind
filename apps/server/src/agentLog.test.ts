@@ -21,6 +21,8 @@ const record = {
   agent: 'fake',
   promptVersion: '0.1.0',
   input: '<data>振り返り</data>',
+  annotations: [],
+  charCount: 3,
   attempts: [{ output: '{}' }],
   status: 'succeeded',
   finishedAt: '2026-09-25T12:00:00.000Z',

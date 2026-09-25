@@ -8,6 +8,17 @@ const toUtcDays = (day: string): number => {
   return Date.UTC(y, m - 1, d) / 86_400_000;
 };
 
+/**
+ * day より前の count 日の業務日を、新しい順に返す（エージェントに渡す「直近7日」、architecture.md 12.5）。
+ * 暦の計算だけなのでタイムゾーンに依存しない
+ */
+export function previousDays(day: string, count: number): string[] {
+  const base = toUtcDays(day);
+  return Array.from({ length: count }, (_, i) =>
+    new Date((base - i - 1) * 86_400_000).toISOString().slice(0, 10),
+  );
+}
+
 /** 2つの業務日の間の暦日の数（from が to より後なら負） */
 export function daysBetween(from: string, to: string): number {
   return toUtcDays(to) - toUtcDays(from);

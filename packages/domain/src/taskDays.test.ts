@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { dayOrdinalSince, daysBetween, statusSinceDay } from './taskDays';
+import { dayOrdinalSince, daysBetween, previousDays, statusSinceDay } from './taskDays';
 import type { TaskEvent } from './taskEvents';
 
 const at = '2026-09-23T01:00:00.000Z';
@@ -64,5 +64,20 @@ describe('FR-T12 今の状態になった日', () => {
 
   it('イベントがなければ null', () => {
     expect(statusSinceDay([])).toBeNull();
+  });
+});
+
+describe('NFR-15 直近の業務日', () => {
+  it('その日より前の日を、新しい順に返す', () => {
+    expect(previousDays('2026-09-25', 3)).toEqual(['2026-09-24', '2026-09-23', '2026-09-22']);
+  });
+
+  it('月末と年末をまたいでも暦どおりに戻る', () => {
+    expect(previousDays('2026-03-01', 2)).toEqual(['2026-02-28', '2026-02-27']);
+    expect(previousDays('2027-01-01', 1)).toEqual(['2026-12-31']);
+  });
+
+  it('0 日なら空', () => {
+    expect(previousDays('2026-09-25', 0)).toEqual([]);
   });
 });

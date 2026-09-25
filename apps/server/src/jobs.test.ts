@@ -9,6 +9,7 @@ import {
   plainCodec,
 } from '@mymind/db';
 import { beforeEach, describe, expect, it } from 'vitest';
+import type { AgentLogRecord } from './agentLog';
 import { createApi } from './api';
 import { createApp } from './app';
 import { createEventBus, type ServerEvent } from './events';
@@ -344,5 +345,60 @@ describe('NFR-16 エージェントの入出力のログ', () => {
     expect(lines.join('\n')).toContain('FB の生成に失敗しました');
     expect(lines.join('\n')).not.toContain('<data>');
     expect(lines.join('\n')).not.toContain('JSON ではない出力');
+  });
+});
+
+describe('NFR-15 日次 FB に送る入力', () => {
+  it('直近7日の調子と明日の一手を添え、送った入力の文字数と注記をログに残す', async () => {
+    const tasks = createTaskRepository({ db, codec: plainCodec, newEventId: newId });
+    const inputs: string[] = [];
+    const logged: AgentLogRecord[] = [];
+    const runner = createJobRunner({
+      jobs,
+      tasks,
+      runner: {
+        name: 'fake',
+        run: async (input) => {
+          inputs.push(input);
+          return { ok: true, output: JSON.stringify(FAKE_OUTPUT) };
+        },
+      },
+      events: createEventBus(),
+      prompt: { text: 'プロンプト', version: '0.1.0' },
+      now: () => now,
+      newId,
+      timeoutMs: 1000,
+      agentLog: {
+        write: (_day, record) => {
+          logged.push(record);
+          return '';
+        },
+        prune: () => [],
+      },
+    });
+    // 前日の FB（調子と明日の一手）を先に作る
+    runner.enqueue('daily_feedback', '2026-09-22');
+    await runner.idle();
+    runner.enqueue('daily_feedback', DAY);
+    await runner.idle();
+
+    const last = inputs.at(-1) ?? '';
+    const payload = JSON.parse(
+      last.slice(last.indexOf('<data>\n') + 7, last.lastIndexOf('\n</data>')),
+    );
+    expect(payload.recent).toHaveLength(7);
+    expect(payload.recent[0]).toEqual({
+      day: '2026-09-22',
+      condition: FAKE_OUTPUT.condition.level,
+      next_action: FAKE_OUTPUT.next_action,
+      blank: false,
+    });
+    expect(payload.recent[1]).toEqual({
+      day: '2026-09-21',
+      condition: null,
+      next_action: null,
+      blank: true,
+    });
+    expect(logged.at(-1)).toMatchObject({ annotations: [], charCount: expect.any(Number) });
   });
 });
