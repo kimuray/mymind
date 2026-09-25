@@ -58,6 +58,13 @@ function setup(mode: FakeMode = 'success', timeoutMs = 1000) {
       dayOptions: { timeZone: 'Asia/Tokyo', dayStartHour: 5 },
       newId,
       jobs: { runner, jobs, events },
+      health: {
+        checkDatabase: () => ({ ok: true }),
+        databaseFiles: [],
+        backupsDir: '/nonexistent',
+        jobs,
+        agentStatus: async () => ({ name: 'fake', usable: true, executable: null, message: null }),
+      },
     }),
   );
   return { runner, agent, tasks, events, app };

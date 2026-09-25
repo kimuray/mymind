@@ -16,6 +16,7 @@ import { type Context, Hono } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import { validator } from 'hono/validator';
 import { z } from 'zod';
+import { createHealthApi, type HealthDeps } from './health';
 import { createJobsApi, type JobsApiDeps } from './jobsApi';
 
 export type ApiDeps = {
@@ -28,6 +29,8 @@ export type ApiDeps = {
   newId: () => string;
   /** エージェントのジョブと FB（architecture.md 7章） */
   jobs: JobsApiDeps;
+  /** 状態の見える化（NFR-21） */
+  health: HealthDeps;
 };
 
 const dayParam = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD の形式で指定してください');
@@ -110,7 +113,7 @@ const jsonBody = <T extends z.ZodType>(schema: T) =>
  * 今日とバックログの API（architecture.md 6章）。
  * 状態の変更はすべて domain の関数でイベントにし、リポジトリが1つのトランザクションで保存する（ADR-0004）。
  */
-export function createApi({ tasks, now, dayOptions, newId, jobs }: ApiDeps) {
+export function createApi({ tasks, now, dayOptions, newId, jobs, health }: ApiDeps) {
   /**
    * 一覧の各行に、画面で必要な値を加える。日数や件数はここで計算し、画面や AI には計算させない。
    * - statusSince：今の状態になった業務日（「着手から何日目」FR-T12）
@@ -332,7 +335,7 @@ export function createApi({ tasks, now, dayOptions, newId, jobs }: ApiDeps) {
       if (!result.ok) return conflict(c, result.error);
       return c.json({ task: result.value[0], suggestions: outcome.suggestions });
     });
-  return taskRoutes.route('/', createJobsApi(jobs));
+  return taskRoutes.route('/', createJobsApi(jobs)).route('/', createHealthApi(health));
 }
 
 export type Api = ReturnType<typeof createApi>;
