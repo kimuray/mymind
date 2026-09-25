@@ -17,7 +17,8 @@ import { PageLayout } from '../components/PageLayout';
 import { CountChip } from '../components/StatusBadge';
 import { TaskDetail } from '../components/TaskDetail';
 import { TaskRow } from '../components/TaskRow';
-import { currentDay, formatDayHeading } from '../day';
+import { formatDayHeading } from '../day';
+import { useDayGuard } from '../dayGuard';
 import { LIST_HINTS, NAVIGATION_KEYS } from '../keymap';
 import { type ListRow, useTaskListKeys } from '../useTaskListKeys';
 
@@ -36,7 +37,10 @@ function orderWithChildren(tasks: ListTask[]): { task: ListTask; depth: 0 | 1 }[
 /** 今日の画面（Figma「PC/今日」、FR-T01・FR-T03・FR-T05・FR-T12） */
 export function TodayPage() {
   // 画面が表示している業務日。業務日の切り替え検知（NFR-14）は別の issue で加える
-  const [day] = useState(currentDay);
+  // 画面が表示している業務日。業務日が変わったら操作を止めて選ばせる（NFR-14）
+  const guard = useDayGuard();
+  const day = guard.day;
+  const screen = { expectedDay: day, ...(guard.allowPastDay ? { allowPastDay: true } : {}) };
   const plan = useDayPlan(day);
   const create = useCreateTask();
   const transition = useTransition();
@@ -62,7 +66,7 @@ export function TodayPage() {
 
   const changeStatus = (task: ListTask, to: Status) =>
     transition.mutate(
-      { task, to, expectedDay: day },
+      { task, to, ...screen },
       { onSuccess: (res) => setSuggestions(res.suggestions) },
     );
   const advance = (task: ListTask) => {
@@ -71,7 +75,7 @@ export function TodayPage() {
   };
   const moveTask = (task: ListTask, to: 'today' | 'tomorrow' | 'backlog') =>
     move.mutate(
-      { task, to, expectedDay: day },
+      { task, to, ...screen },
       {
         onSuccess: (res) => {
           setSuggestions(res.suggestions);
@@ -88,12 +92,12 @@ export function TodayPage() {
     changeStatus,
     moveTask,
     startEdit: setEditingId,
-    edit: (task, change) => edit.mutateAsync({ task, expectedDay: day, ...change }),
+    edit: (task, change) => edit.mutateAsync({ task, ...screen, ...change }),
     notify: setNotice,
   });
   const endEdit = (task: ListTask) => (title: string | null) => {
     setEditingId(null);
-    if (title !== null) edit.mutate({ task, title, expectedDay: day });
+    if (title !== null) edit.mutate({ task, title, ...screen });
   };
 
   const detail =
@@ -109,6 +113,7 @@ export function TodayPage() {
 
   return (
     <PageLayout detail={detail}>
+      {guard.dialog}
       <div className="page">
         <header className="page-header">
           <div className="page-title">
@@ -135,7 +140,7 @@ export function TodayPage() {
         <AddTaskInput
           label="今日のタスクを追加"
           placeholder="今日のタスクを追加（Enterで確定）"
-          onSubmit={(title) => create.mutate({ title, planFor: 'today', expectedDay: day })}
+          onSubmit={(title) => create.mutate({ title, planFor: 'today', ...screen })}
         />
 
         {notice !== null && (
