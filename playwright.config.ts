@@ -9,6 +9,8 @@ const dataDir = fileURLToPath(new URL('./.data/e2e', import.meta.url));
 export default defineConfig({
   testDir: 'e2e',
   fullyParallel: false,
+  // すべてのテストが1つのサーバー（1つの DB）を共有するので、並行させると互いのタスクが混ざる
+  workers: 1,
   retries: process.env['CI'] ? 1 : 0,
   reporter: process.env['CI'] ? 'github' : 'list',
   use: {

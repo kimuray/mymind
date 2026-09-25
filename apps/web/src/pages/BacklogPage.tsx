@@ -13,7 +13,8 @@ import { Button } from '../components/Button';
 import { PageLayout } from '../components/PageLayout';
 import { TaskDetail } from '../components/TaskDetail';
 import { TaskRow } from '../components/TaskRow';
-import { currentDay, dayOf } from '../day';
+import { dayOf } from '../day';
+import { useDayGuard } from '../dayGuard';
 import { type ListRow, useTaskListKeys } from '../useTaskListKeys';
 
 /** 最後に触れてからの日数（「3日前」）。日数は domain で数える */
@@ -43,7 +44,10 @@ function groupByParent(tasks: ListTask[]): { key: string; title: string; tasks: 
 
 /** バックログの画面（Figma「PC/バックログ」、FR-T01・FR-T05） */
 export function BacklogPage() {
-  const [screenDay] = useState(currentDay);
+  // 画面が表示している業務日。業務日が変わったら操作を止めて選ばせる（NFR-14）
+  const guard = useDayGuard();
+  const screenDay = guard.day;
+  const screen = { expectedDay: screenDay, ...(guard.allowPastDay ? { allowPastDay: true } : {}) };
   const backlog = useBacklog();
   const create = useCreateTask();
   const transition = useTransition();
@@ -57,10 +61,9 @@ export function BacklogPage() {
   const tasks = backlog.data?.tasks ?? [];
   const selected = tasks.find((t) => t.id === selectedId);
 
-  const changeStatus = (task: ListTask, to: Status) =>
-    transition.mutate({ task, to, expectedDay: screenDay });
+  const changeStatus = (task: ListTask, to: Status) => transition.mutate({ task, to, ...screen });
   const moveTask = (task: ListTask, to: 'today' | 'tomorrow' | 'backlog') =>
-    move.mutate({ task, to, expectedDay: screenDay }, { onSuccess: () => setSelectedId(null) });
+    move.mutate({ task, to, ...screen }, { onSuccess: () => setSelectedId(null) });
   const groups = groupByParent(tasks);
   const rows: ListRow[] = groups.flatMap((g) =>
     g.tasks.map((task) => ({ task, depth: 0 as const, order: task.sortOrder })),
@@ -73,7 +76,7 @@ export function BacklogPage() {
     changeStatus,
     moveTask,
     startEdit: setEditingId,
-    edit: (task, change) => edit.mutateAsync({ task, expectedDay: screenDay, ...change }),
+    edit: (task, change) => edit.mutateAsync({ task, ...screen, ...change }),
     notify: setNotice,
   });
   const detail =
@@ -89,6 +92,7 @@ export function BacklogPage() {
 
   return (
     <PageLayout detail={detail}>
+      {guard.dialog}
       <div className="page">
         <header className="page-header">
           <h1 className="text-display">バックログ</h1>
@@ -98,7 +102,7 @@ export function BacklogPage() {
         <AddTaskInput
           label="バックログに追加"
           placeholder="覚えておくことを追加（Enterで確定）"
-          onSubmit={(title) => create.mutate({ title, expectedDay: screenDay })}
+          onSubmit={(title) => create.mutate({ title, ...screen })}
         />
 
         {notice !== null && (
@@ -131,7 +135,7 @@ export function BacklogPage() {
                   editing={task.id === editingId}
                   onEditEnd={(title) => {
                     setEditingId(null);
-                    if (title !== null) edit.mutate({ task, title, expectedDay: screenDay });
+                    if (title !== null) edit.mutate({ task, title, ...screen });
                   }}
                 />
               ))}
