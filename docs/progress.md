@@ -19,3 +19,4 @@
 | 2026-09-24 | #31 | なし（ローカルの feat/31-keyboard、#30 の上） | キーマップの定義と全体で1つのキーの受け口、J/K・Space・P・W・X・T・B・E・N・Tab・⌘↑↓・G→各画面。親の付け替えと並べ替えを PATCH に追加。E2E 6件 | 楽観的更新で version も上げる（連続操作の 409 を防ぐ）。E2E は MYMIND_E2E_PORT でポートを変えられる |
 | 2026-09-24 | #25 | なし（ローカルの feat/25-screenshots、#31 の上） | pnpm screenshots（一時的なデータディレクトリで本番ビルドを起動し、見本を入れて全画面を 1440×900 で撮る）。AGENTS.md に Figma と並べる手順、design/README に node-id | Chromium はサンドボックスの中では起動しない（#15）。Playwright MCP の設定は見送り |
 | 2026-09-25 | #36 | 下記の PR | AgentRunner と偽アダプタ、agent_jobs・feedbacks・conditions、同時実行1件のジョブランナー（タイムアウト・キャンセル・1回の再試行・起動時の中断）、ジョブと FB の API、GET /api/events（SSE） | 実物のアダプタは #10 の後。振り返りの本文は入力に未反映 |
+| 2026-09-25 | #41 | 下記の PR（#72 の上） | RealtimeChannel（BroadcastChannel・SSE）、変更の成功を他のタブへ知らせてクエリを読み直す、SSE の id と Last-Event-ID での補完 | E2E はサーバーを共有するのでワーカーを1つにした |

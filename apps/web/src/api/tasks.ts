@@ -1,5 +1,6 @@
 import type { Status } from '@mymind/domain';
 import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { notifyTasksChanged } from '../realtime';
 import { api, unwrap } from './client';
 
 type DayResponse = Awaited<ReturnType<typeof fetchDay>>;
@@ -42,8 +43,16 @@ export function useTaskEvents(taskId: string | null) {
   });
 }
 
-/** タスクの一覧に関わるキャッシュをすべて読み直す（他の画面の表示も古くなるため） */
-const invalidateTasks = (qc: QueryClient) =>
+/**
+ * タスクの一覧に関わるキャッシュをすべて読み直す（他の画面の表示も古くなるため）。
+ * 他のタブにも知らせ、同じように読み直させる（NFR-13）
+ */
+const invalidateTasks = (qc: QueryClient) => {
+  notifyTasksChanged();
+  return reloadTasks(qc);
+};
+
+const reloadTasks = (qc: QueryClient) =>
   Promise.all([
     qc.invalidateQueries({ queryKey: ['day'] }),
     qc.invalidateQueries({ queryKey: queryKeys.backlog }),
