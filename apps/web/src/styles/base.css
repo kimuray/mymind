@@ -82,6 +82,13 @@ ul {
   backdrop-filter: var(--glass-3-blur);
 }
 
+.glass-4 {
+  border: var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  background: var(--glass-4);
+  backdrop-filter: var(--glass-4-blur);
+}
+
 @media (prefers-reduced-transparency: reduce) {
   body {
     background-image: none;
@@ -89,7 +96,8 @@ ul {
 
   .glass-1,
   .glass-2,
-  .glass-3 {
+  .glass-3,
+  .glass-4 {
     background: var(--glass-opaque);
     border: var(--glass-opaque-border);
     backdrop-filter: none;
