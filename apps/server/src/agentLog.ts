@@ -1,5 +1,6 @@
 import { chmodSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import type { Annotation } from '@mymind/agent';
 
 /** エージェントの入出力のログの1件（architecture.md 7.5）。ジョブごとに全文を残す */
 export type AgentLogRecord = {
@@ -9,6 +10,10 @@ export type AgentLogRecord = {
   agent: string;
   promptVersion: string;
   input: string;
+  /** 送信前処理の注記（何を省いたか、切り詰めたか。NFR-15） */
+  annotations: Annotation[];
+  /** 送った入力（<data> の中身）の文字数 */
+  charCount: number;
   /** 試した回数ぶんの出力または失敗の理由（形式違反は1回だけ再試行する） */
   attempts: ({ output: string } | { error: string })[];
   status: string;

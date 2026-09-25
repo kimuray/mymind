@@ -2,11 +2,13 @@ import {
   type AgentRunner,
   buildDailyFeedbackInput,
   type DailyFeedbackData,
+  dailyFeedbackSchema,
   parseDailyFeedback,
+  RECENT_DAYS,
   withTimeout,
 } from '@mymind/agent';
 import type { Job, JobRepository, TaskRepository } from '@mymind/db';
-import type { JobKind } from '@mymind/domain';
+import { dayOrdinalSince, type JobKind, previousDays, statusSinceDay } from '@mymind/domain';
 import type { AgentLog, AgentLogRecord } from './agentLog';
 import type { EventBus } from './events';
 import type { Logger } from './logger';
@@ -45,7 +47,7 @@ export function createJobRunner(deps: JobRunnerDeps) {
     if (job !== undefined) events.publish({ type: 'job.updated', job });
   };
 
-  /** その日の計画から、日次 FB の入力を作る。件数はここで数える（FR-A10） */
+  /** その日の計画と直近の日から、日次 FB の元のデータを集める。件数と日数はここで数える（FR-A10） */
   const dailyData = (day: string): DailyFeedbackData => {
     const plan = deps.tasks.listPlan(day);
     const parentIds = [...new Set(plan.flatMap((t) => (t.parentId === null ? [] : [t.parentId])))];
@@ -57,6 +59,8 @@ export function createJobRunner(deps: JobRunnerDeps) {
         title: t.title,
         status: t.status,
         parentTitle: t.parentId === null ? null : (parents.get(t.parentId) ?? null),
+        // 作成のイベントは必ずあるので、見つからないのはその日に作られた場合と同じに扱う
+        statusDays: dayOrdinalSince(statusSinceDay(deps.tasks.listEvents(t.id)) ?? day, day),
       })),
       counts: {
         planned: plan.length,
@@ -65,6 +69,24 @@ export function createJobRunner(deps: JobRunnerDeps) {
         paused: count('paused'),
         waiting: count('waiting'),
       },
+      // 振り返りのテーブル（daily_logs）は、振り返りの画面の issue で作る
+      reflection: null,
+      recent: previousDays(day, RECENT_DAYS).map(recentDay),
+    };
+  };
+
+  /** 直近の1日：調子（手動の値を優先）、最新の FB の「明日の一手」、空白日かどうか */
+  const recentDay = (day: string): DailyFeedbackData['recent'][number] => {
+    const condition = jobs.findCondition(day);
+    const latest = jobs.listFeedbacks('daily', day)[0];
+    const content = dailyFeedbackSchema.safeParse(latest?.content);
+    return {
+      day,
+      level: condition?.userLevel ?? condition?.aiLevel ?? null,
+      nextAction: content.success ? content.data.next_action : null,
+      // 計画も調子も FB もない日は、アプリを開かなかった日（空白日、architecture.md 4.5）
+      isBlank:
+        deps.tasks.listPlan(day).length === 0 && condition === undefined && latest === undefined,
     };
   };
 
@@ -76,7 +98,8 @@ export function createJobRunner(deps: JobRunnerDeps) {
     }
     const controller = new AbortController();
     controllers.set(job.id, controller);
-    const input = buildDailyFeedbackInput(deps.prompt.text, dailyData(job.period));
+    const agentInput = buildDailyFeedbackInput(deps.prompt.text, dailyData(job.period));
+    const input = agentInput.text;
     const attempts: AgentLogRecord['attempts'] = [];
     try {
       let lastError = '';
@@ -126,13 +149,17 @@ export function createJobRunner(deps: JobRunnerDeps) {
       jobs.fail(job.id, `エージェントの出力の形式が正しくありませんでした（${lastError}）`, iso());
     } finally {
       controllers.delete(job.id);
-      recordAgentLog(job, input, attempts);
+      recordAgentLog(job, agentInput, attempts);
       publish(job.id);
     }
   };
 
   /** 入出力の全文をローカルのログに残し、期間を過ぎたログを消す。失敗の理由はロガーにも出す（本文は出さない） */
-  const recordAgentLog = (job: Job, input: string, attempts: AgentLogRecord['attempts']) => {
+  const recordAgentLog = (
+    job: Job,
+    input: { text: string; annotations: AgentLogRecord['annotations']; charCount: number },
+    attempts: AgentLogRecord['attempts'],
+  ) => {
     const finished = jobs.find(job.id);
     if (finished?.status === 'failed') {
       deps.logger?.warn('FB の生成に失敗しました', {
@@ -149,7 +176,9 @@ export function createJobRunner(deps: JobRunnerDeps) {
         period: job.period,
         agent: deps.runner.name,
         promptVersion: deps.prompt.version,
-        input,
+        input: input.text,
+        annotations: input.annotations,
+        charCount: input.charCount,
         attempts,
         status: finished?.status ?? 'unknown',
         finishedAt: iso(),
