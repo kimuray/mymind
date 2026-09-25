@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs';
+import { chmodSync, existsSync } from 'node:fs';
 import type { DatabaseSync } from 'node:sqlite';
 
 export type SnapshotError = { kind: 'destination_exists'; path: string };
@@ -16,5 +16,7 @@ export function writeSnapshot(
     return { ok: false, error: { kind: 'destination_exists', path: destinationPath } };
   }
   client.prepare('VACUUM INTO ?').run(destinationPath);
+  // スナップショットも DB と同じ機微データを含むので、本人だけが読めるようにする（ADR-0009）
+  chmodSync(destinationPath, 0o600);
   return { ok: true };
 }
