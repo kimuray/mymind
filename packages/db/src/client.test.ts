@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { cpSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { eq } from 'drizzle-orm';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { itemEvents, items } from '../fixtures/migration-check/schema';
-import { type Database, openDatabase } from './client';
+import { type Database, openDatabase, pendingMigrations } from './client';
 import { writeSnapshot } from './snapshot';
 
 const migrationsFolder = fileURLToPath(
@@ -142,5 +142,70 @@ describe('NFR-04 スナップショット', () => {
       ok: false,
       error: { kind: 'destination_exists', path: destination },
     });
+  });
+});
+
+describe('NFR-04 マイグレーションの前のスナップショット', () => {
+  /** fixture のマイグレーションを写し、あとから1つ足せるようにする */
+  const copyMigrations = () => {
+    const folder = join(dir, 'migrations');
+    cpSync(migrationsFolder, folder, { recursive: true });
+    return folder;
+  };
+  const addMigration = (folder: string) => {
+    const next = join(folder, '20991231000000_add_note');
+    mkdirSync(next);
+    writeFileSync(join(next, 'migration.sql'), 'ALTER TABLE `items` ADD `note` text;');
+  };
+
+  it('新しく作った DB では呼ばない', () => {
+    const calls: string[][] = [];
+    openDatabase({
+      path: join(dir, 'mymind.db'),
+      migrationsFolder,
+      beforeMigrate: ({ pending }) => calls.push(pending),
+    }).$client.close();
+    expect(calls).toEqual([]);
+  });
+
+  it('すべて適用済みなら呼ばない', () => {
+    const path = join(dir, 'mymind.db');
+    openDatabase({ path, migrationsFolder }).$client.close();
+    const calls: string[][] = [];
+    openDatabase({
+      path,
+      migrationsFolder,
+      beforeMigrate: ({ pending }) => calls.push(pending),
+    }).$client.close();
+    expect(calls).toEqual([]);
+  });
+
+  it('既存の DB に未適用のマイグレーションがあれば、適用の前に名前を渡して呼ぶ', () => {
+    const path = join(dir, 'mymind.db');
+    const folder = copyMigrations();
+    const first = openDatabase({ path, migrationsFolder: folder });
+    first.insert(items).values({ id: 'a', title: '残したいデータ', status: 'todo' }).run();
+    first.$client.close();
+    addMigration(folder);
+
+    const snapshot = join(dir, 'before.db');
+    const pendingSeen: string[][] = [];
+    const db = openDatabase({
+      path,
+      migrationsFolder: folder,
+      beforeMigrate: ({ client, pending }) => {
+        pendingSeen.push(pending);
+        writeSnapshot(client, snapshot);
+      },
+    });
+    opened.push(db);
+    expect(pendingSeen).toEqual([['20991231000000_add_note']]);
+    // スナップショットは適用の前の形（note の列がない）で、データを含む
+    const before = new DatabaseSync(snapshot, { readOnly: true });
+    expect(before.prepare('SELECT * FROM items').all()).toEqual([
+      { id: 'a', title: '残したいデータ', status: 'todo' },
+    ]);
+    before.close();
+    expect(pendingMigrations(db.$client, folder)).toEqual([]);
   });
 });

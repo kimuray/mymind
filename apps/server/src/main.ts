@@ -1,8 +1,8 @@
-import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createTaskRepository, MIGRATIONS_FOLDER, openDatabase, plainCodec } from '@mymind/db';
 import { createApi } from './api';
 import { createApp } from './app';
+import { databasePath, snapshotBeforeMigration } from './backups';
 import { type ConfigError, loadConfig } from './config';
 import { acquireLock, ensureDataDir, issueSessionToken } from './dataDir';
 import { listen } from './listen';
@@ -45,8 +45,15 @@ async function main(): Promise<number> {
 
   const sessionToken = issueSessionToken(dataDir);
   const db = openDatabase({
-    path: join(dataDir, 'mymind.db'),
+    path: databasePath(dataDir),
     migrationsFolder: MIGRATIONS_FOLDER,
+    // 未適用のマイグレーションがあれば、適用の前にスナップショットを取る（NFR-04。戻し方は docs/operations.md）
+    beforeMigrate: ({ client, pending }) => {
+      const path = snapshotBeforeMigration(dataDir, client, new Date());
+      process.stdout.write(
+        `マイグレーション（${pending.join(', ')}）の前にバックアップしました: ${path}\n`,
+      );
+    },
   });
   const newId = createUlidGenerator(() => Date.now());
   const api = createApi({
