@@ -1,3 +1,4 @@
+import { chmodSync, existsSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { fileURLToPath } from 'node:url';
 import { readMigrationFiles } from 'drizzle-orm/migrator';
@@ -29,10 +30,6 @@ export type OpenDatabaseOptions = {
 
 const DEFAULT_BUSY_TIMEOUT_MS = 5000;
 
-/**
- * DB を開き、接続ごとの PRAGMA を設定してからマイグレーションを適用する（ADR-0006）。
- * 開けない・適用できない状態からは復旧できないので、失敗は例外のまま起動を止める。
- */
 /** Drizzle が適用済みのマイグレーションを記録する表 */
 const MIGRATIONS_TABLE = '__drizzle_migrations';
 
@@ -58,6 +55,10 @@ export function pendingMigrations(client: DatabaseSync, migrationsFolder: string
     .filter((name) => !applied.has(name));
 }
 
+/**
+ * DB を開き、接続ごとの PRAGMA を設定してからマイグレーションを適用する（ADR-0006）。
+ * 開けない・適用できない状態からは復旧できないので、失敗は例外のまま起動を止める。
+ */
 export function openDatabase(options: OpenDatabaseOptions): Database {
   const client = new DatabaseSync(options.path, {
     timeout: options.busyTimeoutMs ?? DEFAULT_BUSY_TIMEOUT_MS,
@@ -74,5 +75,18 @@ export function openDatabase(options: OpenDatabaseOptions): Database {
     options.beforeMigrate({ client, pending });
   }
   migrate(db, { migrationsFolder: options.migrationsFolder });
+  // WAL の -wal と -shm は最初の書き込み（マイグレーション）で作られるので、その後で直す
+  restrictFileMode(options.path);
   return db;
+}
+
+/**
+ * DB のファイルを本人だけが読み書きできるようにする（ADR-0009：DB は 600）。
+ * WAL の -wal と -shm も同じ内容を含むので、合わせて直す。
+ */
+function restrictFileMode(path: string) {
+  if (path === ':memory:' || path.startsWith('file:')) return;
+  for (const file of [path, `${path}-wal`, `${path}-shm`]) {
+    if (existsSync(file)) chmodSync(file, 0o600);
+  }
 }
