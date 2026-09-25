@@ -21,6 +21,8 @@
     "screenshots": "node scripts/screenshots.mjs",
     "check": "pnpm lint && pnpm typecheck && pnpm deps:check && pnpm design:check && pnpm docs:check && pnpm test",
     "doctor": "node scripts/doctor.mjs",
+    "update-app": "node scripts/update-app.mjs",
+    "restore-backup": "tsx apps/server/src/restoreCli.ts",
     "start": "pnpm --filter @mymind/server start",
     "docs:build": "node scripts/docs-build.mjs",
     "docs:check": "node scripts/docs-build.mjs --check",
