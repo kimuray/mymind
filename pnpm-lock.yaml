@@ -38,6 +38,9 @@ importers:
       '@hono/node-server':
         specifier: ^2.1.1
         version: 2.1.1(hono@4.13.8)
+      '@mymind/agent':
+        specifier: workspace:*
+        version: link:../../packages/agent
       '@mymind/db':
         specifier: workspace:*
         version: link:../../packages/db
