@@ -1,3 +1,4 @@
+import { chmodSync, existsSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { fileURLToPath } from 'node:url';
 import { drizzle, type NodeSQLiteDatabase } from 'drizzle-orm/node-sqlite';
@@ -39,5 +40,18 @@ export function openDatabase(options: OpenDatabaseOptions): Database {
 
   const db = drizzle({ client });
   migrate(db, { migrationsFolder: options.migrationsFolder });
+  // WAL の -wal と -shm は最初の書き込み（マイグレーション）で作られるので、その後で直す
+  restrictFileMode(options.path);
   return db;
+}
+
+/**
+ * DB のファイルを本人だけが読み書きできるようにする（ADR-0009：DB は 600）。
+ * WAL の -wal と -shm も同じ内容を含むので、合わせて直す。
+ */
+function restrictFileMode(path: string) {
+  if (path === ':memory:' || path.startsWith('file:')) return;
+  for (const file of [path, `${path}-wal`, `${path}-shm`]) {
+    if (existsSync(file)) chmodSync(file, 0o600);
+  }
 }

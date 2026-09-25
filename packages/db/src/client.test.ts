@@ -1,4 +1,4 @@
-import { mkdtempSync, rmSync } from 'node:fs';
+import { existsSync, mkdtempSync, rmSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
@@ -142,5 +142,25 @@ describe('NFR-04 スナップショット', () => {
       ok: false,
       error: { kind: 'destination_exists', path: destination },
     });
+  });
+});
+
+describe('NFR-16 ファイルのパーミッション', () => {
+  const mode = (path: string) => statSync(path).mode & 0o777;
+
+  it('DB と WAL のファイルを、本人だけが読み書きできるようにする', () => {
+    const path = join(dir, 'mymind.db');
+    open(path);
+    expect(mode(path)).toBe(0o600);
+    for (const suffix of ['-wal', '-shm']) {
+      if (existsSync(path + suffix)) expect(mode(path + suffix)).toBe(0o600);
+    }
+  });
+
+  it('スナップショットも本人だけが読めるようにする', () => {
+    const db = open(join(dir, 'mymind.db'));
+    const destination = join(dir, 'snapshot.db');
+    writeSnapshot(db.$client, destination);
+    expect(mode(destination)).toBe(0o600);
   });
 });
