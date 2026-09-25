@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import {
   type AgentRunner,
   createFakeAgentRunner,
+  detectAgent,
   readPromptVersion,
   unavailableRunner,
 } from '@mymind/agent';
@@ -17,7 +18,7 @@ import {
 import { createAgentLog } from './agentLog';
 import { createApi } from './api';
 import { createApp } from './app';
-import { databasePath, snapshotBeforeMigration } from './backups';
+import { backupsDir, databasePath, snapshotBeforeMigration } from './backups';
 import { type ConfigError, loadConfig } from './config';
 import { acquireLock, ensureDataDir, issueSessionToken } from './dataDir';
 import { createEventBus } from './events';
@@ -114,6 +115,20 @@ async function main(): Promise<number> {
     dayOptions: DAY_OPTIONS,
     newId,
     jobs: { runner: jobRunner, jobs, events },
+    health: {
+      checkDatabase: () => {
+        try {
+          db.$client.prepare('SELECT 1').get();
+          return { ok: true };
+        } catch (e) {
+          return { ok: false, message: e instanceof Error ? e.message : String(e) };
+        }
+      },
+      databaseFiles: ['', '-wal', '-shm'].map((suffix) => databasePath(dataDir) + suffix),
+      backupsDir: backupsDir(dataDir),
+      jobs,
+      agentStatus: () => detectAgent(agent.name),
+    },
   });
   const web = createWebRoutes({ distDir: WEB_DIST, sessionToken });
   const app = createApp({ ports: [port, ...devPorts], sessionToken }, api, web);

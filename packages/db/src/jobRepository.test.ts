@@ -152,3 +152,22 @@ describe('FR-A08 失敗とキャンセル', () => {
     expect(jobs.find('j2')?.status).toBe('queued');
   });
 });
+
+describe('NFR-21 直近の失敗', () => {
+  it('失敗がなければ undefined', () => {
+    createJob('j1');
+    jobs.claimNext(at(1));
+    jobs.succeed(success('j1'));
+    expect(jobs.latestFailure()).toBeUndefined();
+  });
+
+  it('いちばん新しく終わった失敗を返す', () => {
+    createJob('j1');
+    createJob('j2');
+    jobs.claimNext(at(1));
+    jobs.fail('j1', '古い失敗', at(3));
+    jobs.claimNext(at(4));
+    jobs.fail('j2', '新しい失敗', at(7));
+    expect(jobs.latestFailure()).toMatchObject({ id: 'j2', error: '新しい失敗' });
+  });
+});

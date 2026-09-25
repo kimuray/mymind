@@ -1,3 +1,4 @@
+export * from './detect';
 export * from './fake';
 export * from './input';
 export * from './pipeline';
