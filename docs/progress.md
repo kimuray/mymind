@@ -18,3 +18,4 @@
 | 2026-09-24 | #30 | なし（ローカルの feat/30-today-backlog-ui、#50 の上） | 今日とバックログの画面（Figma に沿う）、StatusIcon・バッジ・詳細ペイン・状態の履歴・提案、楽観的更新、Hono RPC の型共有。API に一覧の日数・親子の情報と履歴を追加。e2e/today.spec の1件目を有効化 | スクリーンショットは .data/screenshots/。次は #31 |
 | 2026-09-24 | #31 | なし（ローカルの feat/31-keyboard、#30 の上） | キーマップの定義と全体で1つのキーの受け口、J/K・Space・P・W・X・T・B・E・N・Tab・⌘↑↓・G→各画面。親の付け替えと並べ替えを PATCH に追加。E2E 6件 | 楽観的更新で version も上げる（連続操作の 409 を防ぐ）。E2E は MYMIND_E2E_PORT でポートを変えられる |
 | 2026-09-24 | #25 | なし（ローカルの feat/25-screenshots、#31 の上） | pnpm screenshots（一時的なデータディレクトリで本番ビルドを起動し、見本を入れて全画面を 1440×900 で撮る）。AGENTS.md に Figma と並べる手順、design/README に node-id | Chromium はサンドボックスの中では起動しない（#15）。Playwright MCP の設定は見送り |
+| 2026-09-25 | #16 | 下記の PR | domain に持ち越しの基準日・空白日数・持ち越し候補・状態の区間（空白日で途切れない） | API は朝の計画の画面の issue で |
