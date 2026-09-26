@@ -1,5 +1,11 @@
 import type { Status } from '@mymind/domain';
-import { type Annotation, runPipeline, type Stage, serializePayload } from './pipeline';
+import {
+  type Annotation,
+  hashPayload,
+  runPipeline,
+  type Stage,
+  serializePayload,
+} from './pipeline';
 
 /** プロンプトの先頭のコメントからバージョンを読む（`<!-- prompt_version: 0.1.0 (draft) -->`） */
 export function readPromptVersion(prompt: string): string | null {
@@ -160,6 +166,8 @@ export type AgentInput<P> = {
   annotations: Annotation[];
   /** payload の文字数 */
   charCount: number;
+  /** payload のハッシュ（プレビューと依頼の突き合わせに使う。FR-A12） */
+  payloadHash: string;
 };
 
 /**
@@ -185,5 +193,6 @@ export function buildDailyFeedbackInput(
     payload,
     annotations: result.annotations,
     charCount: json.length,
+    payloadHash: hashPayload(payload),
   };
 }

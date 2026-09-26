@@ -10,11 +10,20 @@ export type JobsApiDeps = { runner: JobRunner; jobs: JobRepository; events: Even
 
 const dayParam = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD の形式で指定してください');
 
+const inputTarget = { kind: z.literal('daily_feedback'), period: dayParam };
+
 /** FB の依頼（FR-A01、FR-A05）。過去の日の FB も依頼できるので、業務日の一致は求めない */
 const createJobBody = z.strictObject({
-  kind: z.literal('daily_feedback'),
-  period: dayParam,
+  ...inputTarget,
+  /** 送信内容のプレビュー（FR-A12）を見てから依頼したときの、確認した入力のハッシュ */
+  payloadHash: z
+    .string()
+    .regex(/^sha256:[0-9a-f]{64}$/, 'sha256:（16進数64桁）の形式で指定してください')
+    .optional(),
 });
+
+/** 送信内容のプレビュー（FR-A12） */
+const previewBody = z.strictObject(inputTarget);
 
 const feedbackQuery = z.strictObject({ scope: z.literal('daily'), period: dayParam });
 
@@ -41,10 +50,46 @@ export function createJobsApi({ runner, jobs, events }: JobsApiDeps) {
         return parsed.success ? parsed.data : c.json(invalid(parsed.error.issues), 400);
       }),
       (c) => {
-        const { kind, period } = c.req.valid('json');
+        const { kind, period, payloadHash } = c.req.valid('json');
+        if (payloadHash !== undefined) {
+          // 依頼の時点で入力を作り直し、確認した後に振り返りやタスクが変わっていたら送らない（architecture.md 12.5）
+          const built = runner.buildInput(kind, period);
+          if (built.ok && built.input.payloadHash !== payloadHash) {
+            return c.json(
+              {
+                error: {
+                  code: 'PREVIEW_STALE' as const,
+                  message: '確認した後に送信内容が変わりました。もう一度確認してください',
+                },
+              },
+              409,
+            );
+          }
+        }
         const { job } = runner.enqueue(kind, period);
         // 生成は非同期で進むので、すぐにジョブを返す。進み具合は GET /api/events で知らせる
         return c.json({ job }, 202);
+      },
+    )
+
+    .post(
+      '/agent-input/preview',
+      validator('json', (value, c) => {
+        const parsed = previewBody.safeParse(value);
+        return parsed.success ? parsed.data : c.json(invalid(parsed.error.issues), 400);
+      }),
+      (c) => {
+        const { kind, period } = c.req.valid('json');
+        const built = runner.buildInput(kind, period);
+        if (!built.ok) {
+          return c.json(
+            { error: { code: 'INVALID_REQUEST' as const, message: built.message, issues: [] } },
+            400,
+          );
+        }
+        // 全文（プロンプトを含む text）は返さない。利用者が確かめるのは送るデータ（<data> の中身）
+        const { payload, annotations, charCount, payloadHash } = built.input;
+        return c.json({ payload, annotations, charCount, payloadHash }, 200);
       },
     )
 

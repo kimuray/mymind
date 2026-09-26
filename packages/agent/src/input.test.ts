@@ -188,3 +188,32 @@ describe('NFR-15 送信前処理の段階', () => {
     );
   });
 });
+
+describe('FR-A12 送る入力のハッシュ', () => {
+  it('同じデータからは同じハッシュになり、sha256: で始まる', () => {
+    const a = buildDailyFeedbackInput('プロンプト', data);
+    const b = buildDailyFeedbackInput('プロンプト', structuredClone(data));
+    expect(a.payloadHash).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(b.payloadHash).toBe(a.payloadHash);
+  });
+
+  it('送る内容が1文字でも変わるとハッシュが変わる', () => {
+    const changed = { ...data, tasks: [{ ...data.tasks[0], title: '企画書を書いた' }] };
+    expect(
+      buildDailyFeedbackInput('プロンプト', changed as DailyFeedbackData).payloadHash,
+    ).not.toBe(buildDailyFeedbackInput('プロンプト', data).payloadHash);
+  });
+
+  it('送らない項目（ID など）が変わってもハッシュは変わらない', () => {
+    const withId = { ...data, tasks: data.tasks.map((t) => ({ ...t, id: 'task-1' })) };
+    expect(buildDailyFeedbackInput('プロンプト', withId).payloadHash).toBe(
+      buildDailyFeedbackInput('プロンプト', data).payloadHash,
+    );
+  });
+
+  it('プロンプトが変わってもハッシュは変わらない（利用者が確認するのは送るデータ）', () => {
+    expect(buildDailyFeedbackInput('別のプロンプト', data).payloadHash).toBe(
+      buildDailyFeedbackInput('プロンプト', data).payloadHash,
+    );
+  });
+});

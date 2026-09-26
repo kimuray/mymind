@@ -1,14 +1,7 @@
-import {
-  type AgentRunner,
-  buildDailyFeedbackInput,
-  type DailyFeedbackData,
-  dailyFeedbackSchema,
-  parseDailyFeedback,
-  RECENT_DAYS,
-  withTimeout,
-} from '@mymind/agent';
+import { type AgentRunner, parseDailyFeedback, withTimeout } from '@mymind/agent';
 import type { Job, JobRepository, TaskRepository } from '@mymind/db';
-import { dayOrdinalSince, type JobKind, previousDays, statusSinceDay } from '@mymind/domain';
+import type { JobKind } from '@mymind/domain';
+import { type BuildInputResult, createAgentInputBuilder } from './agentInput';
 import type { AgentLog, AgentLogRecord } from './agentLog';
 import type { EventBus } from './events';
 import type { Logger } from './logger';
@@ -39,6 +32,11 @@ export type CancelResult = { ok: true; job: Job } | { ok: false; reason: 'not_fo
 export function createJobRunner(deps: JobRunnerDeps) {
   const { jobs, events } = deps;
   const controllers = new Map<string, AbortController>();
+  const inputs = createAgentInputBuilder({
+    tasks: deps.tasks,
+    jobs,
+    promptText: deps.prompt.text,
+  });
   let loop: Promise<void> | null = null;
 
   const iso = () => deps.now().toISOString();
@@ -47,58 +45,16 @@ export function createJobRunner(deps: JobRunnerDeps) {
     if (job !== undefined) events.publish({ type: 'job.updated', job });
   };
 
-  /** その日の計画と直近の日から、日次 FB の元のデータを集める。件数と日数はここで数える（FR-A10） */
-  const dailyData = (day: string): DailyFeedbackData => {
-    const plan = deps.tasks.listPlan(day);
-    const parentIds = [...new Set(plan.flatMap((t) => (t.parentId === null ? [] : [t.parentId])))];
-    const parents = new Map(deps.tasks.findMany(parentIds).map((p) => [p.id, p.title]));
-    const count = (s: string) => plan.filter((t) => t.status === s).length;
-    return {
-      day,
-      tasks: plan.map((t) => ({
-        title: t.title,
-        status: t.status,
-        parentTitle: t.parentId === null ? null : (parents.get(t.parentId) ?? null),
-        // 作成のイベントは必ずあるので、見つからないのはその日に作られた場合と同じに扱う
-        statusDays: dayOrdinalSince(statusSinceDay(deps.tasks.listEvents(t.id)) ?? day, day),
-      })),
-      counts: {
-        planned: plan.length,
-        done: count('done'),
-        doing: count('doing'),
-        paused: count('paused'),
-        waiting: count('waiting'),
-      },
-      // 振り返りのテーブル（daily_logs）は、振り返りの画面の issue で作る
-      reflection: null,
-      recent: previousDays(day, RECENT_DAYS).map(recentDay),
-    };
-  };
-
-  /** 直近の1日：調子（手動の値を優先）、最新の FB の「明日の一手」、空白日かどうか */
-  const recentDay = (day: string): DailyFeedbackData['recent'][number] => {
-    const condition = jobs.findCondition(day);
-    const latest = jobs.listFeedbacks('daily', day)[0];
-    const content = dailyFeedbackSchema.safeParse(latest?.content);
-    return {
-      day,
-      level: condition?.userLevel ?? condition?.aiLevel ?? null,
-      nextAction: content.success ? content.data.next_action : null,
-      // 計画も調子も FB もない日は、アプリを開かなかった日（空白日、architecture.md 4.5）
-      isBlank:
-        deps.tasks.listPlan(day).length === 0 && condition === undefined && latest === undefined,
-    };
-  };
-
   /** 1件を実行する。形式が違えば1回だけ再試行する（architecture.md 7.1） */
   const execute = async (job: Job) => {
-    if (job.kind !== 'daily_feedback') {
-      jobs.fail(job.id, '月次総括はまだ依頼できません', iso());
+    const built = inputs.build(job.kind, job.period);
+    if (!built.ok) {
+      jobs.fail(job.id, built.message, iso());
       return;
     }
     const controller = new AbortController();
     controllers.set(job.id, controller);
-    const agentInput = buildDailyFeedbackInput(deps.prompt.text, dailyData(job.period));
+    const agentInput = built.input;
     const input = agentInput.text;
     const attempts: AgentLogRecord['attempts'] = [];
     try {
@@ -229,6 +185,13 @@ export function createJobRunner(deps: JobRunnerDeps) {
       publish(job.id);
       kick();
       return { job, created: true };
+    },
+
+    /**
+     * 送る入力を今のデータで組み立てる（FR-A12 の送信内容のプレビュー）。実行のときと同じ関数を使う
+     */
+    buildInput(kind: JobKind, period: string): BuildInputResult {
+      return inputs.build(kind, period);
     },
 
     /** 待機中なら取り消し、実行中ならエージェントを止める（FR-A08） */

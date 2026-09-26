@@ -10,6 +10,7 @@ import {
 } from '@mymind/agent';
 import {
   createJobRepository,
+  createSettingsRepository,
   createTaskRepository,
   MIGRATIONS_FOLDER,
   openDatabase,
@@ -129,6 +130,7 @@ async function main(): Promise<number> {
       jobs,
       agentStatus: () => detectAgent(agent.name),
     },
+    settings: createSettingsRepository({ db }),
   });
   const web = createWebRoutes({ distDir: WEB_DIST, sessionToken });
   const app = createApp({ ports: [port, ...devPorts], sessionToken }, api, web);
