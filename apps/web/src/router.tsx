@@ -1,6 +1,7 @@
 import { createRootRoute, createRoute, createRouter } from '@tanstack/react-router';
 import { AppShell } from './components/AppShell';
 import { BacklogPage } from './pages/BacklogPage';
+import { SettingsPage } from './pages/SettingsPage';
 import { TodayPage } from './pages/TodayPage';
 import {
   CalendarPage,
@@ -50,6 +51,11 @@ const calendarRoute = createRoute({
     return <CalendarPage ym={ym} day={day} />;
   },
 });
+const settingsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/settings',
+  component: SettingsPage,
+});
 const mameRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/dev/mame',
@@ -63,6 +69,7 @@ const routeTree = rootRoute.addChildren([
   backlogRoute,
   timelineRoute,
   calendarRoute,
+  settingsRoute,
   mameRoute,
 ]);
 
