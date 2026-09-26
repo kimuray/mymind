@@ -46,6 +46,13 @@ beforeEach(() => {
     dayOptions: { timeZone: 'Asia/Tokyo', dayStartHour: 5 },
     newId,
     jobs: { runner, jobs, events },
+    health: {
+      checkDatabase: () => ({ ok: true }),
+      databaseFiles: [],
+      backupsDir: '/nonexistent',
+      jobs,
+      agentStatus: async () => ({ name: 'fake', usable: true, executable: null, message: null }),
+    },
   });
   app = createApp({ ports: [PORT], sessionToken: TOKEN }, api);
 });

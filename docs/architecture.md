@@ -222,6 +222,7 @@ CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 | キャンセル | `POST /api/jobs/:id/cancel` | |
 | FBの取得 | `GET /api/feedbacks?scope=&period=` | 履歴を新しい順に返す |
 | 設定 | `GET /api/settings`、`PATCH /api/settings` | |
+| 状態 | `GET /api/health` | `status`（`ok` / `degraded`）、DB（問い合わせの可否とファイルの合計サイズ）、エージェント（使えるか、実行ファイルの有無とバージョン、理由）、最後のバックアップ、直近の FB 生成の失敗。DB に問い合わせられなければ 503（NFR-21） |
 
 ## 7. エージェント連携
 

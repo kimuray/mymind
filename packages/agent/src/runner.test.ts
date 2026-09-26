@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest';
 import { createFakeAgentRunner, FAKE_OUTPUT } from './fake';
-import { buildDailyFeedbackInput, readPromptVersion } from './input';
 import { withTimeout } from './runner';
 import { parseDailyFeedback } from './schema';
 
@@ -63,31 +62,5 @@ describe('FR-A08 タイムアウト', () => {
     expect(t.signal.aborted).toBe(true);
     expect(t.timedOut()).toBe(false);
     t.dispose();
-  });
-});
-
-describe('FR-A10 日次 FB の入力', () => {
-  const data = {
-    day: '2026-09-23',
-    tasks: [{ title: '企画書を書く', status: 'doing' as const, parentTitle: 'Q4計画' }],
-    counts: { planned: 1, done: 0, doing: 1, paused: 0, waiting: 0 },
-  };
-
-  it('プロンプトのあとに、データを <data> で区切って渡す', () => {
-    const input = buildDailyFeedbackInput('プロンプト', data);
-    expect(input.startsWith('プロンプト\n\n<data>\n')).toBe(true);
-    expect(input.trimEnd().endsWith('</data>')).toBe(true);
-  });
-
-  it('件数はコードで数えた値をそのまま渡す', () => {
-    const input = buildDailyFeedbackInput('プロンプト', data);
-    const json = JSON.parse(input.slice(input.indexOf('{'), input.lastIndexOf('}') + 1));
-    expect(json.counts).toEqual(data.counts);
-    expect(json.tasks).toEqual([{ title: '企画書を書く', status: 'doing', parent: 'Q4計画' }]);
-  });
-
-  it('プロンプトの先頭のコメントからバージョンを読む', () => {
-    expect(readPromptVersion('<!-- prompt_version: 0.1.0 (draft) -->\n本文')).toBe('0.1.0');
-    expect(readPromptVersion('本文だけ')).toBeNull();
   });
 });

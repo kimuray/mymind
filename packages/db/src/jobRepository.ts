@@ -169,6 +169,16 @@ export function createJobRepository({ db, codec }: { db: Database; codec: Sensit
       });
     },
 
+    /** 直近に失敗したジョブ（NFR-21：設定画面と /api/health で見せる）。なければ undefined */
+    latestFailure(): Job | undefined {
+      return db
+        .select()
+        .from(agentJobs)
+        .where(eq(agentJobs.status, 'failed'))
+        .orderBy(desc(agentJobs.finishedAt), desc(agentJobs.id))
+        .get();
+    },
+
     /** FB の履歴を新しい順に返す（FR-A04） */
     listFeedbacks(scope: 'daily' | 'monthly', period: string): Feedback[] {
       return db
