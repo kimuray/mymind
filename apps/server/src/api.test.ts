@@ -1,5 +1,6 @@
 import { createFakeAgentRunner } from '@mymind/agent';
 import {
+  createDailyLogRepository,
   createJobRepository,
   createSettingsRepository,
   createTaskRepository,
@@ -34,6 +35,7 @@ beforeEach(() => {
   const runner = createJobRunner({
     jobs,
     tasks,
+    logs: createDailyLogRepository({ db, codec: plainCodec }),
     runner: createFakeAgentRunner(),
     events,
     prompt: { text: 'プロンプト', version: '0.1.0' },
@@ -55,6 +57,7 @@ beforeEach(() => {
       agentStatus: async () => ({ name: 'fake', usable: true, executable: null, message: null }),
     },
     settings: createSettingsRepository({ db }),
+    logs: createDailyLogRepository({ db, codec: plainCodec }),
   });
   app = createApp({ ports: [PORT], sessionToken: TOKEN }, api);
 });
@@ -460,5 +463,105 @@ describe('FR-T10 並べ替え', () => {
     const b = await addTask({ title: 'B' });
     await patch(b, { order: { in: 'backlog', value: 0.5 } });
     expect(await backlogIds()).toEqual([b.id, a.id]);
+  });
+});
+
+describe('FR-D06 FR-D08 振り返りの保存', () => {
+  type LogJson = { day: string; thoughtsMd: string; learningMd: string; updatedAt: string };
+  const readLog = async (day: string) => {
+    const res = await get(`/days/${day}`);
+    expect(res.status).toBe(200);
+    return ((await res.json()) as { log: LogJson | null }).log;
+  };
+
+  it('保存していない日の log は null', async () => {
+    expect(await readLog(TODAY)).toBeNull();
+  });
+
+  it('保存した振り返りが、その日の GET で返る', async () => {
+    const res = await send('PUT', `/days/${TODAY}/log`, {
+      thoughtsMd: '# 考えたこと\n- 企画書が進んだ',
+      learningMd: '先に骨子を書くと速い',
+    });
+    expect(res.status).toBe(200);
+    expect(await readLog(TODAY)).toEqual({
+      day: TODAY,
+      thoughtsMd: '# 考えたこと\n- 企画書が進んだ',
+      learningMd: '先に骨子を書くと速い',
+      planConfirmedAt: null,
+      updatedAt: now.toISOString(),
+    });
+  });
+
+  it('一行だけ、片方の欄だけでも保存できる', async () => {
+    const res = await send('PUT', `/days/${TODAY}/log`, { thoughtsMd: '疲れた', learningMd: '' });
+    expect(res.status).toBe(200);
+    expect(await readLog(TODAY)).toMatchObject({ thoughtsMd: '疲れた', learningMd: '' });
+  });
+
+  it('同じ日に保存し直すと上書きする', async () => {
+    await send('PUT', `/days/${TODAY}/log`, { thoughtsMd: '前', learningMd: '前' });
+    now = new Date('2026-09-23T02:00:00.000Z');
+    await send('PUT', `/days/${TODAY}/log`, { thoughtsMd: '後', learningMd: '' });
+    expect(await readLog(TODAY)).toMatchObject({
+      thoughtsMd: '後',
+      learningMd: '',
+      updatedAt: '2026-09-23T02:00:00.000Z',
+    });
+  });
+
+  it('過去の日の振り返りも保存できる', async () => {
+    const res = await send('PUT', '/days/2026-09-20/log', {
+      thoughtsMd: 'あとから',
+      learningMd: '',
+    });
+    expect(res.status).toBe(200);
+    expect(await readLog('2026-09-20')).toMatchObject({ thoughtsMd: 'あとから' });
+  });
+
+  it('業務日の切り替え時刻の前なら、暦の上では翌日でも前日の振り返りとして保存できる', async () => {
+    // 2026-09-24 04:59（日本時間）は、業務日ではまだ 2026-09-23
+    now = new Date('2026-09-23T19:59:00.000Z');
+    expect(
+      (await send('PUT', `/days/${TOMORROW}/log`, { thoughtsMd: 'a', learningMd: '' })).status,
+    ).toBe(400);
+    expect(
+      (await send('PUT', `/days/${TODAY}/log`, { thoughtsMd: 'a', learningMd: '' })).status,
+    ).toBe(200);
+    // 05:00 を過ぎると 2026-09-24 に書ける
+    now = new Date('2026-09-23T20:00:00.000Z');
+    expect(
+      (await send('PUT', `/days/${TOMORROW}/log`, { thoughtsMd: 'a', learningMd: '' })).status,
+    ).toBe(200);
+  });
+
+  it('まだ来ていない日の振り返りは 400 で拒否する', async () => {
+    const res = await send('PUT', `/days/${TOMORROW}/log`, { thoughtsMd: 'a', learningMd: '' });
+    expect(res.status).toBe(400);
+    expect(await readLog(TOMORROW)).toBeNull();
+  });
+
+  it('業務日の形式が不正なら 400', async () => {
+    const res = await send('PUT', '/days/today/log', { thoughtsMd: 'a', learningMd: '' });
+    expect(res.status).toBe(400);
+  });
+
+  it('欄が足りない、または余計な項目がある本文は 400', async () => {
+    expect((await send('PUT', `/days/${TODAY}/log`, { thoughtsMd: 'a' })).status).toBe(400);
+    expect(
+      (await send('PUT', `/days/${TODAY}/log`, { thoughtsMd: 'a', learningMd: '', extra: 1 }))
+        .status,
+    ).toBe(400);
+  });
+
+  it('トークンのない保存は 403 で拒否する', async () => {
+    const { [TOKEN_HEADER]: _, ...noToken } = headers;
+    const res = await app.request(`/api/days/${TODAY}/log`, {
+      method: 'PUT',
+      headers: noToken,
+      body: JSON.stringify({ thoughtsMd: 'a', learningMd: '' }),
+    });
+    expect(res.status).toBe(403);
+    expect(await readLog(TODAY)).toBeNull();
   });
 });

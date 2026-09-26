@@ -1,4 +1,5 @@
 export * from './client';
+export * from './dailyLogRepository';
 export * from './jobRepository';
 export * from './schema';
 export * from './sensitiveCodec';
