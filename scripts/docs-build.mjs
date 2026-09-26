@@ -15,6 +15,7 @@ import {
 } from 'node:fs';
 import { basename, dirname, join, posix, relative } from 'node:path';
 import MarkdownIt from 'markdown-it';
+import { PROGRESS_DIR, readProgressEntries, renderProgressTable } from './progress-entries.mjs';
 
 const root = new URL('..', import.meta.url).pathname;
 const outDir = join(root, 'docs-site');
@@ -29,7 +30,11 @@ const SOURCES = [
   '.claude/rules/*.md',
   '.claude/skills/**/*.md',
 ];
-const EXCLUDE = [/^docs\/design\/mockup-source\/(?!README\.md$)/];
+const EXCLUDE = [
+  /^docs\/design\/mockup-source\/(?!README\.md$)/,
+  // 作業記録は1件ずつのページにせず、docs/progress/README.md の表にまとめる
+  /^docs\/progress\/(?!README\.md$)/,
+];
 
 function walk(dir) {
   const abs = join(root, dir);
@@ -124,9 +129,16 @@ function parseFrontmatter(raw) {
 const problems = [];
 const pages = [];
 
+const progress = readProgressEntries(root);
+problems.push(...progress.problems);
+
 for (const src of sources) {
   const raw = readFileSync(join(root, src), 'utf8');
-  const { meta, body } = parseFrontmatter(raw);
+  const { meta, body: rawBody } = parseFrontmatter(raw);
+  const body =
+    src === `${PROGRESS_DIR}/README.md`
+      ? `${rawBody}\n${renderProgressTable([...progress.entries].reverse())}\n`
+      : rawBody;
   const env = { headings: [], used: new Set() };
   const tokens = md.parse(body, env);
 
@@ -242,7 +254,10 @@ if (checkOnly) {
 
 // ---------- ページの組み立て ----------
 const NAV = [
-  ['概要', [/^docs\/README\.md$/, /^AGENTS\.md$/, /^docs\/roadmap\.md$/, /^docs\/progress\.md$/]],
+  [
+    '概要',
+    [/^docs\/README\.md$/, /^AGENTS\.md$/, /^docs\/roadmap\.md$/, /^docs\/progress\/README\.md$/],
+  ],
   [
     '要件と設計',
     [/^docs\/requirements\.md$/, /^docs\/architecture\.md$/, /^docs\/open-questions\.md$/],
