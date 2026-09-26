@@ -134,6 +134,19 @@ export function AppShell() {
         <NavGroup title="毎日" items={DAILY} />
         <NavGroup title="一覧" items={LISTS} />
         <div className="sidebar-spacer" />
+        {/* 設定（Figma「PC/設定」）。ショートカットは割り当てない */}
+        <ul className="nav-group" aria-label="その他">
+          <li>
+            <Link
+              to="/settings"
+              className="nav-item"
+              activeProps={{ className: 'nav-item is-active', 'aria-current': 'page' as const }}
+            >
+              <span className="nav-dot" aria-hidden="true" />
+              <span className="nav-label">設定</span>
+            </Link>
+          </li>
+        </ul>
         <ul className="sidebar-hints" aria-label="ショートカット">
           {SIDEBAR_HINTS.map((h) => (
             <li key={h.label}>

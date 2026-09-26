@@ -48,6 +48,7 @@ try {
     ['backlog', '/backlog'],
     ['timeline', '/timeline'],
     ['calendar', `/calendar/${ym}`],
+    ['settings', '/settings'],
     ['mame', '/dev/mame'],
   ];
   for (const [name, path] of screens) {
