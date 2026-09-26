@@ -1,7 +1,14 @@
-import { dayOrdinalSince, STATUS_LABELS, type Status, TRANSITIONS } from '@mymind/domain';
+import {
+  canHaveChildren,
+  dayOrdinalSince,
+  STATUS_LABELS,
+  type Status,
+  TRANSITIONS,
+} from '@mymind/domain';
 import { useState } from 'react';
 import { type ListTask, type TaskEventJson, useTaskEvents } from '../api/tasks';
 import { formatShortDay } from '../day';
+import { AddTaskInput } from './AddTaskInput';
 import { Button } from './Button';
 import { StatusBadge } from './StatusBadge';
 
@@ -39,10 +46,29 @@ type TaskDetailProps = {
   place: 'today' | 'backlog';
   onTransition: (to: Status) => void;
   onMove: (to: 'today' | 'tomorrow' | 'backlog') => void;
+  /** 同じ画面にある、このタスクの子 */
+  childTasks: readonly ListTask[];
+  /** 子タスクを追加する（FR-T02）。追加先は画面で決まる（FR-T01） */
+  onAddChild: (title: string) => void;
 };
 
+/**
+ * 詳細ペインから子タスクを足せるか。子を持てるのは親を持たないタスクだけ（2階層まで、#18）。
+ * 完了・中止の親は、未完了の子を足したときに親の状態をどうするかが決まっていないので足せない（#89 の暫定）
+ */
+export const canAddChildFromDetail = (task: Pick<ListTask, 'parentId' | 'status'>) =>
+  canHaveChildren(task) && task.status !== 'done' && task.status !== 'cancelled';
+
 /** 選択中のタスクの詳細（Figma「PC/今日」の詳細ペイン） */
-export function TaskDetail({ task, today, place, onTransition, onMove }: TaskDetailProps) {
+export function TaskDetail({
+  task,
+  today,
+  place,
+  onTransition,
+  onMove,
+  childTasks,
+  onAddChild,
+}: TaskDetailProps) {
   const [showOthers, setShowOthers] = useState(false);
   const events = useTaskEvents(task.id);
   const primary = PRIMARY[task.status];
@@ -90,6 +116,37 @@ export function TaskDetail({ task, today, place, onTransition, onMove }: TaskDet
         <Button onClick={() => onMove('tomorrow')}>明日へ</Button>
         {place === 'today' && <Button onClick={() => onMove('backlog')}>バックログへ</Button>}
       </div>
+
+      {canHaveChildren(task) && (
+        <section className="task-children-detail" aria-label="子タスク">
+          <h3 className="text-label">子タスク</h3>
+          {childTasks.length > 0 && (
+            <ul>
+              {childTasks.map((child) => (
+                <li key={child.id}>
+                  <span className="chip" data-status={child.status}>
+                    {STATUS_LABELS[child.status]}
+                  </span>
+                  <span>{child.title}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+          {canAddChildFromDetail(task) ? (
+            <AddTaskInput
+              label={`「${task.title}」の子タスクを追加`}
+              placeholder="子タスクを追加（Enterで確定）"
+              onSubmit={onAddChild}
+              isPrimary={false}
+            />
+          ) : (
+            <p className="text-small">
+              {STATUS_LABELS[task.status]}
+              のタスクには子タスクを追加できません。未着手に戻すと追加できます
+            </p>
+          )}
+        </section>
+      )}
 
       <section className="task-history" aria-label="状態の履歴">
         <h3 className="text-label">状態の履歴</h3>

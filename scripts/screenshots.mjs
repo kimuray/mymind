@@ -62,6 +62,11 @@ try {
   await page.waitForTimeout(300);
   await page.screenshot({ path: join(outDir, 'today-selected.png') });
   console.log(`today-selected: ${join('.data/screenshots', 'today-selected.png')}`);
+  // 親を選んだ状態（詳細ペインの子タスクの欄、DESIGN.md 4.12）
+  await page.locator('.task-title', { hasText: 'TODOツール MVP' }).click();
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: join(outDir, 'today-parent-selected.png') });
+  console.log(`today-parent-selected: ${join('.data/screenshots', 'today-parent-selected.png')}`);
   await browser.close();
 } finally {
   server.kill('SIGTERM');

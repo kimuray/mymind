@@ -146,6 +146,13 @@
   border-radius: var(--radius-xl);
 }
 
+.add-task-sub {
+  height: 40px;
+  padding: 0 var(--space-4);
+  border: var(--button-secondary-border);
+  background: var(--button-secondary-bg);
+}
+
 .add-task input {
   flex: 1;
   min-width: 0;
@@ -391,6 +398,30 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-4);
+}
+
+/* 詳細ペインの子タスク（FR-T02、DESIGN.md 4.12） */
+.task-children-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.task-children-detail ul {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.task-children-detail li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 13px;
+  color: var(--ink-1);
 }
 
 .task-history {
