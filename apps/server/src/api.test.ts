@@ -1,6 +1,7 @@
 import { createFakeAgentRunner } from '@mymind/agent';
 import {
   createJobRepository,
+  createSettingsRepository,
   createTaskRepository,
   MIGRATIONS_FOLDER,
   openDatabase,
@@ -53,6 +54,7 @@ beforeEach(() => {
       jobs,
       agentStatus: async () => ({ name: 'fake', usable: true, executable: null, message: null }),
     },
+    settings: createSettingsRepository({ db }),
   });
   app = createApp({ ports: [PORT], sessionToken: TOKEN }, api);
 });

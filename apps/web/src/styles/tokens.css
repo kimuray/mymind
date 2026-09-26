@@ -105,6 +105,7 @@
   --accent-shadow: 0 8px 20px rgba(47, 75, 124, 0.28);
   --button-secondary-bg: rgba(255, 255, 255, 0.4);
   --button-secondary-border: 1px solid rgba(255, 255, 255, 0.95);
+  --button-confirm-bg: rgba(28, 27, 25, 0.88);
 
   /* 4.9 ダイアログ */
   --overlay: rgba(28, 27, 25, 0.18);

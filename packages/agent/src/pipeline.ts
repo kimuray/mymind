@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto';
+
 /**
  * 送信前処理のパイプライン（NFR-15、architecture.md 12.5）。
  * 入力は決まった順序の段階（stage）を通して作る。各段階は純粋関数で、加工した入力と、何をしたかの注記を返す。
@@ -44,3 +46,10 @@ export function runPipeline<T>(
 
 /** エージェントに渡す JSON の文字数（上限の判定とプレビューの表示に同じ数え方を使う） */
 export const serializePayload = (payload: unknown) => JSON.stringify(payload, null, 2);
+
+/**
+ * 送る入力のハッシュ（FR-A12）。プレビューを見てから依頼したとき、依頼の時点で作り直した入力と比べ、
+ * 確認していない内容を送らないようにする。文字数と同じ直列化の結果から作る
+ */
+export const hashPayload = (payload: unknown) =>
+  `sha256:${createHash('sha256').update(serializePayload(payload)).digest('hex')}`;

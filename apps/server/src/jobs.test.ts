@@ -1,6 +1,7 @@
 import { createFakeAgentRunner, FAKE_OUTPUT, type FakeMode } from '@mymind/agent';
 import {
   createJobRepository,
+  createSettingsRepository,
   createTaskRepository,
   type Database,
   type JobRepository,
@@ -65,6 +66,7 @@ function setup(mode: FakeMode = 'success', timeoutMs = 1000) {
         jobs,
         agentStatus: async () => ({ name: 'fake', usable: true, executable: null, message: null }),
       },
+      settings: createSettingsRepository({ db }),
     }),
   );
   return { runner, agent, tasks, events, app };
@@ -407,5 +409,121 @@ describe('NFR-15 日次 FB に送る入力', () => {
       blank: true,
     });
     expect(logged.at(-1)).toMatchObject({ annotations: [], charCount: expect.any(Number) });
+  });
+});
+
+describe('FR-A12 送信内容のプレビュー', () => {
+  const headers = {
+    Host: `127.0.0.1:${PORT}`,
+    'Sec-Fetch-Site': 'same-origin',
+    Origin: `http://127.0.0.1:${PORT}`,
+    [TOKEN_HEADER]: 'token',
+    'Content-Type': 'application/json',
+  };
+  type Preview = {
+    payload: { tasks: { title: string }[] };
+    annotations: unknown[];
+    charCount: number;
+    payloadHash: string;
+  };
+
+  const post = (app: ReturnType<typeof setup>['app'], path: string, body: unknown) =>
+    app.request(`/api${path}`, { method: 'POST', headers, body: JSON.stringify(body) });
+
+  const addPlannedTask = (tasks: ReturnType<typeof setup>['tasks'], id: string, title: string) =>
+    tasks.create({
+      created: { type: 'created', taskId: id, at: now.toISOString(), day: DAY },
+      parentId: null,
+      title,
+      noteMd: null,
+      plan: { day: DAY, event: { type: 'planned', taskId: id, at: now.toISOString(), day: DAY } },
+    });
+
+  const preview = async (app: ReturnType<typeof setup>['app']) => {
+    const res = await post(app, '/agent-input/preview', { kind: 'daily_feedback', period: DAY });
+    expect(res.status).toBe(200);
+    return (await res.json()) as Preview;
+  };
+
+  it('実際に送る入力、注記、文字数、ハッシュを返し、プロンプトの全文は返さない', async () => {
+    const { app, tasks } = setup();
+    addPlannedTask(tasks, 't1', '企画書を書く');
+    const body = await preview(app);
+    expect(body.payload.tasks.map((t) => t.title)).toEqual(['企画書を書く']);
+    expect(body.annotations).toEqual([]);
+    expect(body.charCount).toBe(JSON.stringify(body.payload, null, 2).length);
+    expect(body.payloadHash).toMatch(/^sha256:[0-9a-f]{64}$/);
+    expect(Object.keys(body).sort()).toEqual([
+      'annotations',
+      'charCount',
+      'payload',
+      'payloadHash',
+    ]);
+  });
+
+  it('プレビューの payload は、エージェントが受け取った <data> の中身と一致する', async () => {
+    const { app, tasks, runner, agent } = setup();
+    addPlannedTask(tasks, 't1', '企画書を書く');
+    const shown = await preview(app);
+    const res = await post(app, '/jobs', {
+      kind: 'daily_feedback',
+      period: DAY,
+      payloadHash: shown.payloadHash,
+    });
+    expect(res.status).toBe(202);
+    await runner.idle();
+    const sent = agent.inputs[0] ?? '';
+    expect(
+      JSON.parse(sent.slice(sent.indexOf('<data>\n') + 7, sent.lastIndexOf('\n</data>'))),
+    ).toEqual(shown.payload);
+  });
+
+  it('プレビューの後に送る内容が変わっていたら、409（PREVIEW_STALE）で依頼しない', async () => {
+    const { app, tasks } = setup();
+    addPlannedTask(tasks, 't1', '企画書を書く');
+    const shown = await preview(app);
+    addPlannedTask(tasks, 't2', '週報を書く');
+    const res = await post(app, '/jobs', {
+      kind: 'daily_feedback',
+      period: DAY,
+      payloadHash: shown.payloadHash,
+    });
+    expect(res.status).toBe(409);
+    expect(await res.json()).toMatchObject({ error: { code: 'PREVIEW_STALE' } });
+    expect(jobs.findActive('daily_feedback', DAY)).toBeUndefined();
+  });
+
+  it('ハッシュを付けない依頼は、これまでどおり確認なしで受け付ける', async () => {
+    const { app } = setup();
+    const res = await post(app, '/jobs', { kind: 'daily_feedback', period: DAY });
+    expect(res.status).toBe(202);
+  });
+
+  it.each([
+    [
+      'プレビューの期間の形式が不正',
+      '/agent-input/preview',
+      { kind: 'daily_feedback', period: '9/23' },
+    ],
+    [
+      'プレビューに余計な項目',
+      '/agent-input/preview',
+      { kind: 'daily_feedback', period: DAY, x: 1 },
+    ],
+    ['ハッシュの形式が不正', '/jobs', { kind: 'daily_feedback', period: DAY, payloadHash: 'abc' }],
+  ])('%s なら 400', async (_, path, body) => {
+    const { app } = setup();
+    expect((await post(app, path, body)).status).toBe(400);
+  });
+
+  it('トークンのないプレビューは 403', async () => {
+    const { app } = setup();
+    const { [TOKEN_HEADER]: _, ...noToken } = headers;
+    const res = await app.request('/api/agent-input/preview', {
+      method: 'POST',
+      headers: noToken,
+      body: JSON.stringify({ kind: 'daily_feedback', period: DAY }),
+    });
+    expect(res.status).toBe(403);
   });
 });

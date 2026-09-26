@@ -73,4 +73,15 @@ describe('NFR-06 文字色のコントラスト', () => {
   it('主ボタンの白い文字は、藍色の塗りに対して 4.5:1 以上', () => {
     expect(contrast(token('text-on-accent'), token('accent'))).toBeGreaterThanOrEqual(4.5);
   });
+
+  it('確定ボタンの白い文字は、詳細ペインの上の塗りに対して 4.5:1 以上', () => {
+    const fill = over(token('button-confirm-bg'), surfaces.詳細ペイン);
+    expect(contrast(token('text-on-accent'), fill)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('送信内容の注記（FR-A12）の文字は、強調の背景に対して 4.5:1 以上', () => {
+    const highlight = over(token('status-paused-bg'), over(token('glass-2'), surfaces.詳細ペイン));
+    expect(contrast(token('status-paused-text'), highlight)).toBeGreaterThanOrEqual(4.5);
+    expect(contrast(token('ink-2'), highlight)).toBeGreaterThanOrEqual(4.5);
+  });
 });

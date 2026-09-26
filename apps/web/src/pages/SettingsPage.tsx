@@ -1,6 +1,7 @@
 import type { Status } from '@mymind/domain';
 import { useState } from 'react';
 import { type Health, useHealth } from '../api/health';
+import { useSettings, useUpdateSettings } from '../api/settings';
 import { Button } from '../components/Button';
 import { PageLayout } from '../components/PageLayout';
 
@@ -188,7 +189,48 @@ function RowDetail({ row }: { row: Row }) {
   );
 }
 
-/** 設定（Figma「PC/設定」）。今はアプリの状態だけを表示する（NFR-21） */
+/** FB の依頼の設定（FR-A12）。送信内容のプレビューを依頼の前に毎回はさむか */
+function FeedbackSettings() {
+  const settings = useSettings();
+  const update = useUpdateSettings();
+  // 保存を待たずに表示を変える。react-query の状態の通知は次のタスクに回るので、クリックの中で決まるよう手元の状態に持つ
+  const [pending, setPending] = useState<boolean | null>(null);
+  const checked = pending ?? settings.data?.settings.confirmBeforeRequest ?? false;
+  return (
+    <section className="task-list settings-status glass-2" aria-label="FB の依頼">
+      <div className="settings-status-head">
+        <h2>FB の依頼</h2>
+      </div>
+      <label className="settings-toggle">
+        <input
+          type="checkbox"
+          checked={checked}
+          disabled={settings.data === undefined}
+          onChange={(e) => {
+            const value = e.target.checked;
+            setPending(value);
+            // 保存できれば保存した値、失敗すれば保存されている値の表示に戻す
+            update.mutate({ confirmBeforeRequest: value }, { onSettled: () => setPending(null) });
+          }}
+        />
+        <span className="settings-row-value">
+          <span className="settings-row-main">依頼の前に毎回確認する</span>
+          <span className="settings-row-note">
+            「保存してFBをもらう」を押したとき、エージェントに送る内容を表示してから依頼します
+          </span>
+        </span>
+      </label>
+      {(settings.isError || update.isError) && (
+        <p className="settings-note" role="alert">
+          設定を{settings.isError ? '読み込め' : '保存でき'}
+          ませんでした。サーバーが動いているか確かめてください
+        </p>
+      )}
+    </section>
+  );
+}
+
+/** 設定（Figma「PC/設定」）。アプリの状態（NFR-21）と、FB の依頼の設定（FR-A12）を表示する */
 export function SettingsPage() {
   const health = useHealth();
   const [selected, setSelected] = useState<RowKey>('agent');
@@ -207,7 +249,7 @@ export function SettingsPage() {
       <div className="page">
         <header className="page-header">
           <h1 className="text-display">設定</h1>
-          <p className="text-small">アプリの状態</p>
+          <p className="text-small">アプリの状態と FB の依頼</p>
         </header>
         <section className="task-list settings-status glass-2" aria-label="状態">
           <div className="settings-status-head">
@@ -252,6 +294,7 @@ export function SettingsPage() {
         <p className="text-small">
           状態は開いたときと「もう一度確かめる」を押したときに確かめます。
         </p>
+        <FeedbackSettings />
       </div>
     </PageLayout>
   );
