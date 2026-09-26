@@ -1,4 +1,4 @@
-import type { SettingsRepository, Task, TaskRepository } from '@mymind/db';
+import type { DailyLogRepository, SettingsRepository, Task, TaskRepository } from '@mymind/db';
 import {
   type BusinessDayOptions,
   canBecomeChild,
@@ -34,6 +34,8 @@ export type ApiDeps = {
   health: HealthDeps;
   /** 画面から変えられる設定 */
   settings: SettingsRepository;
+  /** 業務日ごとの振り返り（FR-D06） */
+  logs: DailyLogRepository;
 };
 
 const dayParam = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD の形式で指定してください');
@@ -73,6 +75,9 @@ const editTaskBody = z
       b.order !== undefined,
     { message: 'title、noteMd、parentId、order のどれかを指定してください' },
   );
+
+/** FR-D06、FR-D08：振り返りの本文。一行だけ、片方だけでも保存できる */
+const logBody = z.strictObject({ thoughtsMd: z.string(), learningMd: z.string() });
 
 const transitionBody = z.strictObject({ ...withVersion, to: z.enum(STATUSES) });
 
@@ -116,7 +121,16 @@ const jsonBody = <T extends z.ZodType>(schema: T) =>
  * 今日とバックログの API（architecture.md 6章）。
  * 状態の変更はすべて domain の関数でイベントにし、リポジトリが1つのトランザクションで保存する（ADR-0004）。
  */
-export function createApi({ tasks, now, dayOptions, newId, jobs, health, settings }: ApiDeps) {
+export function createApi({
+  tasks,
+  now,
+  dayOptions,
+  newId,
+  jobs,
+  health,
+  settings,
+  logs,
+}: ApiDeps) {
   /**
    * 一覧の各行に、画面で必要な値を加える。日数や件数はここで計算し、画面や AI には計算させない。
    * - statusSince：今の状態になった業務日（「着手から何日目」FR-T12）
@@ -170,8 +184,24 @@ export function createApi({ tasks, now, dayOptions, newId, jobs, health, setting
     .get('/days/:day', (c) => {
       const day = dayParam.safeParse(c.req.param('day'));
       if (!day.success) return fail(c, 400, 'INVALID_REQUEST', '業務日の形式が正しくありません');
-      // ログ・FB・調子は、それぞれのテーブルを作る issue で加える
-      return c.json({ day: day.data, tasks: withListInfo(tasks.listPlan(day.data)) });
+      // FB・調子は、それぞれの画面の issue で加える
+      return c.json({
+        day: day.data,
+        tasks: withListInfo(tasks.listPlan(day.data)),
+        log: logs.find(day.data) ?? null,
+      });
+    })
+
+    .put('/days/:day/log', jsonBody(logBody), (c) => {
+      const day = dayParam.safeParse(c.req.param('day'));
+      if (!day.success) return fail(c, 400, 'INVALID_REQUEST', '業務日の形式が正しくありません');
+      // 過去の日の振り返りは後から書き足せる（深夜に前日の分を書き終える場合も含む）。まだ来ていない日には書けない
+      if (day.data > toBusinessDay(now(), dayOptions)) {
+        return fail(c, 400, 'INVALID_REQUEST', 'まだ来ていない日の振り返りは保存できません');
+      }
+      const input = c.req.valid('json');
+      const log = logs.saveReflection({ day: day.data, ...input, at: now().toISOString() });
+      return c.json({ log });
     })
 
     .get('/backlog', (c) => {

@@ -37,7 +37,7 @@ export type DailyFeedbackData = {
   }[];
   /** domain で計算した件数（FR-A10：AI には数えさせない） */
   counts: { planned: number; done: number; doing: number; paused: number; waiting: number };
-  /** 振り返り。振り返りのテーブル（daily_logs）ができるまでは null */
+  /** 振り返り。保存していないか、どちらの欄も空なら null */
   reflection: { thoughtsMd: string; learningMd: string } | null;
   /** 直近の日。調子、「明日の一手」、空白日かどうかだけを渡す（全文は渡さない） */
   recent: { day: string; level: number | null; nextAction: string | null; isBlank: boolean }[];

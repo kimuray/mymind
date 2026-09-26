@@ -58,6 +58,16 @@ export const taskEvents = sqliteTable('task_events', {
   day: text('day').notNull(), // 業務日
 });
 
+export const dailyLogs = sqliteTable('daily_logs', {
+  day: text('day').primaryKey(), // 業務日
+  // 機微データ。読み書きは必ず SensitiveCodec を通す（ADR-0009）
+  thoughtsMd: text('thoughts_md').notNull().default(''),
+  learningMd: text('learning_md').notNull().default(''),
+  // 朝の計画を確定した時刻（FR-D05）。振り返りだけを保存した日は null
+  planConfirmedAt: text('plan_confirmed_at'),
+  updatedAt: text('updated_at').notNull(),
+});
+
 export const settings = sqliteTable('settings', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),

@@ -210,7 +210,7 @@ CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 | タスクの追加・編集 | `POST /api/tasks`、`PATCH /api/tasks/:id` | 追加時に `planFor` を指定すると計画に直接入る |
 | ステータス変更 | `POST /api/tasks/:id/transition` | 自動ルールの結果と提案を応答に含める |
 | 移動 | `POST /api/tasks/:id/move` | `to: today / tomorrow / backlog` |
-| 振り返り | `PUT /api/days/:day/log` | Markdownの原文を保存 |
+| 振り返り | `PUT /api/days/:day/log` | Markdownの原文（思考の整理、学び）を保存。過去の業務日にも書ける。まだ来ていない業務日は 400 |
 | 調子の修正 | `PUT /api/days/:day/condition` | `user_level` のみ更新 |
 | バックログ | `GET /api/backlog` | |
 | 棚卸し | `GET /api/review/stale`、`POST /api/review/decisions` | |

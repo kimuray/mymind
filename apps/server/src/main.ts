@@ -9,6 +9,7 @@ import {
   unavailableRunner,
 } from '@mymind/agent';
 import {
+  createDailyLogRepository,
   createJobRepository,
   createSettingsRepository,
   createTaskRepository,
@@ -83,6 +84,7 @@ async function main(): Promise<number> {
   const newId = createUlidGenerator(() => Date.now());
   const tasks = createTaskRepository({ db, codec: plainCodec, newEventId: newId });
   const jobs = createJobRepository({ db, codec: plainCodec });
+  const logs = createDailyLogRepository({ db, codec: plainCodec });
   const events = createEventBus();
   const promptText = readFileSync(DAILY_PROMPT, 'utf8');
   const runner: AgentRunner =
@@ -102,6 +104,7 @@ async function main(): Promise<number> {
     logger,
     jobs,
     tasks,
+    logs,
     runner,
     events,
     prompt: { text: promptText, version: readPromptVersion(promptText) ?? 'unknown' },
@@ -131,6 +134,7 @@ async function main(): Promise<number> {
       agentStatus: () => detectAgent(agent.name),
     },
     settings: createSettingsRepository({ db }),
+    logs,
   });
   const web = createWebRoutes({ distDir: WEB_DIST, sessionToken });
   const app = createApp({ ports: [port, ...devPorts], sessionToken }, api, web);

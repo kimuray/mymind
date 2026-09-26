@@ -6,12 +6,13 @@ import {
   dailyFeedbackSchema,
   RECENT_DAYS,
 } from '@mymind/agent';
-import type { JobRepository, TaskRepository } from '@mymind/db';
+import type { DailyLogRepository, JobRepository, TaskRepository } from '@mymind/db';
 import { dayOrdinalSince, type JobKind, previousDays, statusSinceDay } from '@mymind/domain';
 
 export type AgentInputDeps = {
   tasks: TaskRepository;
   jobs: JobRepository;
+  logs: DailyLogRepository;
   /** 日次 FB のプロンプト（prompts/daily-feedback.md） */
   promptText: string;
 };
@@ -24,7 +25,7 @@ export type BuildInputResult =
  * エージェントに渡す入力を DB から組み立てる（architecture.md 12.5）。
  * 送信内容のプレビュー（FR-A12）と実際の依頼の両方がこの関数を使うので、表示する内容と送る内容は一致する
  */
-export function createAgentInputBuilder({ tasks, jobs, promptText }: AgentInputDeps) {
+export function createAgentInputBuilder({ tasks, jobs, logs, promptText }: AgentInputDeps) {
   /** その日の計画と直近の日から、日次 FB の元のデータを集める。件数と日数はここで数える（FR-A10） */
   const dailyData = (day: string): DailyFeedbackData => {
     const plan = tasks.listPlan(day);
@@ -47,10 +48,18 @@ export function createAgentInputBuilder({ tasks, jobs, promptText }: AgentInputD
         paused: count('paused'),
         waiting: count('waiting'),
       },
-      // 振り返りのテーブル（daily_logs）は、振り返りの画面の issue で作る
-      reflection: null,
+      reflection: reflectionOf(day),
       recent: previousDays(day, RECENT_DAYS).map(recentDay),
     };
+  };
+
+  /** その日の振り返り。保存していないか、どちらの欄も空なら送らない */
+  const reflectionOf = (day: string): DailyFeedbackData['reflection'] => {
+    const log = logs.find(day);
+    if (log === undefined || (log.thoughtsMd.trim() === '' && log.learningMd.trim() === '')) {
+      return null;
+    }
+    return { thoughtsMd: log.thoughtsMd, learningMd: log.learningMd };
   };
 
   /** 直近の1日：調子（手動の値を優先）、最新の FB の「明日の一手」、空白日かどうか */
@@ -62,8 +71,12 @@ export function createAgentInputBuilder({ tasks, jobs, promptText }: AgentInputD
       day,
       level: condition?.userLevel ?? condition?.aiLevel ?? null,
       nextAction: content.success ? content.data.next_action : null,
-      // 計画も調子も FB もない日は、アプリを開かなかった日（空白日、architecture.md 4.5）
-      isBlank: tasks.listPlan(day).length === 0 && condition === undefined && latest === undefined,
+      // 計画も振り返りも調子も FB もない日は、アプリを開かなかった日（空白日、architecture.md 4.5）
+      isBlank:
+        tasks.listPlan(day).length === 0 &&
+        logs.find(day) === undefined &&
+        condition === undefined &&
+        latest === undefined,
     };
   };
 

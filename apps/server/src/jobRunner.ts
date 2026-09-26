@@ -1,5 +1,5 @@
 import { type AgentRunner, parseDailyFeedback, withTimeout } from '@mymind/agent';
-import type { Job, JobRepository, TaskRepository } from '@mymind/db';
+import type { DailyLogRepository, Job, JobRepository, TaskRepository } from '@mymind/db';
 import type { JobKind } from '@mymind/domain';
 import { type BuildInputResult, createAgentInputBuilder } from './agentInput';
 import type { AgentLog, AgentLogRecord } from './agentLog';
@@ -9,6 +9,7 @@ import type { Logger } from './logger';
 export type JobRunnerDeps = {
   jobs: JobRepository;
   tasks: TaskRepository;
+  logs: DailyLogRepository;
   runner: AgentRunner;
   events: EventBus;
   /** 日次 FB のプロンプト（prompts/daily-feedback.md）とそのバージョン */
@@ -35,6 +36,7 @@ export function createJobRunner(deps: JobRunnerDeps) {
   const inputs = createAgentInputBuilder({
     tasks: deps.tasks,
     jobs,
+    logs: deps.logs,
     promptText: deps.prompt.text,
   });
   let loop: Promise<void> | null = null;

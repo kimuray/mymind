@@ -1,5 +1,6 @@
 import { createFakeAgentRunner, FAKE_OUTPUT, type FakeMode } from '@mymind/agent';
 import {
+  createDailyLogRepository,
   createJobRepository,
   createSettingsRepository,
   createTaskRepository,
@@ -44,6 +45,7 @@ function setup(mode: FakeMode = 'success', timeoutMs = 1000) {
   const runner = createJobRunner({
     jobs,
     tasks,
+    logs: createDailyLogRepository({ db, codec: plainCodec }),
     runner: agent,
     events,
     prompt: { text: '<!-- prompt_version: 0.1.0 -->\nプロンプト', version: '0.1.0' },
@@ -67,6 +69,7 @@ function setup(mode: FakeMode = 'success', timeoutMs = 1000) {
         agentStatus: async () => ({ name: 'fake', usable: true, executable: null, message: null }),
       },
       settings: createSettingsRepository({ db }),
+      logs: createDailyLogRepository({ db, codec: plainCodec }),
     }),
   );
   return { runner, agent, tasks, events, app };
@@ -330,6 +333,7 @@ describe('NFR-16 エージェントの入出力のログ', () => {
     const runner = createJobRunner({
       jobs,
       tasks,
+      logs: createDailyLogRepository({ db, codec: plainCodec }),
       runner: createFakeAgentRunner({ mode: 'invalid' }),
       events: createEventBus(),
       prompt: { text: 'プロンプト', version: '0.1.0' },
@@ -365,6 +369,7 @@ describe('NFR-15 日次 FB に送る入力', () => {
     const runner = createJobRunner({
       jobs,
       tasks,
+      logs: createDailyLogRepository({ db, codec: plainCodec }),
       runner: {
         name: 'fake',
         run: async (input) => {
@@ -525,5 +530,59 @@ describe('FR-A12 送信内容のプレビュー', () => {
       body: JSON.stringify({ kind: 'daily_feedback', period: DAY }),
     });
     expect(res.status).toBe(403);
+  });
+});
+
+describe('FR-D06 日次 FB に送る振り返り', () => {
+  const headers = {
+    Host: `127.0.0.1:${PORT}`,
+    'Sec-Fetch-Site': 'same-origin',
+    Origin: `http://127.0.0.1:${PORT}`,
+    [TOKEN_HEADER]: 'token',
+    'Content-Type': 'application/json',
+  };
+  type Payload = {
+    reflection?: { thoughts_md: string; learning_md: string };
+    recent: { day: string; blank: boolean }[];
+  };
+
+  const previewPayload = async (app: ReturnType<typeof setup>['app']) => {
+    const res = await app.request('/api/agent-input/preview', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ kind: 'daily_feedback', period: DAY }),
+    });
+    expect(res.status).toBe(200);
+    return ((await res.json()) as { payload: Payload }).payload;
+  };
+  const saveLog = (app: ReturnType<typeof setup>['app'], day: string, thoughtsMd: string) =>
+    app.request(`/api/days/${day}/log`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ thoughtsMd, learningMd: '' }),
+    });
+
+  it('保存した振り返りを入力に含める', async () => {
+    const { app } = setup();
+    expect((await saveLog(app, DAY, '企画書が進んだ')).status).toBe(200);
+    expect((await previewPayload(app)).reflection).toEqual({
+      thoughts_md: '企画書が進んだ',
+      learning_md: '',
+    });
+  });
+
+  it('振り返りがない日や、どちらの欄も空の日は、振り返りを送らない', async () => {
+    const { app } = setup();
+    expect((await previewPayload(app)).reflection).toBeUndefined();
+    await saveLog(app, DAY, '  ');
+    expect((await previewPayload(app)).reflection).toBeUndefined();
+  });
+
+  it('振り返りだけを保存した直近の日は、空白日として扱わない', async () => {
+    const { app } = setup();
+    await saveLog(app, '2026-09-21', '一行だけ');
+    const recent = (await previewPayload(app)).recent;
+    expect(recent.find((r) => r.day === '2026-09-21')?.blank).toBe(false);
+    expect(recent.find((r) => r.day === '2026-09-20')?.blank).toBe(true);
   });
 });
