@@ -1,4 +1,5 @@
 // 各画面のスクリーンショットを .data/screenshots/ に出力する（#25）。Figma のフレームと並べて見た目を確認するために使う。
+// 撮る画面は docs/design/screenshots.json に書く。
 // 使い方: pnpm screenshots（先に pnpm build で画面の本番ビルドを作る）
 // 実データには触れない：一時的なデータディレクトリでサーバーを起動し、見本のタスクを API で入れてから撮る。
 // Chromium は Claude Code のサンドボックスの中では起動できない（Mach ポートの制限。#15）。
@@ -13,6 +14,8 @@ const base = `http://127.0.0.1:${port}`;
 const dataDir = join(root, '.data/screenshots-server');
 const outDir = join(root, '.data/screenshots');
 const VIEWPORT = { width: 1440, height: 900 }; // Figma のフレームと同じ大きさ
+// 撮る画面と、比べる Figma のフレームの対応。画面を足すときはこのファイルに足す
+const { screens } = JSON.parse(readFileSync(join(root, 'docs/design/screenshots.json'), 'utf8'));
 
 if (!existsSync(join(root, 'apps/web/dist/index.html'))) {
   console.error('画面の本番ビルドがありません。先に pnpm build を実行してください');
@@ -41,32 +44,15 @@ try {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: VIEWPORT });
   const ym = businessDay().slice(0, 7);
-  const screens = [
-    ['today', '/'],
-    ['morning', '/morning'],
-    ['reflection', '/reflection'],
-    ['backlog', '/backlog'],
-    ['timeline', '/timeline'],
-    ['calendar', `/calendar/${ym}`],
-    ['settings', '/settings'],
-    ['mame', '/dev/mame'],
-  ];
-  for (const [name, path] of screens) {
-    await page.goto(base + path, { waitUntil: 'networkidle' });
-    await page.screenshot({ path: join(outDir, `${name}.png`) });
-    console.log(`${name}: ${join('.data/screenshots', `${name}.png`)}`);
+  for (const screen of screens) {
+    await page.goto(base + screen.path.replace('{ym}', ym), { waitUntil: 'networkidle' });
+    if (screen.select !== undefined) {
+      await page.locator('.task-title', { hasText: screen.select }).first().click();
+      await page.waitForTimeout(300);
+    }
+    await page.screenshot({ path: join(outDir, screen.file) });
+    console.log(`${screen.file}: ${screen.frame ?? '（フレームなし）'}／${screen.state}`);
   }
-  // 詳細ペインを開いた状態も撮る（Figma「PC/今日」は選択中のタスクを表示している）
-  await page.goto(`${base}/`, { waitUntil: 'networkidle' });
-  await page.locator('.task-title').first().click();
-  await page.waitForTimeout(300);
-  await page.screenshot({ path: join(outDir, 'today-selected.png') });
-  console.log(`today-selected: ${join('.data/screenshots', 'today-selected.png')}`);
-  // 親を選んだ状態（詳細ペインの子タスクの欄、DESIGN.md 4.12）
-  await page.locator('.task-title', { hasText: 'TODOツール MVP' }).click();
-  await page.waitForTimeout(300);
-  await page.screenshot({ path: join(outDir, 'today-parent-selected.png') });
-  console.log(`today-parent-selected: ${join('.data/screenshots', 'today-parent-selected.png')}`);
   await browser.close();
 } finally {
   server.kill('SIGTERM');

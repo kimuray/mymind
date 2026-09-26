@@ -49,7 +49,7 @@ https://www.figma.com/design/VLCoEFLm1ujvYPq8xyEQFg/mymind-view-design
 1. 対象の issue に書かれたフレーム名（上の表）を確認する
 2. Figma MCP の `get_design_context` に fileKey `VLCoEFLm1ujvYPq8xyEQFg` とフレームの node-id を渡して、スクリーンショットと構造を取得する。node-id は Figma でフレームを選択して「Copy link to selection」で得られる
 3. 色・角の丸み・余白・書体は、Figma の値ではなく DESIGN.md のトークン（`tokens.css`）を使う。食い違いがあれば実装を止めて issue にコメントする
-4. 実装後、Playwright で同じサイズのスクリーンショットを撮り、Figma のフレームと並べて確認する（issue 016）
+4. 実装後、Playwright で同じサイズのスクリーンショットを撮り、Figma のフレームと並べて確認する（issue 016）。`pnpm screenshots` が撮る画像と比べるフレームの対応は `docs/design/screenshots.json` にある。画面や状態（詳細ペインを開いた状態など）を足したら、ここにも1件足す
 
 Figma に接続できない環境では、`docs/design/mockup-source/` のモックアップのソースを参照します。
 

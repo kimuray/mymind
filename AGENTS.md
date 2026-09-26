@@ -76,7 +76,7 @@ e2e/            Playwright の E2E テスト
 画面を作ったり直したりしたら、見た目を Figma のフレームと並べて確かめてください。
 
 1. `docs/design/README.md` の表で、対象のフレーム名（`PC/今日` など）と node-id を確認し、Figma MCP の `get_screenshot` で画像を取得する
-2. `pnpm build && pnpm screenshots` で、同じ 1440×900 の画像を `.data/screenshots/` に出力する（詳細ペインを開いた状態は `today-selected.png`、親を選んだ状態は `today-parent-selected.png`）
+2. `pnpm build && pnpm screenshots` で、同じ 1440×900 の画像を `.data/screenshots/` に出力する。どの画像をどのフレームと比べるかは `docs/design/screenshots.json` にある
 3. 2つを並べて、構成・寸法・状態の表現の違いを確かめる。違いが DESIGN.md のトークンやルールによるもの（DESIGN.md が正本）なら、PR に差分として書く。それ以外は直す
 
 ## 完了の定義

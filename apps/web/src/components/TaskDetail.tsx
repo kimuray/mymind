@@ -54,7 +54,7 @@ type TaskDetailProps = {
 
 /**
  * 詳細ペインから子タスクを足せるか。子を持てるのは親を持たないタスクだけ（2階層まで、#18）。
- * 完了・中止の親は、未完了の子を足したときに親の状態をどうするかが決まっていないので足せない（#89 の暫定）
+ * 完了・中止の親には足せない。未完了の子を足すと、終わった親の下に終わっていない子ができるため（#89 で決定）
  */
 export const canAddChildFromDetail = (task: Pick<ListTask, 'parentId' | 'status'>) =>
   canHaveChildren(task) && task.status !== 'done' && task.status !== 'cancelled';
