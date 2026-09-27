@@ -37,6 +37,7 @@ export type KeyAction =
   | 'list.moveDown'
   | 'reflection.save'
   | 'reflection.saveAndRequest'
+  | 'reflection.togglePreview'
   | 'escape';
 
 /**
@@ -81,6 +82,8 @@ export const KEY_BINDINGS: readonly KeyBinding[] = [
   // 5.3 振り返り。入力欄の中でも使えるよう、修飾キー付きにする
   { action: 'reflection.saveAndRequest', keys: ['Meta+Enter'], label: '保存してFBをもらう' },
   { action: 'reflection.save', keys: ['Meta+s'], label: '保存のみ' },
+  // ブラウザの印刷と重なるので、振り返りの画面では印刷を止めて切り替えに使う（実機の確認は #35）
+  { action: 'reflection.togglePreview', keys: ['Meta+p'], label: '書く / プレビューの切り替え' },
 ];
 
 /**

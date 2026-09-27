@@ -27,27 +27,32 @@ const wrapSelectionInBold = (view: EditorView) => {
 };
 
 /**
- * Markdown の入力欄（DESIGN.md 4.7）。ガラスの面の中に CodeMirror 6 を置き、下端に書き方の案内を出す。
+ * Markdown の入力欄（DESIGN.md 4.7）。CodeMirror 6 の本体だけで、ガラスの面と書き方の案内は MarkdownField が置く。
  * 値は最初の描画のときだけ受け取る（入力中に外から書き換えるとカーソルが飛ぶため）。
- * 別の内容で始め直すときは、呼び出す側で key を変える
+ * 別の内容で始め直すときは、呼び出す側で key を変える。
+ * プレビューのあいだも入力欄は残して隠す（取り消しの履歴とカーソルの位置を保つため）。隠した状態から戻したら、入力欄にフォーカスを戻す
  */
 export function MarkdownEditor({
   label,
   initialValue,
   onChange,
+  hidden = false,
 }: {
   label: string;
   initialValue: string;
   onChange: (value: string) => void;
+  hidden?: boolean;
 }) {
   const parent = useRef<HTMLDivElement>(null);
+  const view = useRef<EditorView | null>(null);
+  const wasHidden = useRef(hidden);
   const changeRef = useRef(onChange);
   changeRef.current = onChange;
 
   // biome-ignore lint/correctness/useExhaustiveDependencies: 初期値は最初の描画でだけ使う（上の説明）
   useEffect(() => {
     if (parent.current === null) return;
-    const view = new EditorView({
+    const created = new EditorView({
       parent: parent.current,
       state: EditorState.create({
         doc: initialValue,
@@ -70,19 +75,17 @@ export function MarkdownEditor({
         ],
       }),
     });
-    return () => view.destroy();
+    view.current = created;
+    return () => {
+      created.destroy();
+      view.current = null;
+    };
   }, [label]);
 
-  return (
-    <div className="markdown-editor glass-2">
-      <div ref={parent} className="markdown-editor-body" />
-      <p className="markdown-hints" aria-hidden="true">
-        <span className="markdown-hints-title">Markdown</span>
-        <span>## 見出し</span>
-        <span>- リスト</span>
-        <span>**太字**</span>
-        <span>`コード`</span>
-      </p>
-    </div>
-  );
+  useEffect(() => {
+    if (wasHidden.current && !hidden) view.current?.focus();
+    wasHidden.current = hidden;
+  }, [hidden]);
+
+  return <div ref={parent} className="markdown-editor-body" hidden={hidden} />;
 }
