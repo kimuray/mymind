@@ -28,7 +28,7 @@ import { createJobRunner } from './jobRunner';
 import { listen } from './listen';
 import { createLogger } from './logger';
 import { createUlidGenerator } from './ulid';
-import { createWebRoutes } from './web';
+import { createDevRedirect, createWebRoutes } from './web';
 
 // 画面の本番ビルド（apps/web の vite build の出力）
 const WEB_DIST = fileURLToPath(new URL('../../web/dist', import.meta.url));
@@ -136,7 +136,12 @@ async function main(): Promise<number> {
     settings: createSettingsRepository({ db }),
     logs,
   });
-  const web = createWebRoutes({ distDir: WEB_DIST, sessionToken });
+  // 開発時は Vite が画面を配信する。古い本番ビルドを出さないよう、画面の URL は Vite へ移す（#97）
+  const vitePort = devPorts[0];
+  const web =
+    vitePort === undefined
+      ? createWebRoutes({ distDir: WEB_DIST, sessionToken })
+      : createDevRedirect(vitePort);
   const app = createApp({ ports: [port, ...devPorts], sessionToken }, api, web);
   const server = await listen(app, host, port);
   if (!server.ok) {

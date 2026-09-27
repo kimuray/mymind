@@ -3,7 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from './app';
-import { contentSecurityPolicy, createWebRoutes, injectMeta } from './web';
+import { contentSecurityPolicy, createDevRedirect, createWebRoutes, injectMeta } from './web';
 
 const PORT = 4820;
 const HOST = { Host: `127.0.0.1:${PORT}` };
@@ -99,5 +99,31 @@ describe('NFR-02 開発時の Vite のポート', () => {
       },
     });
     expect(res.status).toBe(200);
+  });
+});
+
+describe('NFR-02 開発時の画面の URL（#97）', () => {
+  const devApp = () =>
+    createApp({ ports: [PORT, 5173], sessionToken: 'token' }, undefined, createDevRedirect(5173));
+
+  it('本番ビルドを返さず、同じパスのまま Vite のポートへリダイレクトする', async () => {
+    const res = await devApp().request('/calendar/2026-09?x=1', { headers: HOST });
+    expect(res.status).toBe(307);
+    expect(res.headers.get('Location')).toBe('http://127.0.0.1:5173/calendar/2026-09?x=1');
+  });
+
+  it('localhost で開いたときは localhost のまま移す', async () => {
+    const res = await devApp().request('/', { headers: { Host: `localhost:${PORT}` } });
+    expect(res.headers.get('Location')).toBe('http://localhost:5173/');
+  });
+
+  it('API の未定義のパスはリダイレクトせず 404 にする', async () => {
+    const res = await devApp().request('/api/unknown', { headers: HOST });
+    expect(res.status).toBe(404);
+  });
+
+  it('許可していない Host はリダイレクトの前に拒否する', async () => {
+    const res = await devApp().request('/', { headers: { Host: 'evil.example:4820' } });
+    expect(res.status).toBe(403);
   });
 });

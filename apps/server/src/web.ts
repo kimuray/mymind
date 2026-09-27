@@ -71,3 +71,17 @@ export function createWebRoutes({
     return c.html(injectMeta(indexHtml, { [TOKEN_META]: sessionToken, [NONCE_META]: nonce }));
   });
 }
+
+/**
+ * 開発時（Vite で画面を開くとき）の画面の URL。本番ビルドは配信せず、Vite のポートへリダイレクトする。
+ * dist は最後に pnpm build した時点の画面なので、開発中に配信すると、ソースを変えても古い画面が出てしまう（#97）。
+ * Host は localOnly が 127.0.0.1 か localhost に限っているので、同じホスト名のまま移す
+ */
+export function createDevRedirect(vitePort: number): Hono {
+  return new Hono().get('*', (c) => {
+    if (c.req.path.startsWith('/api/')) return c.notFound();
+    const hostname = new URL(`http://${c.req.header('Host') ?? '127.0.0.1'}`).hostname;
+    const url = new URL(c.req.url);
+    return c.redirect(`http://${hostname}:${vitePort}${url.pathname}${url.search}`, 307);
+  });
+}
