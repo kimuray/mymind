@@ -22,7 +22,8 @@ ENTRYPOINT ["/usr/bin/tini", "--"]
 
 # ---------- 開発用（ソースはバインドマウント、node_modules はボリューム） ----------
 FROM base AS dev
-CMD ["sh", "-c", "pnpm install --frozen-lockfile && pnpm dev"]
+# pnpm install と pnpm dev を包み、lockfile が変わったら入れ直して再起動する（#97）
+CMD ["node", "scripts/docker-dev.mjs"]
 
 # ---------- E2E 用（Chromium と依存ライブラリを追加） ----------
 FROM base AS e2e

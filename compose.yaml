@@ -1,5 +1,5 @@
 # mymind の開発環境（ADR-0010）
-#   docker compose up dev              開発サーバー（http://127.0.0.1:5173）
+#   docker compose up dev              開発サーバー（http://127.0.0.1:5173 で開く。4820 の画面の URL も 5173 へ移る）
 #   docker compose run --rm check      lint・型・依存・デザイン・文書・テスト
 #   docker compose run --rm e2e        E2E（本番ビルド、偽のエージェント）
 name: mymind
