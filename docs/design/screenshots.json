@@ -12,7 +12,7 @@
     {
       "file": "today-parent-selected.png",
       "path": "/",
-      "frame": "PC/今日",
+      "frame": "PC/今日（親を選択）",
       "state": "親のタスクを選び、詳細ペインに子タスクの欄が出た状態（DESIGN.md 4.12）",
       "select": "TODOツール MVP"
     },
