@@ -51,6 +51,7 @@ test.describe('NFR-06 コントラスト', () => {
   for (const [name, path] of [
     ['今日', '/'],
     ['バックログ', '/backlog'],
+    ['振り返り', '/reflection'],
     ['マメの表情', '/dev/mame'],
     ['設定', '/settings'],
   ] as const) {

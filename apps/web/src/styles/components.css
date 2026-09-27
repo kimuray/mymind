@@ -803,3 +803,111 @@
   align-items: flex-end;
   gap: var(--space-2);
 }
+
+/* 振り返り（Figma「PC/振り返り」、DESIGN.md 4.7） */
+.page.reflection {
+  height: 100%;
+}
+
+.reflection-title {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.reflection-fields {
+  display: flex;
+  flex: 1;
+  gap: var(--space-3);
+  min-height: 320px;
+}
+
+.reflection-field {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.reflection-field-title {
+  padding-left: var(--space-1);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.reflection-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.reflection-notice {
+  flex: 1;
+}
+
+.markdown-editor {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-3);
+  min-height: 0;
+  padding: var(--space-4) var(--space-4) var(--space-2);
+  border-radius: var(--radius-xl);
+}
+
+.markdown-editor-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.markdown-editor .cm-editor {
+  height: 100%;
+  background: none;
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--ink-1);
+}
+
+.markdown-editor .cm-editor.cm-focused {
+  outline: none;
+}
+
+/* 入力欄の中はガラスの面に任せ、キーボードのフォーカスは面の枠で示す */
+.markdown-editor:focus-within {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.markdown-editor .cm-scroller {
+  font-family: var(--font-sans);
+}
+
+.markdown-editor .cm-content {
+  padding: 0;
+  caret-color: var(--ink-1);
+}
+
+.markdown-editor .cm-line {
+  padding: 0;
+}
+
+.markdown-editor .cm-placeholder {
+  color: var(--ink-4);
+}
+
+.markdown-hints {
+  display: flex;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--ink-4);
+}
+
+.markdown-hints-title {
+  font-weight: 600;
+  color: var(--ink-3);
+}

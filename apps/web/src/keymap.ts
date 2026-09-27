@@ -35,6 +35,8 @@ export type KeyAction =
   | 'list.outdent'
   | 'list.moveUp'
   | 'list.moveDown'
+  | 'reflection.save'
+  | 'reflection.saveAndRequest'
   | 'escape';
 
 /**
@@ -76,7 +78,16 @@ export const KEY_BINDINGS: readonly KeyBinding[] = [
   { action: 'list.outdent', keys: ['Shift+Tab'], label: '親に戻す' },
   { action: 'list.moveUp', keys: ['Meta+ArrowUp'], label: '上へ並べ替え' },
   { action: 'list.moveDown', keys: ['Meta+ArrowDown'], label: '下へ並べ替え' },
+  // 5.3 振り返り。入力欄の中でも使えるよう、修飾キー付きにする
+  { action: 'reflection.saveAndRequest', keys: ['Meta+Enter'], label: '保存してFBをもらう' },
+  { action: 'reflection.save', keys: ['Meta+s'], label: '保存のみ' },
 ];
+
+/**
+ * Markdown の入力欄の中だけで効くキー（DESIGN.md 5.3）。入力欄（CodeMirror）のキーマップの書き方で書く。
+ * 画面の割り当て（Meta+Enter、Meta+s）と重なる入力欄の既定のキーは、入力欄の側で外す
+ */
+export const EDITOR_KEYS = { bold: 'Mod-b' } as const;
 
 /** サイドバーの下に案内するショートカット */
 export const SIDEBAR_HINTS: readonly { label: string; keys: readonly string[] }[] = [

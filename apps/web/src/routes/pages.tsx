@@ -15,9 +15,6 @@ function Page({ title, note }: { title: string; note?: string }) {
 }
 
 export const MorningPage = () => <Page title="朝の計画" />;
-export function ReflectionPage({ day }: { day: string | undefined }) {
-  return <Page title="振り返り" {...(day === undefined ? {} : { note: day })} />;
-}
 export const TimelinePage = () => <Page title="タイムライン" />;
 export function CalendarPage({ ym, day }: { ym: string; day: string | undefined }) {
   return <Page title="カレンダー" note={day ?? ym} />;

@@ -6,3 +6,8 @@ export const TOKEN_HEADER = 'X-Mymind-Token';
 export function readSessionToken(doc: Pick<Document, 'querySelector'> = document): string | null {
   return doc.querySelector('meta[name="mymind-token"]')?.getAttribute('content') ?? null;
 }
+
+/** 本番の CSP のノンス。CodeMirror が差し込む <style> に付ける。開発（Vite）は CSP がないので null */
+export function readCspNonce(doc: Pick<Document, 'querySelector'> = document): string | null {
+  return doc.querySelector('meta[name="mymind-csp-nonce"]')?.getAttribute('content') ?? null;
+}
