@@ -1,0 +1,37 @@
+{
+  "$comment": "pnpm screenshots が撮る画像と、比べる Figma のフレームの対応（docs/design/README.md）。画面や状態を足すときは、ここに1件足す。file は .data/screenshots/ の中の名前、path は開く URL、select は詳細ペインを開くためにクリックするタスクの名前（scripts/screenshots.mjs の見本のデータ）",
+  "screens": [
+    { "file": "today.png", "path": "/", "frame": "PC/今日", "state": "何も選んでいない" },
+    {
+      "file": "today-selected.png",
+      "path": "/",
+      "frame": "PC/今日",
+      "state": "子のタスクを選び、詳細ペインを開いた状態",
+      "select": "企画書ドラフトを書く"
+    },
+    {
+      "file": "today-parent-selected.png",
+      "path": "/",
+      "frame": "PC/今日（親を選択）",
+      "state": "親のタスクを選び、詳細ペインに子タスクの欄が出た状態（DESIGN.md 4.12）",
+      "select": "TODOツール MVP"
+    },
+    { "file": "morning.png", "path": "/morning", "frame": "PC/朝の計画", "state": "初期" },
+    { "file": "reflection.png", "path": "/reflection", "frame": "PC/振り返り", "state": "初期" },
+    { "file": "backlog.png", "path": "/backlog", "frame": "PC/バックログ", "state": "初期" },
+    { "file": "timeline.png", "path": "/timeline", "frame": "PC/タイムライン", "state": "初期" },
+    { "file": "calendar.png", "path": "/calendar/{ym}", "frame": "PC/カレンダー", "state": "今月" },
+    {
+      "file": "settings.png",
+      "path": "/settings",
+      "frame": "PC/設定",
+      "state": "初期（詳細ペインはエージェント）"
+    },
+    {
+      "file": "mame.png",
+      "path": "/dev/mame",
+      "frame": null,
+      "state": "マメの表情の一覧（Components の Mame と比べる）"
+    }
+  ]
+}

@@ -8,7 +8,7 @@ https://www.figma.com/design/VLCoEFLm1ujvYPq8xyEQFg/mymind-view-design
 
 | ページ | 内容 |
 |---|---|
-| `PC` | 画面のフレーム7枚（1440×900） |
+| `PC` | 画面のフレーム8枚（1440×900） |
 | `Components` | 共通コンポーネント、テキストスタイル、エフェクトスタイル |
 
 ### 画面のフレーム（PC ページ）
@@ -18,6 +18,7 @@ https://www.figma.com/design/VLCoEFLm1ujvYPq8xyEQFg/mymind-view-design
 | フレーム名 | node-id | 画面 | URL（issue 011 の暫定決定） |
 |---|---|---|---|
 | `PC/今日` | `6:25` | 今日のタスク、3ペイン、状態の履歴 | `/` |
+| `PC/今日（親を選択）` | `27:7` | 親のタスク（TODOツール MVP）を選んだ状態。詳細ペイン（`27:158`）に子タスクの欄（子の一覧と追加の入力欄、DESIGN.md 4.12） | `/` |
 | `PC/朝の計画` | `9:2` | 持ち越しの判断、バックログからの追加、昨日のFBと調子 | `/morning` |
 | `PC/振り返り` | `9:225` | Markdown の入力（書く／プレビュー）、今日のFB | `/reflection/:day?` |
 | `PC/バックログ` | `10:2` | バックログの一覧、右ペインに日曜の棚卸し | `/backlog` |
@@ -49,7 +50,7 @@ https://www.figma.com/design/VLCoEFLm1ujvYPq8xyEQFg/mymind-view-design
 1. 対象の issue に書かれたフレーム名（上の表）を確認する
 2. Figma MCP の `get_design_context` に fileKey `VLCoEFLm1ujvYPq8xyEQFg` とフレームの node-id を渡して、スクリーンショットと構造を取得する。node-id は Figma でフレームを選択して「Copy link to selection」で得られる
 3. 色・角の丸み・余白・書体は、Figma の値ではなく DESIGN.md のトークン（`tokens.css`）を使う。食い違いがあれば実装を止めて issue にコメントする
-4. 実装後、Playwright で同じサイズのスクリーンショットを撮り、Figma のフレームと並べて確認する（issue 016）
+4. 実装後、Playwright で同じサイズのスクリーンショットを撮り、Figma のフレームと並べて確認する（issue 016）。`pnpm screenshots` が撮る画像と比べるフレームの対応は `docs/design/screenshots.json` にある。画面や状態（詳細ペインを開いた状態など）を足したら、ここにも1件足す
 
 Figma に接続できない環境では、`docs/design/mockup-source/` のモックアップのソースを参照します。
 
