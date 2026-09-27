@@ -29,6 +29,11 @@ body {
   background-attachment: fixed;
 }
 
+/* 振り返りの画面の地色（DESIGN.md 2.1） */
+body[data-ground="evening"] {
+  background-color: var(--ground-evening);
+}
+
 h1,
 h2,
 p,

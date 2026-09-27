@@ -11,14 +11,16 @@ export const DAY_CHANGED_EVENT = 'mymind:day-changed';
  * 業務日の切り替え検知（NFR-14、architecture.md 12.4）。
  * 画面は表示している業務日を持ち、入力系の操作のたびに今の業務日と比べる。変わっていたら操作を止めて、
  * 「今日の画面へ移る」か「前の日の記録として続ける」かを選ばせる。
+ * 日付を指定して開いた画面（過去の日の振り返りなど）では enabled を false にして、確かめない。
  */
-export function useDayGuard() {
+export function useDayGuard(enabled = true) {
   const [day, setDay] = useState(() => currentDay());
   const [allowPastDay, setAllowPastDay] = useState(false);
   const [changedTo, setChangedTo] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    if (!enabled) return;
     const check = (e: Event) => {
       // 前の日として続けると決めたあとと、ダイアログの中の操作は止めない
       if (allowPastDay || changedTo !== null) {
@@ -41,14 +43,15 @@ export function useDayGuard() {
     return () => {
       for (const type of WATCHED) window.removeEventListener(type, check, true);
     };
-  }, [day, allowPastDay, changedTo]);
+  }, [enabled, day, allowPastDay, changedTo]);
 
   // サーバーが 409（DAY_CHANGED）を返したときも、同じ選択を出す（画面の確認をすり抜けた場合の保険）
   useEffect(() => {
+    if (!enabled) return;
     const onServerDayChanged = () => setChangedTo(currentDay());
     window.addEventListener(DAY_CHANGED_EVENT, onServerDayChanged);
     return () => window.removeEventListener(DAY_CHANGED_EVENT, onServerDayChanged);
-  }, []);
+  }, [enabled]);
 
   const dialog =
     changedTo === null ? null : (
