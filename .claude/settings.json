@@ -39,7 +39,8 @@
       "Bash(gh pr update-branch:*)",
       "Bash(git fetch:*)",
       "Bash(git pull:*)",
-      "Bash(node scripts/merge-if-allowed.mjs:*)"
+      "Bash(node scripts/merge-if-allowed.mjs:*)",
+      "Bash(node ./scripts/merge-if-allowed.mjs:*)"
     ],
     "ask": [
       "Bash(dangerouslyDisableSandbox:true)",
@@ -53,6 +54,7 @@
       "Bash(gh issue create:*)",
       "Bash(gh issue close:*)",
       "Bash(node scripts/github-setup.mjs:*)",
+      "Bash(node ./scripts/github-setup.mjs:*)",
       "Bash(docker:*)",
       "Bash(pnpm docker:*)"
     ],
@@ -89,8 +91,14 @@
       "git pull",
       "git pull:*",
       "pnpm run doctor",
+      "pnpm test:e2e",
+      "pnpm test:e2e:*",
+      "pnpm exec playwright test",
+      "pnpm exec playwright test:*",
       "node scripts/merge-if-allowed.mjs:*",
-      "node scripts/github-setup.mjs:*"
+      "node ./scripts/merge-if-allowed.mjs:*",
+      "node scripts/github-setup.mjs:*",
+      "node ./scripts/github-setup.mjs:*"
     ],
     "filesystem": {
       "allowWrite": [

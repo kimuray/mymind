@@ -1,6 +1,6 @@
 // PR をマージしてよいかを機械的に判定し、許可される場合だけマージする（.claude/rules/autonomy.md、issue 023）。
 // 使い方: node scripts/merge-if-allowed.mjs <PR番号>
-// 終了コード: 0=マージした / 2=レビュー必須 / 3=条件未達（CI、draft、ベースブランチなど）
+// 終了コード: 0=マージした / 2=レビュー必須 / 3=条件未達（CI、draft、ベースブランチなど） / 4=サンドボックスの中で実行された
 import { execFileSync } from 'node:child_process';
 import { reviewRequiredFiles } from './review-policy.mjs';
 
@@ -9,7 +9,23 @@ if (!pr || !/^\d+$/.test(pr)) {
   console.error('使い方: node scripts/merge-if-allowed.mjs <PR番号>');
   process.exit(3);
 }
-const gh = (args) => execFileSync('gh', args, { encoding: 'utf8' }).trim();
+const gh = (args) => {
+  try {
+    return execFileSync('gh', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();
+  } catch (error) {
+    const stderr = String(error.stderr ?? '');
+    // Claude Code のサンドボックスは、コマンド全体が除外済みのコマンドだけでできている場合にしか外へ出さない。
+    // `; echo $?` や `2>&1` を付けると中で実行され、gh が認証情報を読めずにここへ来る
+    if (stderr.includes('operation not permitted')) {
+      console.error(
+        'gh が認証情報を読めません（サンドボックスの中で実行されています）。\n' +
+          `\`node scripts/merge-if-allowed.mjs ${pr}\` を、パイプ・リダイレクト・\`;\`・\`&&\` を付けずに単独で実行してください。`,
+      );
+      process.exit(4);
+    }
+    throw new Error(`gh ${args.join(' ')} が失敗しました:\n${stderr}`, { cause: error });
+  }
+};
 const info = JSON.parse(
   gh([
     'pr',
