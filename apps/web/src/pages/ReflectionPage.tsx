@@ -6,7 +6,7 @@ import { useDayPlan } from '../api/tasks';
 import { AgentInputPreview } from '../components/AgentInputPreview';
 import { Button } from '../components/Button';
 import { Kbd } from '../components/Kbd';
-import { MarkdownEditor } from '../components/MarkdownEditor';
+import { MarkdownField, type MarkdownMode } from '../components/MarkdownField';
 import { PageLayout } from '../components/PageLayout';
 import { DAY_OPTIONS, formatDayHeading } from '../day';
 import { useDayGuard } from '../dayGuard';
@@ -14,6 +14,34 @@ import { useKeyBindings } from '../keyboard';
 
 const sameDraft = (a: ReflectionDraft, b: ReflectionDraft) =>
   a.thoughtsMd === b.thoughtsMd && a.learningMd === b.learningMd;
+
+type FieldKey = keyof ReflectionDraft;
+const FIELDS: readonly { key: FieldKey; id: string; label: string }[] = [
+  { key: 'thoughtsMd', id: 'reflection-thoughts', label: '思考の整理' },
+  { key: 'learningMd', id: 'reflection-learning', label: '学び' },
+];
+
+/**
+ * ⌘P の切り替え。フォーカスのある欄だけを切り替え、欄の外なら両方を切り替える
+ * （どちらかが「書く」なら両方をプレビューに、両方がプレビューなら両方を「書く」に）
+ */
+export function toggleModes(
+  modes: Record<FieldKey, MarkdownMode>,
+  focused: FieldKey | null,
+): Record<FieldKey, MarkdownMode> {
+  const flip = (m: MarkdownMode): MarkdownMode => (m === 'write' ? 'preview' : 'write');
+  if (focused !== null) return { ...modes, [focused]: flip(modes[focused]) };
+  const next: MarkdownMode = Object.values(modes).includes('write') ? 'preview' : 'write';
+  return { thoughtsMd: next, learningMd: next };
+}
+
+/** フォーカスのある欄 */
+const focusedField = (): FieldKey | null => {
+  const id = document.activeElement
+    ?.closest('[data-markdown-field]')
+    ?.getAttribute('data-markdown-field');
+  return FIELDS.find((f) => f.id === id)?.key ?? null;
+};
 
 const errorText = (e: unknown) => (e instanceof ApiError ? e.message : '通信に失敗しました');
 
@@ -76,6 +104,10 @@ function ReflectionEditor({
   const lastSaved = useRef(saved);
   const [notice, setNotice] = useState('');
   const [previewKey, setPreviewKey] = useState<number | null>(null);
+  const [modes, setModes] = useState<Record<FieldKey, MarkdownMode>>({
+    thoughtsMd: 'write',
+    learningMd: 'write',
+  });
   const save = useSaveReflection(day);
   const request = useRequestFeedback(day);
   const settings = useSettings();
@@ -128,6 +160,10 @@ function ReflectionEditor({
       if (!busy) void saveAndRequest();
       return true;
     },
+    'reflection.togglePreview': () => {
+      setModes((m) => toggleModes(m, focusedField()));
+      return true;
+    },
   });
 
   const detail =
@@ -156,26 +192,18 @@ function ReflectionEditor({
         </header>
 
         <div className="reflection-fields">
-          <section className="reflection-field" aria-labelledby="reflection-thoughts">
-            <h2 id="reflection-thoughts" className="reflection-field-title">
-              思考の整理
-            </h2>
-            <MarkdownEditor
-              label="思考の整理"
-              initialValue={saved.thoughtsMd}
-              onChange={(thoughtsMd) => setDraft((d) => ({ ...d, thoughtsMd }))}
+          {FIELDS.map((f) => (
+            <MarkdownField
+              key={f.key}
+              id={f.id}
+              label={f.label}
+              initialValue={saved[f.key]}
+              value={draft[f.key]}
+              onChange={(value) => setDraft((d) => ({ ...d, [f.key]: value }))}
+              mode={modes[f.key]}
+              onModeChange={(mode) => setModes((m) => ({ ...m, [f.key]: mode }))}
             />
-          </section>
-          <section className="reflection-field" aria-labelledby="reflection-learning">
-            <h2 id="reflection-learning" className="reflection-field-title">
-              学び
-            </h2>
-            <MarkdownEditor
-              label="学び"
-              initialValue={saved.learningMd}
-              onChange={(learningMd) => setDraft((d) => ({ ...d, learningMd }))}
-            />
-          </section>
+          ))}
         </div>
 
         <div className="reflection-actions">
