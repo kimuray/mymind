@@ -11,6 +11,8 @@ import { PageLayout } from '../components/PageLayout';
 import { DAY_OPTIONS, formatDayHeading } from '../day';
 import { useDayGuard } from '../dayGuard';
 import { useKeyBindings } from '../keyboard';
+import { useReflectionDrafts } from '../useReflectionDrafts';
+import { formatDateTime } from './SettingsPage';
 
 const sameDraft = (a: ReflectionDraft, b: ReflectionDraft) =>
   a.thoughtsMd === b.thoughtsMd && a.learningMd === b.learningMd;
@@ -78,6 +80,7 @@ export function ReflectionPage({ day: dayParam }: { day: string | undefined }) {
           saved={{
             thoughtsMd: log.data.log?.thoughtsMd ?? '',
             learningMd: log.data.log?.learningMd ?? '',
+            updatedAt: log.data.log?.updatedAt ?? null,
           }}
         />
       ) : (
@@ -98,10 +101,15 @@ function ReflectionEditor({
 }: {
   day: string;
   isToday: boolean;
-  saved: ReflectionDraft;
+  saved: ReflectionDraft & { updatedAt: string | null };
 }) {
-  const [draft, setDraft] = useState(saved);
-  const lastSaved = useRef(saved);
+  const savedText = { thoughtsMd: saved.thoughtsMd, learningMd: saved.learningMd };
+  const [draft, setDraft] = useState<ReflectionDraft>(savedText);
+  // 入力欄の最初の内容。下書きを復元したら、復元した内容で入力欄を作り直す
+  const [initial, setInitial] = useState<ReflectionDraft>(savedText);
+  const [editorVersion, setEditorVersion] = useState(0);
+  const lastSaved = useRef<ReflectionDraft>(savedText);
+  const drafts = useReflectionDrafts({ day, draft, saved });
   const [notice, setNotice] = useState('');
   const [previewKey, setPreviewKey] = useState<number | null>(null);
   const [modes, setModes] = useState<Record<FieldKey, MarkdownMode>>({
@@ -120,6 +128,7 @@ function ReflectionEditor({
     try {
       await save.mutateAsync(draft);
       lastSaved.current = draft;
+      drafts.clearSaved(draft);
       return true;
     } catch (e) {
       setNotice(`保存できませんでした（${errorText(e)}）`);
@@ -149,6 +158,17 @@ function ReflectionEditor({
       onSuccess: () => setNotice('保存して、FBを依頼しました'),
       onError: (e) => setNotice(`保存しました。FBを依頼できませんでした（${errorText(e)}）`),
     });
+  };
+
+  const restoreDrafts = () => {
+    if (drafts.offer === null) return;
+    const restored = { ...draft };
+    for (const f of FIELDS) restored[f.key] = drafts.offer.drafts[f.key]?.text ?? restored[f.key];
+    setInitial(restored);
+    setDraft(restored);
+    setEditorVersion((v) => v + 1);
+    drafts.dismiss();
+    setNotice('下書きを復元しました。まだ保存していません');
   };
 
   useKeyBindings({
@@ -191,13 +211,25 @@ function ReflectionEditor({
           )}
         </header>
 
+        {drafts.offer !== null && (
+          <div className="draft-offer glass-2" role="status">
+            <p>{`保存していない下書きがあります（${formatDateTime(drafts.offer.updatedAt)}）`}</p>
+            <Button kind="text" onClick={restoreDrafts}>
+              復元する
+            </Button>
+            <Button kind="text" onClick={() => void drafts.discard()}>
+              破棄する
+            </Button>
+          </div>
+        )}
+
         <div className="reflection-fields">
           {FIELDS.map((f) => (
             <MarkdownField
-              key={f.key}
+              key={`${f.key}-${editorVersion}`}
               id={f.id}
               label={f.label}
-              initialValue={saved[f.key]}
+              initialValue={initial[f.key]}
               value={draft[f.key]}
               onChange={(value) => setDraft((d) => ({ ...d, [f.key]: value }))}
               mode={modes[f.key]}
