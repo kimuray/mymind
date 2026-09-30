@@ -1,3 +1,4 @@
+import type { DaySummary as DaySummaryData } from '@mymind/domain';
 import { useEffect, useRef, useState } from 'react';
 import { ApiError } from '../api/client';
 import { type ReflectionDraft, useRequestFeedback, useSaveReflection } from '../api/reflection';
@@ -5,6 +6,7 @@ import { useSettings } from '../api/settings';
 import { useDayPlan } from '../api/tasks';
 import { AgentInputPreview } from '../components/AgentInputPreview';
 import { Button } from '../components/Button';
+import { DaySummary } from '../components/DaySummary';
 import { Kbd } from '../components/Kbd';
 import { MarkdownField, type MarkdownMode } from '../components/MarkdownField';
 import { PageLayout } from '../components/PageLayout';
@@ -77,6 +79,7 @@ export function ReflectionPage({ day: dayParam }: { day: string | undefined }) {
           key={day}
           day={day}
           isToday={day === guard.day}
+          summary={log.data.summary}
           saved={{
             thoughtsMd: log.data.log?.thoughtsMd ?? '',
             learningMd: log.data.log?.learningMd ?? '',
@@ -98,10 +101,12 @@ function ReflectionEditor({
   day,
   isToday,
   saved,
+  summary,
 }: {
   day: string;
   isToday: boolean;
   saved: ReflectionDraft & { updatedAt: string | null };
+  summary: DaySummaryData;
 }) {
   const savedText = { thoughtsMd: saved.thoughtsMd, learningMd: saved.learningMd };
   const [draft, setDraft] = useState<ReflectionDraft>(savedText);
@@ -210,6 +215,8 @@ function ReflectionEditor({
             <p className="text-small">{`翌 ${DAY_OPTIONS.dayStartHour}:00 までこの日の記録になります`}</p>
           )}
         </header>
+
+        <DaySummary summary={summary} />
 
         {drafts.offer !== null && (
           <div className="draft-offer glass-2" role="status">

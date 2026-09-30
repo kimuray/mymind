@@ -565,3 +565,38 @@ describe('FR-D06 FR-D08 振り返りの保存', () => {
     expect(await readLog(TODAY)).toBeNull();
   });
 });
+
+describe('FR-D07 振り返りの冒頭の記録のまとめ', () => {
+  const step = async (task: TaskJson, to: string) => {
+    const res = await transition(task, to);
+    expect(res.status).toBe(200);
+    return ((await res.json()) as { task: TaskJson }).task;
+  };
+
+  it('その日の完了・着手・変化を、件数と日数を計算して返す', async () => {
+    const done = await step(
+      await step(await addTask({ title: '経費精算', planFor: 'today' }), 'doing'),
+      'done',
+    );
+    await step(await addTask({ title: 'スキーマ設計', planFor: 'today' }), 'doing');
+    await step(await step(await addTask({ title: '週報', planFor: 'today' }), 'doing'), 'paused');
+    await addTask({ title: '手をつけていない', planFor: 'today' });
+
+    const body = (await (await get(`/days/${TODAY}`)).json()) as {
+      summary: { completed: unknown[]; started: unknown[]; changes: unknown[] };
+    };
+    expect(body.summary.completed).toEqual([{ taskId: done.id, title: '経費精算' }]);
+    expect(body.summary.started).toEqual([
+      expect.objectContaining({ title: 'スキーマ設計', isNew: true, dayOrdinal: 1 }),
+    ]);
+    // 週報は、この日に作ったので始めの状態は未着手
+    expect(body.summary.changes).toEqual([
+      expect.objectContaining({ kind: 'changed', title: '週報', from: 'todo', to: 'paused' }),
+    ]);
+  });
+
+  it('何もない日は、どの欄も空', async () => {
+    const body = (await (await get('/days/2026-09-01')).json()) as { summary: unknown };
+    expect(body.summary).toEqual({ completed: [], started: [], changes: [] });
+  });
+});

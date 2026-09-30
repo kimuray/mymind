@@ -318,3 +318,46 @@ describe('FR-T05 計画への出し入れ', () => {
     expect(repo.listBacklog(DAY).map((t) => t.id)).toEqual(['past', 'none']);
   });
 });
+
+describe('FR-D07 その日の記録のまとめの候補', () => {
+  const make = (id: string, day: string) =>
+    repo.create({
+      created: { type: 'created', taskId: id, at: `${day}T01:00:00.000Z`, day },
+      parentId: null,
+      title: id,
+      noteMd: null,
+    });
+  const toStatus = (id: string, from: Status, to: Status, day: string) => {
+    const result = changeStatus({ taskId: id, at: `${day}T02:00:00.000Z`, day, from, to });
+    if (!result.ok) throw new Error('遷移できません');
+    const applied = repo.applyChanges([
+      { taskId: id, expectedVersion: null, events: [result.value] },
+    ]);
+    if (!applied.ok) throw new Error('保存できません');
+  };
+
+  it('その日にイベントがあるタスク、その日の計画のタスク、今も着手中か待ちのタスクを返す', () => {
+    make('today-event', '2026-09-20');
+    toStatus('today-event', 'todo', 'doing', DAY);
+    make('planned', '2026-09-20');
+    repo.applyChanges([
+      {
+        taskId: 'planned',
+        expectedVersion: null,
+        events: [{ type: 'planned', taskId: 'planned', at: `${DAY}T00:00:00.000Z`, day: DAY }],
+        plan: { removeDays: [], addDay: DAY },
+      },
+    ]);
+    make('waiting', '2026-09-18');
+    toStatus('waiting', 'todo', 'doing', '2026-09-18');
+    toStatus('waiting', 'doing', 'waiting', '2026-09-18');
+    make('old-todo', '2026-09-18');
+
+    expect(
+      repo
+        .listSummaryCandidates(DAY)
+        .map((t) => t.id)
+        .sort(),
+    ).toEqual(['planned', 'today-event', 'waiting']);
+  });
+});

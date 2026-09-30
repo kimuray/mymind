@@ -1036,3 +1036,47 @@
 .draft-offer p {
   flex: 1;
 }
+
+/* 振り返りの冒頭の記録のまとめ（FR-D07、Figma「PC/振り返り」の「記録/完了」など） */
+.day-summary {
+  display: flex;
+  gap: var(--space-3);
+}
+
+.day-summary-card {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  padding: var(--space-4) var(--space-4);
+  border-radius: var(--radius-l);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.day-summary-label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.day-summary-count {
+  font-variant-numeric: tabular-nums;
+}
+
+.day-summary-done {
+  color: var(--status-done-text);
+}
+
+.day-summary-doing {
+  color: var(--status-doing-text);
+}
+
+.day-summary-waiting {
+  color: var(--status-waiting-text);
+}
+
+.day-summary-empty {
+  color: var(--ink-4);
+}
