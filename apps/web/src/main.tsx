@@ -15,6 +15,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { ApiError } from './api/client';
 import { DAY_CHANGED_EVENT } from './dayGuard';
+import { indexedDbDrafts } from './drafts';
 import { router } from './router';
 
 const queryClient = new QueryClient({
@@ -27,6 +28,11 @@ const queryClient = new QueryClient({
     },
   }),
 });
+
+// 30日を過ぎた下書きを起動時に消す（NFR-12、architecture.md 12.2）
+indexedDbDrafts
+  .prune(new Date())
+  .catch((e: unknown) => console.warn('古い下書きを消せませんでした', e));
 
 const root = document.getElementById('root');
 if (root === null) throw new Error('#root が見つかりません');

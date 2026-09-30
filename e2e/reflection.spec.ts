@@ -159,3 +159,55 @@ test.describe('FR-D06 NFR-02 書く／プレビューの切り替え', () => {
     expect(dialogs).toEqual([]);
   });
 });
+
+test.describe('NFR-12 下書きの保護', () => {
+  // 他のテストの下書きと混ざらないよう、過去の日を使う
+  const path = '/reflection/2026-09-10';
+
+  test('保存前にタブを閉じても、再度開くと復元を提示され、復元すると書きかけに戻る', async ({
+    context,
+  }) => {
+    const first = await context.newPage();
+    await first.goto(path);
+    await replaceText(first, '思考の整理', '保存する前に閉じた書きかけ');
+    // 入力が止まってから1秒後に下書きを書く
+    await first.waitForTimeout(1500);
+    await first.close();
+
+    const second = await context.newPage();
+    await second.goto(path);
+    const offer = second.getByRole('status').filter({ hasText: '保存していない下書きがあります' });
+    await expect(offer).toBeVisible();
+    await expect(second.getByRole('textbox', { name: '思考の整理' })).not.toContainText('書きかけ');
+    await offer.getByRole('button', { name: '復元する' }).click();
+    await expect(second.getByRole('textbox', { name: '思考の整理' })).toHaveText(
+      '保存する前に閉じた書きかけ',
+    );
+
+    // 保存すると下書きは消え、開き直しても尋ねない
+    await second.getByRole('button', { name: /^保存のみ/ }).click();
+    await expect(notice(second)).toHaveText('保存しました');
+    await second.reload();
+    await expect(second.getByRole('textbox', { name: '思考の整理' })).toHaveText(
+      '保存する前に閉じた書きかけ',
+    );
+    await second.waitForTimeout(500);
+    await expect(second.getByText('保存していない下書きがあります')).toHaveCount(0);
+  });
+
+  test('「破棄する」を選ぶと、下書きを消して保存した内容のまま続ける', async ({ page }) => {
+    await page.goto(path);
+    const before = await page.getByRole('textbox', { name: '学び' }).textContent();
+    await replaceText(page, '学び', '捨てる下書き');
+    await page.waitForTimeout(1500);
+    await page.reload();
+
+    await page.getByRole('button', { name: '破棄する' }).click();
+    await expect(page.getByText('保存していない下書きがあります')).toHaveCount(0);
+    await expect(page.getByRole('textbox', { name: '学び' })).not.toContainText('捨てる下書き');
+    await page.reload();
+    await page.waitForTimeout(500);
+    await expect(page.getByText('保存していない下書きがあります')).toHaveCount(0);
+    expect(before).not.toContain('捨てる下書き');
+  });
+});
