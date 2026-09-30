@@ -822,7 +822,7 @@
   min-height: 320px;
 }
 
-.reflection-field {
+.markdown-field {
   display: flex;
   flex: 1;
   flex-direction: column;
@@ -830,11 +830,44 @@
   min-width: 0;
 }
 
-.reflection-field-title {
+.markdown-field-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   padding-left: var(--space-1);
+}
+
+.markdown-field-title {
   font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.01em;
+}
+
+/* 書く／プレビューの切り替え（Figma「PC/振り返り」） */
+.segmented {
+  display: flex;
+  margin: 0;
+  padding: var(--space-1);
+  border: var(--button-secondary-border);
+  border-radius: var(--radius-m);
+  background: var(--button-secondary-bg);
+}
+
+.segmented-item {
+  padding: var(--space-1) var(--space-3);
+  border: none;
+  border-radius: var(--radius-s);
+  background: none;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--ink-1);
+  cursor: pointer;
+}
+
+.segmented-item[aria-pressed="true"] {
+  background: var(--segmented-active-bg);
 }
 
 .reflection-actions {
@@ -910,4 +943,96 @@
 .markdown-hints-title {
   font-weight: 600;
   color: var(--ink-3);
+}
+
+/* Markdown のプレビュー（DESIGN.md 4.7） */
+.markdown-preview {
+  font-size: 14px;
+  line-height: 1.75;
+  color: var(--ink-1);
+  overflow-wrap: anywhere;
+}
+
+.markdown-preview > :first-child {
+  margin-top: 0;
+}
+
+.markdown-preview h1,
+.markdown-preview h2,
+.markdown-preview h3 {
+  margin: var(--space-3) 0 var(--space-1);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.markdown-preview p,
+.markdown-preview ul,
+.markdown-preview ol,
+.markdown-preview blockquote,
+.markdown-preview pre {
+  margin: 0 0 var(--space-2);
+}
+
+.markdown-preview ul,
+.markdown-preview ol {
+  padding-left: var(--space-5);
+}
+
+.markdown-preview ul {
+  list-style: disc;
+}
+
+.markdown-preview li::marker {
+  color: var(--accent);
+}
+
+/* 引用は背景で示し、左側の太い線は使わない */
+.markdown-preview blockquote {
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-m);
+  background: var(--accent-soft);
+}
+
+.markdown-preview code {
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-s);
+  background: var(--code-bg);
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+
+.markdown-preview pre {
+  padding: var(--space-3);
+  border-radius: var(--radius-m);
+  background: var(--code-bg);
+  overflow-x: auto;
+}
+
+.markdown-preview pre code {
+  padding: 0;
+  background: none;
+}
+
+.markdown-preview a {
+  color: var(--accent);
+}
+
+.markdown-preview-empty,
+.markdown-preview-image {
+  color: var(--ink-4);
+}
+
+/* 下書きの復元（NFR-12、DESIGN.md 4.7） */
+.draft-offer {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-l);
+  font-size: 13px;
+}
+
+.draft-offer p {
+  flex: 1;
 }
