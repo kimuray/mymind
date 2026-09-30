@@ -10,6 +10,7 @@ import {
   rulesOnStatusChange,
   STATUSES,
   statusSinceDay,
+  summarizeDay,
   toBusinessDay,
 } from '@mymind/domain';
 import { type Context, Hono } from 'hono';
@@ -189,6 +190,15 @@ export function createApi({
         day: day.data,
         tasks: withListInfo(tasks.listPlan(day.data)),
         log: logs.find(day.data) ?? null,
+        // 振り返りの冒頭の記録のまとめ（FR-D07）。件数や日数はここで数える
+        summary: summarizeDay(
+          day.data,
+          tasks.listSummaryCandidates(day.data).map((t) => ({
+            taskId: t.id,
+            title: t.title,
+            events: tasks.listEvents(t.id),
+          })),
+        ),
       });
     })
 

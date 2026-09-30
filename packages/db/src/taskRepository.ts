@@ -1,5 +1,5 @@
 import type { Status, StatusChangeEvent, TaskEvent } from '@mymind/domain';
-import { and, asc, eq, gte, inArray, max, notExists, notInArray } from 'drizzle-orm';
+import { and, asc, eq, gte, inArray, max, notExists, notInArray, or } from 'drizzle-orm';
 import type { Database } from './client';
 import { dayPlans, taskEvents, tasks } from './schema';
 import type { SensitiveCodec } from './sensitiveCodec';
@@ -320,6 +320,32 @@ export function createTaskRepository({ db, codec, newEventId }: TaskRepositoryDe
         .orderBy(asc(taskEvents.id))
         .all()
         .map(toEvent);
+    },
+
+    /**
+     * その日の記録のまとめ（FR-D07）の候補：その日にイベントがあるか、その日の計画にあるか、
+     * 今も着手中か待ちのタスク（前から続いている着手と待ちを拾うため）
+     */
+    listSummaryCandidates(day: string): Task[] {
+      return db
+        .select()
+        .from(tasks)
+        .where(
+          or(
+            inArray(
+              tasks.id,
+              db.select({ id: taskEvents.taskId }).from(taskEvents).where(eq(taskEvents.day, day)),
+            ),
+            inArray(
+              tasks.id,
+              db.select({ id: dayPlans.taskId }).from(dayPlans).where(eq(dayPlans.day, day)),
+            ),
+            inArray(tasks.status, ['doing', 'waiting']),
+          ),
+        )
+        .orderBy(asc(tasks.sortOrder))
+        .all()
+        .map(toTask);
     },
 
     /** 複数のタスクをまとめて取得する（自動ルールで変わった親などを応答に含めるため） */

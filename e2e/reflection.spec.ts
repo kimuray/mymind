@@ -211,3 +211,25 @@ test.describe('NFR-12 下書きの保護', () => {
     expect(before).not.toContain('捨てる下書き');
   });
 });
+
+test.describe('FR-D07 振り返りの冒頭の記録のまとめ', () => {
+  test('今日の画面でタスクを完了にすると、振り返りの冒頭の完了に出る', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('今日のタスクを追加');
+    await input.fill('まとめに出るタスク');
+    await input.press('Enter');
+    const row = page.getByRole('button', { name: /^まとめに出るタスク：/ });
+    await expect(row).toBeVisible();
+    // 未着手 → 着手中 → 完了
+    await row.click();
+    await page.keyboard.press(' ');
+    await expect(page.getByRole('button', { name: /^まとめに出るタスク：着手中/ })).toBeVisible();
+    await page.keyboard.press(' ');
+    await expect(page.getByRole('button', { name: /^まとめに出るタスク：完了/ })).toBeVisible();
+
+    await page.goto('/reflection');
+    const summary = page.getByRole('region', { name: 'この日の記録' });
+    await expect(summary).toContainText('まとめに出るタスク');
+    await expect(summary.getByRole('heading', { name: /^完了/ })).toBeVisible();
+  });
+});
