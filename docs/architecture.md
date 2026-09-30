@@ -205,8 +205,8 @@ CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 | 用途 | メソッドとパス | 補足 |
 |---|---|---|
 | 今日の画面 | `GET /api/days/:day` | 計画、ログ、最新FB、調子をまとめて返す |
-| 持ち越し候補 | `GET /api/days/:day/carryover` | |
-| 朝の計画の確定 | `POST /api/days/:day/plan` | 持ち越しの判断とバックログからの追加を1トランザクションで反映 |
+| 持ち越し候補 | `GET /api/days/:day/carryover` | 基準日、空白日数、候補、確定した時刻。確定した後は候補を返さない |
+| 朝の計画の確定 | `POST /api/days/:day/plan` | 持ち越しの判断（候補のすべてに1つずつ）とバックログからの追加を1トランザクションで反映し、`daily_logs.plan_confirmed_at` に残す。確定は1日1回で、2回目は 409。未着手の「実は終わった」は着手中を経て完了にする（#110） |
 | タスクの追加・編集 | `POST /api/tasks`、`PATCH /api/tasks/:id` | 追加時に `planFor` を指定すると計画に直接入る |
 | ステータス変更 | `POST /api/tasks/:id/transition` | 自動ルールの結果と提案を応答に含める |
 | 移動 | `POST /api/tasks/:id/move` | `to: today / tomorrow / backlog` |

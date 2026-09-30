@@ -55,6 +55,17 @@ export function createDailyLogRepository({ db, codec }: { db: Database; codec: S
         learningMd: input.learningMd,
       };
     },
+
+    /**
+     * 朝の計画を確定した時刻を残す（FR-D05）。振り返りの本文と更新時刻は変えない
+     * （更新時刻は振り返りの下書きの復元の判定に使うため）
+     */
+    confirmPlan(day: string, at: string): void {
+      db.insert(dailyLogs)
+        .values({ day, planConfirmedAt: at, updatedAt: at })
+        .onConflictDoUpdate({ target: dailyLogs.day, set: { planConfirmedAt: at } })
+        .run();
+    },
   };
 }
 

@@ -2,6 +2,7 @@ export * from './businessDay';
 export * from './carryover';
 export * from './daySummary';
 export * from './jobs';
+export * from './morningPlan';
 export * from './plans';
 export * from './rules';
 export * from './status';

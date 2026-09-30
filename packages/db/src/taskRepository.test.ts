@@ -361,3 +361,22 @@ describe('FR-D07 その日の記録のまとめの候補', () => {
     ).toEqual(['planned', 'today-event', 'waiting']);
   });
 });
+
+describe('FR-D09 計画のある業務日', () => {
+  it('計画に行がある業務日を、重なりなく古い順に返す', () => {
+    for (const [id, day] of [
+      ['a', '2026-09-22'],
+      ['b', '2026-09-20'],
+      ['c', '2026-09-22'],
+    ] as const) {
+      repo.create({
+        created: { type: 'created', taskId: id, at: at(0), day: DAY },
+        parentId: null,
+        title: id,
+        noteMd: null,
+        plan: { day, event: { type: 'planned', taskId: id, at: at(0), day: DAY } },
+      });
+    }
+    expect(repo.listPlanDays()).toEqual(['2026-09-20', '2026-09-22']);
+  });
+});

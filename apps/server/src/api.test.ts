@@ -600,3 +600,134 @@ describe('FR-D07 振り返りの冒頭の記録のまとめ', () => {
     expect(body.summary).toEqual({ completed: [], started: [], changes: [] });
   });
 });
+
+describe('FR-D03 FR-D04 FR-D05 FR-D09 朝の計画', () => {
+  /** その業務日の 10:00（日本時間）に時計を合わせる */
+  const setDay = (day: string) => {
+    now = new Date(`${day}T01:00:00.000Z`);
+  };
+  const addOn = async (day: string, title: string, planFor?: 'today') => {
+    setDay(day);
+    const res = await send('POST', '/tasks', {
+      title,
+      expectedDay: day,
+      ...(planFor === undefined ? {} : { planFor }),
+    });
+    expect(res.status).toBe(201);
+    return ((await res.json()) as { task: TaskJson }).task;
+  };
+  const stepOn = async (day: string, task: TaskJson, to: string) => {
+    setDay(day);
+    const res = await send('POST', `/tasks/${task.id}/transition`, {
+      to,
+      expectedVersion: task.version,
+      expectedDay: day,
+    });
+    expect(res.status).toBe(200);
+    return ((await res.json()) as { task: TaskJson }).task;
+  };
+  type Carryover = {
+    baseDay: string | null;
+    blankDays: number;
+    confirmedAt: string | null;
+    candidates: TaskJson[];
+  };
+  const carryover = async (day: string) =>
+    (await (await get(`/days/${day}/carryover`)).json()) as Carryover;
+  const confirm = (day: string, body: Record<string, unknown>) =>
+    send('POST', `/days/${day}/plan`, { expectedDay: day, decisions: [], additions: [], ...body });
+
+  it('空白日をはさんでも、最後に計画した日の未完了のタスクを候補にし、空白日数を返す', async () => {
+    const open = await addOn('2026-09-19', '企画書', 'today');
+    await stepOn(
+      '2026-09-19',
+      await stepOn('2026-09-19', await addOn('2026-09-19', '週報', 'today'), 'doing'),
+      'done',
+    );
+    setDay('2026-09-23');
+    const body = await carryover('2026-09-23');
+    expect(body).toMatchObject({ baseDay: '2026-09-19', blankDays: 3, confirmedAt: null });
+    expect(body.candidates.map((t) => t.id)).toEqual([open.id]);
+  });
+
+  it('計画が一度もなければ、基準日はなく候補も空', async () => {
+    expect(await carryover(TODAY)).toMatchObject({ baseDay: null, blankDays: 0, candidates: [] });
+  });
+
+  it('3つの判断とバックログからの追加を、まとめて反映する', async () => {
+    const keep = await addOn('2026-09-22', '今日もやる', 'today');
+    const later = await stepOn('2026-09-22', await addOn('2026-09-22', 'あとで', 'today'), 'doing');
+    const finished = await addOn('2026-09-22', '実は終わった', 'today');
+    const fromBacklog = await addOn('2026-09-22', 'バックログのタスク');
+    setDay(TODAY);
+
+    const res = await confirm(TODAY, {
+      decisions: [
+        { taskId: keep.id, decision: 'today' },
+        { taskId: later.id, decision: 'backlog' },
+        { taskId: finished.id, decision: 'done' },
+      ],
+      additions: [fromBacklog.id],
+    });
+    expect(res.status).toBe(200);
+    expect(await planIds(TODAY)).toEqual([keep.id, fromBacklog.id]);
+    expect(await backlogIds()).toEqual([later.id]);
+
+    const status = async (id: string) =>
+      (
+        (await (await get(`/tasks/${id}/events`)).json()) as {
+          events: { type: string; to?: string }[];
+        }
+      ).events.flatMap((e) => (e.type === 'status_changed' ? [e.to] : []));
+    // 着手中のままバックログへ送ると中断になる（FR-T06）
+    expect(await status(later.id)).toEqual(['doing', 'paused']);
+    // 未着手の「実は終わった」は、着手中を経て完了にする
+    expect(await status(finished.id)).toEqual(['doing', 'done']);
+  });
+
+  it('確定した後は候補を返さず、もう一度は確定できない', async () => {
+    const task = await addOn('2026-09-22', 'バックログへ送る', 'today');
+    setDay(TODAY);
+    expect(
+      (await confirm(TODAY, { decisions: [{ taskId: task.id, decision: 'backlog' }] })).status,
+    ).toBe(200);
+    const body = await carryover(TODAY);
+    expect(body.candidates).toEqual([]);
+    expect(body.confirmedAt).toBe(now.toISOString());
+    expect((await confirm(TODAY, {})).status).toBe(409);
+  });
+
+  it('判断の抜けや、候補にないタスクへの判断は 400 で、何も反映しない', async () => {
+    const a = await addOn('2026-09-22', 'A', 'today');
+    await addOn('2026-09-22', 'B', 'today');
+    const other = await addOn('2026-09-22', 'バックログ');
+    setDay(TODAY);
+    expect(
+      (await confirm(TODAY, { decisions: [{ taskId: a.id, decision: 'today' }] })).status,
+    ).toBe(400);
+    expect(
+      (await confirm(TODAY, { decisions: [{ taskId: other.id, decision: 'today' }] })).status,
+    ).toBe(400);
+    expect(await planIds(TODAY)).toEqual([]);
+    expect((await carryover(TODAY)).confirmedAt).toBeNull();
+  });
+
+  it('バックログにないタスクは追加できない', async () => {
+    const planned = await addOn(TODAY, '今日の計画にある', 'today');
+    expect((await confirm(TODAY, { additions: [planned.id] })).status).toBe(400);
+  });
+
+  it('画面の業務日とパスの業務日が違えば 400、今の業務日と違えば 409', async () => {
+    setDay(TODAY);
+    expect(
+      (
+        await send('POST', `/days/${TODAY}/plan`, {
+          expectedDay: TOMORROW,
+          decisions: [],
+          additions: [],
+        })
+      ).status,
+    ).toBe(400);
+    expect((await confirm(TOMORROW, {})).status).toBe(409);
+  });
+});

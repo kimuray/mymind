@@ -72,3 +72,32 @@ describe('FR-D06 振り返りの保存', () => {
     expect(row).toMatchObject({ thoughtsMd: 'enc:a', learningMd: 'enc:b' });
   });
 });
+
+describe('FR-D05 朝の計画の確定', () => {
+  it('振り返りがない日は、確定の時刻だけを持つ行を作る', () => {
+    repo.confirmPlan('2026-09-26', '2026-09-26T00:00:00.000Z');
+    expect(repo.find('2026-09-26')).toEqual({
+      day: '2026-09-26',
+      thoughtsMd: '',
+      learningMd: '',
+      planConfirmedAt: '2026-09-26T00:00:00.000Z',
+      updatedAt: '2026-09-26T00:00:00.000Z',
+    });
+  });
+
+  it('振り返りがある日は、本文と更新時刻を変えずに確定の時刻を残す', () => {
+    repo.saveReflection({
+      day: '2026-09-26',
+      thoughtsMd: 'a',
+      learningMd: 'b',
+      at: '2026-09-25T20:00:00.000Z',
+    });
+    repo.confirmPlan('2026-09-26', '2026-09-26T00:00:00.000Z');
+    expect(repo.find('2026-09-26')).toMatchObject({
+      thoughtsMd: 'a',
+      learningMd: 'b',
+      planConfirmedAt: '2026-09-26T00:00:00.000Z',
+      updatedAt: '2026-09-25T20:00:00.000Z',
+    });
+  });
+});
