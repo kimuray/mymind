@@ -278,6 +278,16 @@ export function createTaskRepository({ db, codec, newEventId }: TaskRepositoryDe
         .map((r) => r.day);
     },
 
+    /** 計画に行がある業務日（持ち越しの基準日を求めるため、architecture.md 4.5） */
+    listPlanDays(): string[] {
+      return db
+        .selectDistinct({ day: dayPlans.day })
+        .from(dayPlans)
+        .orderBy(asc(dayPlans.day))
+        .all()
+        .map((r) => r.day);
+    },
+
     /** その業務日の計画を、並び順に返す */
     listPlan(day: string): PlannedTask[] {
       return db

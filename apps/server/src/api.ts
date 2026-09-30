@@ -1,10 +1,15 @@
 import type { DailyLogRepository, SettingsRepository, Task, TaskRepository } from '@mymind/db';
 import {
   type BusinessDayOptions,
+  blankDaysSince,
+  CARRYOVER_DECISIONS,
   canBecomeChild,
   canHaveChildren,
+  carryoverBaseDay,
+  carryoverCandidates,
   changeStatus,
   nextDay,
+  planMorning,
   planMove,
   rulesOnMoveToBacklog,
   rulesOnStatusChange,
@@ -80,6 +85,15 @@ const editTaskBody = z
 /** FR-D06、FR-D08：振り返りの本文。一行だけ、片方だけでも保存できる */
 const logBody = z.strictObject({ thoughtsMd: z.string(), learningMd: z.string() });
 
+/** FR-D03〜D05：朝の計画の確定。持ち越し候補すべてへの判断と、バックログから今日に入れるタスク */
+const planBody = z.strictObject({
+  ...screenState,
+  decisions: z.array(
+    z.strictObject({ taskId: z.string().min(1), decision: z.enum(CARRYOVER_DECISIONS) }),
+  ),
+  additions: z.array(z.string().min(1)),
+});
+
 const transitionBody = z.strictObject({ ...withVersion, to: z.enum(STATUSES) });
 
 const moveBody = z.strictObject({ ...withVersion, to: z.enum(['today', 'tomorrow', 'backlog']) });
@@ -90,7 +104,8 @@ type ErrorCode =
   | 'VERSION_CONFLICT'
   | 'DAY_CHANGED'
   | 'INVALID_TRANSITION'
-  | 'DEPTH_EXCEEDED';
+  | 'DEPTH_EXCEEDED'
+  | 'PLAN_CONFIRMED';
 
 /** エラーの応答。状態コードを型に残し、Hono RPC のクライアントが成功と失敗を区別できるようにする */
 function fail<S extends ContentfulStatusCode>(
@@ -157,6 +172,27 @@ export function createApi({
     });
   };
 
+  /**
+   * 持ち越し候補（FR-D03、FR-D09、architecture.md 4.5）。
+   * 基準日は「今日より前で、計画がある最後の業務日」。その日の計画にあって未完了で、今日の計画にまだないタスク
+   */
+  const findCarryover = (day: string) => {
+    const baseDay = carryoverBaseDay(tasks.listPlanDays(), day);
+    if (baseDay === null) return { baseDay, blankDays: 0, candidates: [] };
+    const basePlan = tasks.listPlan(baseDay);
+    const ids = new Set(
+      carryoverCandidates(
+        basePlan.map((t) => ({ taskId: t.id, status: t.status })),
+        tasks.listPlan(day).map((t) => t.id),
+      ).map((t) => t.taskId),
+    );
+    return {
+      baseDay,
+      blankDays: blankDaysSince(baseDay, day),
+      candidates: basePlan.filter((t) => ids.has(t.id)),
+    };
+  };
+
   /** 画面が想定する業務日と、現在の業務日を比べる（NFR-14） */
   const checkDay = (
     c: Context,
@@ -200,6 +236,84 @@ export function createApi({
           })),
         ),
       });
+    })
+
+    .get('/days/:day/carryover', (c) => {
+      const day = dayParam.safeParse(c.req.param('day'));
+      if (!day.success) return fail(c, 400, 'INVALID_REQUEST', '業務日の形式が正しくありません');
+      const confirmedAt = logs.find(day.data)?.planConfirmedAt ?? null;
+      const { baseDay, blankDays, candidates } = findCarryover(day.data);
+      return c.json({
+        day: day.data,
+        baseDay,
+        blankDays,
+        confirmedAt,
+        // 確定した後は候補を返さない。バックログへ送ったタスクは基準日の計画に残るので、返すと候補に戻ってしまう
+        candidates: confirmedAt === null ? withListInfo(candidates) : [],
+      });
+    })
+
+    .post('/days/:day/plan', jsonBody(planBody), (c) => {
+      const day = dayParam.safeParse(c.req.param('day'));
+      const input = c.req.valid('json');
+      if (!day.success || day.data !== input.expectedDay) {
+        return fail(c, 400, 'INVALID_REQUEST', '業務日の指定が正しくありません');
+      }
+      const dayError = checkDay(c, input);
+      if (dayError) return dayError;
+      if ((logs.find(day.data)?.planConfirmedAt ?? null) !== null) {
+        return fail(c, 409, 'PLAN_CONFIRMED', 'この日の計画はすでに確定しています');
+      }
+
+      // 判断は持ち越し候補のすべてに1つずつ、追加はバックログのタスクだけ
+      const candidates = new Map(findCarryover(day.data).candidates.map((t) => [t.id, t]));
+      const decided = input.decisions.map((d) => d.taskId);
+      const backlog = new Map(tasks.listBacklog(day.data).map((t) => [t.id, t]));
+      if (
+        new Set(decided).size !== decided.length ||
+        decided.length !== candidates.size ||
+        decided.some((id) => !candidates.has(id))
+      ) {
+        return fail(c, 400, 'INVALID_REQUEST', '持ち越し候補のすべてに1つずつ判断してください');
+      }
+      if (
+        new Set(input.additions).size !== input.additions.length ||
+        input.additions.some((id) => !backlog.has(id) || candidates.has(id))
+      ) {
+        return fail(c, 400, 'INVALID_REQUEST', 'バックログにないタスクは追加できません');
+      }
+
+      const at = now().toISOString();
+      const target = (task: Task) => ({ task, plannedDays: tasks.listPlannedDays(task.id) });
+      const plan = planMorning({
+        today: day.data,
+        at,
+        carryovers: input.decisions.flatMap((d) => {
+          const task = candidates.get(d.taskId);
+          return task === undefined ? [] : [{ ...target(task), decision: d.decision }];
+        }),
+        additions: input.additions.flatMap((id) => {
+          const task = backlog.get(id);
+          return task === undefined ? [] : [target(task)];
+        }),
+      });
+      if (!plan.ok) {
+        return fail(c, 422, 'INVALID_TRANSITION', 'このタスクは完了にできません', {
+          taskId: plan.error.taskId,
+        });
+      }
+      // タスクの変更は1つのトランザクションで保存する。途中で失敗したら何も反映しない（FR-D05）
+      const result = tasks.applyChanges(
+        plan.value.map((ch) => ({
+          taskId: ch.taskId,
+          expectedVersion: null,
+          events: ch.events,
+          ...(ch.plan === null ? {} : { plan: ch.plan }),
+        })),
+      );
+      if (!result.ok) return conflict(c, result.error);
+      logs.confirmPlan(day.data, at);
+      return c.json({ confirmedAt: at, tasks: withListInfo(tasks.listPlan(day.data)) });
     })
 
     .put('/days/:day/log', jsonBody(logBody), (c) => {
