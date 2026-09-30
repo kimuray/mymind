@@ -16,7 +16,7 @@
     "@mymind/agent": "workspace:*",
     "@mymind/db": "workspace:*",
     "@mymind/domain": "workspace:*",
-    "hono": "^4.13.8",
+    "hono": "^4.13.9",
     "tsx": "^4.23.15",
     "zod": "^4.6.5"
   },
