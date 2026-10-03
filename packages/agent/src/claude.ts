@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { classifyFailure, describeFailure } from './errors';
 import { agentEnv, firstLine, type RunProcess, runProcess, withEmptyWorkDir } from './process';
 import type { AgentRunner, AgentRunResult } from './runner';
 import { dailyFeedbackJsonSchema } from './schema';
@@ -50,10 +51,8 @@ export function readClaudeOutput(
   if (!parsed.success) return { ok: false, message: 'claude の出力の形が想定と違います' };
   const r = parsed.data;
   if (r.is_error) {
-    return {
-      ok: false,
-      message: `claude がエラーを返しました：${firstLine(r.result ?? r.subtype ?? '')}`,
-    };
+    const reason = firstLine(r.result ?? r.subtype ?? '');
+    return { ok: false, message: describeFailure(classifyFailure(reason), `claude：${reason}`) };
   }
   if (r.structured_output !== undefined)
     return { ok: true, output: JSON.stringify(r.structured_output) };
@@ -88,7 +87,7 @@ export function createClaudeRunner(
             ok: false,
             error: {
               kind: 'failed',
-              message: `${command} が見つかりません（PATH を確認してください）`,
+              message: describeFailure('not_found', command),
             },
           };
         }
@@ -100,7 +99,11 @@ export function createClaudeRunner(
             ok: false,
             error: {
               kind: 'failed',
-              message: `claude が失敗しました（終了コード ${result.exitCode}）：${reason}。ログインしているか確かめてください`,
+              // 種類が分からない失敗は、ログインしていないものとして扱う（未ログインの出力は確かめられていない、#10）
+              message: describeFailure(
+                classifyFailure(reason) === 'unknown' ? 'auth' : classifyFailure(reason),
+                `claude、終了コード ${result.exitCode}：${reason}`,
+              ),
             },
           };
         }

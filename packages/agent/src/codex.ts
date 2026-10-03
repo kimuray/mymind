@@ -1,5 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { classifyFailure, describeFailure } from './errors';
 import { agentEnv, firstLine, type RunProcess, runProcess, withEmptyWorkDir } from './process';
 import type { AgentRunner, AgentRunResult } from './runner';
 import { dailyFeedbackJsonSchema } from './schema';
@@ -81,7 +82,7 @@ export function createCodexRunner(
             ok: false,
             error: {
               kind: 'failed',
-              message: `${command} が見つかりません（PATH を確認してください）`,
+              message: describeFailure('not_found', command),
             },
           };
         }
@@ -94,7 +95,12 @@ export function createCodexRunner(
             ok: false,
             error: {
               kind: 'failed',
-              message: `codex が FB を返しませんでした（終了コード ${result.exitCode}）${reason === '' ? '' : `：${reason}`}`,
+              message: describeFailure(
+                classifyFailure(reason) === 'unknown' && result.exitCode !== 0
+                  ? 'auth'
+                  : classifyFailure(reason),
+                `codex、終了コード ${result.exitCode}${reason === '' ? '' : `：${reason}`}`,
+              ),
             },
           };
         }

@@ -1,0 +1,35 @@
+{
+  "title": "決めたことを実行しなかった日：前日の一手に触れず、別の作業をしている",
+  "data": {
+    "day": "2026-09-26",
+    "tasks": [
+      { "title": "週報", "status": "todo", "parentTitle": null, "statusDays": 3 },
+      { "title": "新しいライブラリの調査", "status": "done", "parentTitle": null, "statusDays": 1 },
+      {
+        "title": "画面の下書き",
+        "status": "doing",
+        "parentTitle": "TODOツール MVP",
+        "statusDays": 3
+      }
+    ],
+    "counts": { "planned": 3, "done": 1, "doing": 1, "paused": 0, "waiting": 0 },
+    "reflection": {
+      "thoughtsMd": "気になっていた新しいライブラリを試してみた。思っていたより良くて、今の画面にも使えそう。楽しかった。",
+      "learningMd": "- このライブラリは状態管理がシンプル"
+    },
+    "recent": [
+      {
+        "day": "2026-09-25",
+        "level": 3,
+        "nextAction": "朝いちばんに週報を15分で仕上げる",
+        "isBlank": false
+      },
+      {
+        "day": "2026-09-24",
+        "level": 3,
+        "nextAction": "朝いちばんに週報を15分で仕上げる",
+        "isBlank": false
+      }
+    ]
+  }
+}

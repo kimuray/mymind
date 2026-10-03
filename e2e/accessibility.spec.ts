@@ -1,10 +1,10 @@
 import AxeBuilder from '@axe-core/playwright';
-import { expect, type Page, test } from '@playwright/test';
+import { type CDPSession, expect, type Page, test } from '@playwright/test';
 
 // 透明度・動きの設定への対応（NFR-22）とコントラストの検査（NFR-06）
 
 /** OS の「透明度を下げる」「視差効果を減らす」を Chromium でエミュレートする */
-async function emulatePreferences(page: Page) {
+async function emulatePreferences(page: Page): Promise<CDPSession> {
   const cdp = await page.context().newCDPSession(page);
   await cdp.send('Emulation.setEmulatedMedia', {
     features: [
@@ -12,7 +12,18 @@ async function emulatePreferences(page: Page) {
       { name: 'prefers-reduced-motion', value: 'reduce' },
     ],
   });
+  return cdp;
 }
+
+// サンドボックスの中ではページを使い回す（playwright.config.ts の reuseContext）ので、
+// Playwright が把握していない CDP のエミュレーションを次のテストに残さない。
+// エミュレーションはセッションごとに効くので、設定したセッションで戻す
+let emulation: CDPSession | undefined;
+test.afterEach(async () => {
+  await emulation?.send('Emulation.setEmulatedMedia', { features: [] });
+  await emulation?.detach();
+  emulation = undefined;
+});
 
 async function addTask(page: Page, title: string) {
   const input = page.getByLabel('今日のタスクを追加');
@@ -23,7 +34,7 @@ async function addTask(page: Page, title: string) {
 
 test.describe('NFR-22 透明度・動きの設定への対応', () => {
   test('透明度を下げる設定では、ガラスの面を不透明にし、背景のにじみを消す', async ({ page }) => {
-    await emulatePreferences(page);
+    emulation = await emulatePreferences(page);
     await page.goto('/');
     const sidebar = page.getByRole('navigation', { name: '画面' });
     await expect(sidebar).toHaveCSS('backdrop-filter', 'none');
@@ -32,7 +43,7 @@ test.describe('NFR-22 透明度・動きの設定への対応', () => {
   });
 
   test('視差効果を減らす設定では、マメの考え中の泡を動かさない', async ({ page }) => {
-    await emulatePreferences(page);
+    emulation = await emulatePreferences(page);
     await page.goto('/dev/mame');
     await expect(page.locator('.mame-bubbles').first()).toHaveCSS('animation-name', 'none');
   });
@@ -59,7 +70,7 @@ test.describe('NFR-06 コントラスト', () => {
     test(`${name}の画面に、WCAG 2 AA のコントラストの違反がない`, async ({ page }) => {
       // ガラスの面とにじみの背景では、axe が文字の背景色を決められず判定できない（incomplete）ので、
       // 不透明な面にした状態で検査する。ガラスの面の文字色の確認は、トークンの値の検査で補う
-      await emulatePreferences(page);
+      emulation = await emulatePreferences(page);
       await page.goto('/');
       await addTask(page, `コントラスト確認（${name}）`);
       await page.goto(path);

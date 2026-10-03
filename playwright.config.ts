@@ -5,6 +5,12 @@ import { defineConfig, devices } from '@playwright/test';
 const port = Number(process.env['MYMIND_E2E_PORT'] ?? 4820);
 // pnpm start は apps/server で動くので、データディレクトリは絶対パスで渡す
 const dataDir = fileURLToPath(new URL('./.data/e2e', import.meta.url));
+// Claude Code のサンドボックス（SANDBOX_RUNTIME=1）は Mach サービスの登録を禁じており、
+// Chromium はプロセス間の通信に使う MachPortRendezvousServer を登録できずに落ちる（#15）。
+// 子プロセスを作らない --single-process なら登録が要らないので、サンドボックスの中だけで使う。
+// --single-process では2つ目の BrowserContext を作るとブラウザが落ちるため、reuseContext で
+// 1つのコンテキストをテスト間で使い回す（状態は Playwright がテストごとに消す）
+const isClaudeSandbox = process.env['SANDBOX_RUNTIME'] === '1';
 
 export default defineConfig({
   testDir: 'e2e',
@@ -20,7 +26,13 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'], viewport: { width: 1440, height: 900 } },
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1440, height: 900 },
+        ...(isClaudeSandbox
+          ? { launchOptions: { args: ['--single-process'] }, reuseContext: true }
+          : {}),
+      },
     },
   ],
   webServer: {

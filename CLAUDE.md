@@ -9,7 +9,7 @@
 - `git push` も、SSH の鍵（`~/.ssh`）を使うためサンドボックスの外で実行する設定にしています。`gh` と同じく、単独で実行してください。force push と main への push は `permissions.deny` で禁止したままです。`git fetch` と `git pull` も同じ理由で、サンドボックスの外で実行します
 - `node scripts/merge-if-allowed.mjs <PR番号>` と `node scripts/github-setup.mjs` も、中で `gh` を呼ぶためサンドボックスの外で実行する設定にしています。`gh` と同じく単独で実行してください。終了コード（0 / 2 / 3）は Bash ツールの結果に表示されるので、`; echo $?` や `2>&1` を付ける必要はありません。付けるとサンドボックスの中で実行され、終了コード 4 で止まります
 - PR を作る前の Codex のレビュー（`node scripts/codex-review.mjs`）も、`~/.codex` の認証情報を読むためサンドボックスの外で確認なしに実行する設定にしています。単独で実行し、数分かかるので Bash のタイムアウトを 600000 にしてください。手順は `.claude/rules/workflow.md` の「Codex のレビュー」にあります
-- E2E（`pnpm test:e2e`、`pnpm exec playwright test`）も、サンドボックスの外で確認なしに実行する設定にしています。Chromium がプロセス間の通信に使う Mach ポートをサンドボックスが制限していて、中では起動できないためです（#15）。E2E のサーバーは偽のエージェントと `./.data/e2e` を使うので、外で実行しても実データには触れません。ほかのコマンドと連結すると中で実行されるので、単独で実行してください
+- E2E（`pnpm test:e2e`、`pnpm exec playwright test`）と `pnpm screenshots` は、サンドボックスの中で実行します。サンドボックスは Mach サービスの登録を禁じていて、Chromium は普通に起動すると子プロセスとの通信の準備で落ちます（#15）。そのため `SANDBOX_RUNTIME=1` のときだけ、`--single-process` で起動し、1つのブラウザコンテキストをテスト間で使い回します（`playwright.config.ts` の `reuseContext`）。使い回しても Cookie やストレージは Playwright がテストごとに消しますが、CDP で直接変えた設定は残るので、テストの後で戻してください（`e2e/accessibility.spec.ts`）。ポート 4820 で開発サーバーが動いていると E2E はそれを使ってしまうので、そのときは `MYMIND_E2E_PORT` で別のポートを指定してください
 - サンドボックスの中からは `.git/config` に書き込めません。`git switch -c <名前> origin/main` はブランチの追跡設定を書き込むところで失敗し、ブランチが切り替わらないまま進んでしまいます。ブランチは `git switch --no-track -c <名前> origin/main` で作り、追跡の設定は最初の `git push -u` に任せてください
 - 権限は `.claude/settings.json` で管理しています。依存関係の追加、push、PR の作成、エージェントの起動は確認を求められます
 - 複数のパッケージにまたがる変更や、要件・設計に関わる変更は、先に計画を示してから着手してください
