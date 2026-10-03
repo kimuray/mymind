@@ -71,9 +71,17 @@ check('推奨', 'ディスクの暗号化（FileVault、ADR-0009）', () => {
 check('任意', 'Docker Compose（コンテナで開発する場合）', () =>
   run('docker', ['compose', 'version', '--short']),
 );
-for (const cli of ['claude', 'codex']) {
-  check('任意', `${cli} コマンド（FB の実機確認用）`, () => run('which', [cli]));
-}
+check('任意', 'claude コマンド（FB の実機確認用）', () => run('which', ['claude']));
+check('推奨', 'codex コマンド（PR 前のレビューと FB の実機確認用、ADR-0013）', () => {
+  // asdf などで Node のバージョンごとに入れている場合、which では見つかっても起動できないことがある
+  try {
+    return run('codex', ['--version']);
+  } catch {
+    throw new Error(
+      `今の Node（${process.versions.node}）で起動できません。npm i -g @openai/codex で入れてください`,
+    );
+  }
+});
 
 let failed = false;
 for (const r of results) {

@@ -1,0 +1,36 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["summary", "findings"],
+  "properties": {
+    "summary": { "type": "string" },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "category",
+          "severity",
+          "file",
+          "line",
+          "title",
+          "reason",
+          "suggestion",
+          "requirement"
+        ],
+        "properties": {
+          "category": { "type": "string", "enum": ["correctness", "security", "nonfunctional"] },
+          "severity": { "type": "string", "enum": ["high", "medium", "low"] },
+          "file": { "type": "string" },
+          "line": { "type": ["integer", "null"] },
+          "title": { "type": "string" },
+          "reason": { "type": "string" },
+          "suggestion": { "type": "string" },
+          "requirement": { "type": ["string", "null"] }
+        }
+      }
+    }
+  }
+}
