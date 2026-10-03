@@ -1,4 +1,3 @@
-import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -7,7 +6,6 @@ import {
   createCodexRunner,
   createFakeAgentRunner,
   detectAgent,
-  readPromptVersion,
 } from '@mymind/agent';
 import {
   createDailyLogRepository,
@@ -28,6 +26,7 @@ import { createEventBus } from './events';
 import { createJobRunner } from './jobRunner';
 import { listen } from './listen';
 import { createLogger } from './logger';
+import { loadDailyPrompt } from './prompts';
 import { createUlidGenerator } from './ulid';
 import { createDevRedirect, createWebRoutes } from './web';
 
@@ -35,7 +34,6 @@ import { createDevRedirect, createWebRoutes } from './web';
 const WEB_DIST = fileURLToPath(new URL('../../web/dist', import.meta.url));
 
 // 日次 FB のプロンプト（architecture.md 7.5）
-const DAILY_PROMPT = fileURLToPath(new URL('../../../prompts/daily-feedback.md', import.meta.url));
 // エージェントの待ち時間の上限（architecture.md 7.4 の初期値）
 const AGENT_TIMEOUT_MS = 120_000;
 
@@ -87,7 +85,7 @@ async function main(): Promise<number> {
   const jobs = createJobRepository({ db, codec: plainCodec });
   const logs = createDailyLogRepository({ db, codec: plainCodec });
   const events = createEventBus();
-  const promptText = readFileSync(DAILY_PROMPT, 'utf8');
+  const prompt = loadDailyPrompt();
   // 実物のエージェントは、空の作業ディレクトリで、ツールを止めて起動する（ADR-0003、ADR-0005）
   const model = agent.model ?? undefined;
   const runner: AgentRunner =
@@ -108,7 +106,7 @@ async function main(): Promise<number> {
     logs,
     runner,
     events,
-    prompt: { text: promptText, version: readPromptVersion(promptText) ?? 'unknown' },
+    prompt,
     now: () => new Date(),
     newId,
     timeoutMs: AGENT_TIMEOUT_MS,

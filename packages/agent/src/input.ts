@@ -170,6 +170,19 @@ export type AgentInput<P> = {
   payloadHash: string;
 };
 
+/** プロンプトの中の方針の置き場所（prompts/daily-feedback.md の「方針」） */
+export const POLICY_PLACEHOLDER = '{{coaching_policy}}';
+
+/**
+ * プロンプトに方針（prompts/coaching-policy.md）の本文を差し込む（FR-A11）。
+ * エージェントはツールを止めて起動するのでファイルを読めず、ファイルを指すと探しに行ってしまう（#10 の spike）。
+ * 方針の正本は1つのまま、読み込むときに本文を入れる。方針の文書の見出し（# …）は、プロンプトの見出しと重ならないよう外す
+ */
+export function composePrompt(template: string, policy: string): string {
+  const body = policy.replace(/^#\s.*\n+/, '').trim();
+  return template.replace(POLICY_PLACEHOLDER, () => body);
+}
+
 /** プロンプトの中の入力の置き場所（prompts/daily-feedback.md の <data> の中） */
 export const INPUT_PLACEHOLDER = '{{input_json}}';
 

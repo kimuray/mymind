@@ -1,0 +1,46 @@
+{
+  "title": "好調な日：計画どおりに進み、手応えを書いている",
+  "data": {
+    "day": "2026-09-24",
+    "tasks": [
+      {
+        "title": "D1のスキーマ設計",
+        "status": "done",
+        "parentTitle": "TODOツール MVP",
+        "statusDays": 1
+      },
+      {
+        "title": "APIのルーティング",
+        "status": "done",
+        "parentTitle": "TODOツール MVP",
+        "statusDays": 1
+      },
+      { "title": "週報", "status": "done", "parentTitle": null, "statusDays": 1 },
+      {
+        "title": "画面の下書き",
+        "status": "doing",
+        "parentTitle": "TODOツール MVP",
+        "statusDays": 1
+      }
+    ],
+    "counts": { "planned": 4, "done": 3, "doing": 1, "paused": 0, "waiting": 0 },
+    "reflection": {
+      "thoughtsMd": "## 今日の手応え\n朝いちばんに週報を15分で終わらせたら、午前のうちに設計に入れた。スキーマとルーティングが一気に片付いて気持ちがいい。\n\n午後は少し欲張って画面にも手を付けた。",
+      "learningMd": "- 朝の15分で小さなものを片付けると、午前の集中が途切れない\n- ルーティングはスキーマが固まってからの方が速い"
+    },
+    "recent": [
+      {
+        "day": "2026-09-23",
+        "level": 2,
+        "nextAction": "週報は朝いちばんの15分で終わらせる",
+        "isBlank": false
+      },
+      {
+        "day": "2026-09-22",
+        "level": 3,
+        "nextAction": "午前中に競合調査の確認を一言送る",
+        "isBlank": false
+      }
+    ]
+  }
+}

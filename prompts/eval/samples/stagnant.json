@@ -1,0 +1,37 @@
+{
+  "title": "停滞している日：待ちと中断が長引き、外部のせいにしている",
+  "data": {
+    "day": "2026-09-25",
+    "tasks": [
+      {
+        "title": "競合調査のまとめ",
+        "status": "waiting",
+        "parentTitle": "Q4プロダクト計画",
+        "statusDays": 8
+      },
+      {
+        "title": "企画書ドラフト",
+        "status": "paused",
+        "parentTitle": "Q4プロダクト計画",
+        "statusDays": 4
+      },
+      { "title": "経費精算", "status": "todo", "parentTitle": null, "statusDays": 6 },
+      { "title": "メールの返信", "status": "done", "parentTitle": null, "statusDays": 1 }
+    ],
+    "counts": { "planned": 4, "done": 1, "doing": 0, "paused": 1, "waiting": 1 },
+    "reflection": {
+      "thoughtsMd": "今日もあまり進まなかった。競合調査はEMの返事が来ないので何もできない。企画書も調査が終わらないと書けない。\n\n会議が多すぎて自分の時間が取れないのが一番の問題だと思う。",
+      "learningMd": ""
+    },
+    "recent": [
+      {
+        "day": "2026-09-24",
+        "level": 1,
+        "nextAction": "EMに競合調査の期限を確認する",
+        "isBlank": false
+      },
+      { "day": "2026-09-23", "level": 1, "nextAction": "企画書の骨子だけ書く", "isBlank": false },
+      { "day": "2026-09-22", "level": null, "nextAction": null, "isBlank": true }
+    ]
+  }
+}
