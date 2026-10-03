@@ -24,6 +24,7 @@
     "progress": "node scripts/progress.mjs",
     "update-app": "node scripts/update-app.mjs",
     "restore-backup": "tsx apps/server/src/restoreCli.ts",
+    "eval-prompt": "tsx apps/server/src/evalPromptCli.ts",
     "start": "pnpm --filter @mymind/server start",
     "docs:build": "node scripts/docs-build.mjs",
     "docs:check": "node scripts/docs-build.mjs --check",

@@ -26,7 +26,7 @@ const SOURCES = [
   'docs/**/*.md',
   'DESIGN.md',
   'AGENTS.md',
-  'prompts/*.md',
+  'prompts/**/*.md',
   '.claude/rules/*.md',
   '.claude/skills/**/*.md',
 ];

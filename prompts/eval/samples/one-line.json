@@ -1,0 +1,25 @@
+{
+  "title": "一行だけの日：疲れていて、ほとんど書いていない",
+  "data": {
+    "day": "2026-09-27",
+    "tasks": [
+      {
+        "title": "画面の下書き",
+        "status": "doing",
+        "parentTitle": "TODOツール MVP",
+        "statusDays": 4
+      },
+      { "title": "買い物", "status": "done", "parentTitle": null, "statusDays": 1 }
+    ],
+    "counts": { "planned": 2, "done": 1, "doing": 1, "paused": 0, "waiting": 0 },
+    "reflection": { "thoughtsMd": "疲れた。", "learningMd": "" },
+    "recent": [
+      {
+        "day": "2026-09-26",
+        "level": 3,
+        "nextAction": "朝いちばんに週報を15分で仕上げる",
+        "isBlank": false
+      }
+    ]
+  }
+}
