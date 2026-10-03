@@ -1,4 +1,11 @@
-import type { DailyLogRepository, SettingsRepository, Task, TaskRepository } from '@mymind/db';
+import { dailyFeedbackSchema } from '@mymind/agent';
+import type {
+  DailyLogRepository,
+  Feedback,
+  SettingsRepository,
+  Task,
+  TaskRepository,
+} from '@mymind/db';
 import {
   type BusinessDayOptions,
   blankDaysSince,
@@ -93,6 +100,26 @@ const planBody = z.strictObject({
   ),
   additions: z.array(z.string().min(1)),
 });
+
+/** FR-A03：調子の手動の値。0:絶不調 〜 4:絶好調。null で手動の値を外す */
+const conditionBody = z.strictObject({ userLevel: z.number().int().min(0).max(4).nullable() });
+
+/**
+ * 画面に返す日次 FB。中身はエージェントの出力のスキーマで検証し直してから返す
+ * （画面は packages/agent に依存できないため、ここで型の付いた値にする）。読めない FB の中身は null
+ */
+function toDailyFeedback(f: Feedback | undefined) {
+  if (f === undefined) return null;
+  const content = dailyFeedbackSchema.safeParse(f.content);
+  return {
+    id: f.id,
+    period: f.period,
+    agent: f.agent,
+    promptVersion: f.promptVersion,
+    createdAt: f.createdAt,
+    content: content.success ? content.data : null,
+  };
+}
 
 const transitionBody = z.strictObject({ ...withVersion, to: z.enum(STATUSES) });
 
@@ -193,6 +220,16 @@ export function createApi({
     };
   };
 
+  const previousFeedback = (day: string) => {
+    const latest = jobs.jobs.latestDailyFeedbackBefore(day);
+    if (latest === undefined) return null;
+    return {
+      day: latest.period,
+      feedback: toDailyFeedback(latest),
+      condition: jobs.jobs.findCondition(latest.period) ?? null,
+    };
+  };
+
   /** 画面が想定する業務日と、現在の業務日を比べる（NFR-14） */
   const checkDay = (
     c: Context,
@@ -226,6 +263,12 @@ export function createApi({
         day: day.data,
         tasks: withListInfo(tasks.listPlan(day.data)),
         log: logs.find(day.data) ?? null,
+        // その日の最新の FB（FR-A04）、調子（FR-A03）、最新のジョブ（生成中・失敗の表示、FR-A08）
+        feedback: toDailyFeedback(jobs.jobs.listFeedbacks('daily', day.data)[0]),
+        condition: jobs.jobs.findCondition(day.data) ?? null,
+        job: jobs.jobs.latestJob('daily_feedback', day.data) ?? null,
+        // 前日の FB：最後に FB をもらった日のもの（architecture.md 4.5、FR-D02）
+        previous: previousFeedback(day.data),
         // 振り返りの冒頭の記録のまとめ（FR-D07）。件数や日数はここで数える
         summary: summarizeDay(
           day.data,
@@ -314,6 +357,18 @@ export function createApi({
       if (!result.ok) return conflict(c, result.error);
       logs.confirmPlan(day.data, at);
       return c.json({ confirmedAt: at, tasks: withListInfo(tasks.listPlan(day.data)) });
+    })
+
+    .put('/days/:day/condition', jsonBody(conditionBody), (c) => {
+      const day = dayParam.safeParse(c.req.param('day'));
+      if (!day.success) return fail(c, 400, 'INVALID_REQUEST', '業務日の形式が正しくありません');
+      if (day.data > toBusinessDay(now(), dayOptions)) {
+        return fail(c, 400, 'INVALID_REQUEST', 'まだ来ていない日の調子は付けられません');
+      }
+      const { userLevel } = c.req.valid('json');
+      return c.json({
+        condition: jobs.jobs.setUserLevel(day.data, userLevel, now().toISOString()),
+      });
     })
 
     .put('/days/:day/log', jsonBody(logBody), (c) => {
