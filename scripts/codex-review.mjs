@@ -78,13 +78,31 @@ try {
 } catch (error) {
   unavailable(`出力を JSON として読めませんでした: ${error.message}`);
 }
-// 形は Codex 側でスキーマに縛っているので、ここでは使う項目があるかだけを確かめる
-if (typeof review?.summary !== 'string' || !Array.isArray(review.findings)) {
+const CATEGORY = { correctness: '正しさ', security: 'セキュリティ', nonfunctional: '非機能' };
+const SEVERITY = { high: '高', medium: '中', low: '低' };
+
+// エージェントの出力なので、Codex 側のスキーマ指定に頼らずここでも確かめる。
+// ルートのスクリプトは zod に依存していないため、codex-review.schema.json と同じ条件を手で書く
+const isNullable = (v, type) => v === null || typeof v === type;
+const isFinding = (f) =>
+  typeof f === 'object' &&
+  f !== null &&
+  Object.hasOwn(CATEGORY, f.category) &&
+  Object.hasOwn(SEVERITY, f.severity) &&
+  typeof f.file === 'string' &&
+  (f.line === null || Number.isInteger(f.line)) &&
+  typeof f.title === 'string' &&
+  typeof f.reason === 'string' &&
+  typeof f.suggestion === 'string' &&
+  isNullable(f.requirement, 'string');
+if (
+  typeof review?.summary !== 'string' ||
+  !Array.isArray(review.findings) ||
+  !review.findings.every(isFinding)
+) {
   unavailable(`出力がスキーマの形になっていません: ${jsonFile}`);
 }
 
-const CATEGORY = { correctness: '正しさ', security: 'セキュリティ', nonfunctional: '非機能' };
-const SEVERITY = { high: '高', medium: '中', low: '低' };
 const ORDER = { high: 0, medium: 1, low: 2 };
 const findings = [...review.findings].sort((a, b) => ORDER[a.severity] - ORDER[b.severity]);
 
@@ -96,7 +114,7 @@ if (findings.length === 0) {
   findings.forEach((f, i) => {
     const place = f.line === null ? f.file : `${f.file}:${f.line}`;
     lines.push(
-      `### ${i + 1}. [${SEVERITY[f.severity] ?? f.severity}][${CATEGORY[f.category] ?? f.category}] ${f.title}`,
+      `### ${i + 1}. [${SEVERITY[f.severity]}][${CATEGORY[f.category]}] ${f.title}`,
       '',
       `- 場所：${place}${f.requirement ? `（${f.requirement}）` : ''}`,
       `- 理由：${f.reason}`,

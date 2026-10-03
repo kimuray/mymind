@@ -12,7 +12,7 @@ description: 特定の issue に着手するとき、「issue 19 をやって」
 3. ブランチを作る：`<type>/<issue番号>-<短い英語の説明>`（例：`feat/19-auto-rules`）
 4. 計画を issue にコメントしてから実装する。途中で仕様の穴を見つけたら、推測で埋めずに issue にコメントして確認を求める
 5. `pnpm check` を通し、必要なら E2E も実行する
-6. 変更をコミットし、`git fetch origin` のあと `node scripts/codex-review.mjs` を単独で実行して Codex にレビューを依頼する（数分かかるので、Bash のタイムアウトを 600000 にする）。指摘は1件ずつ判断して、直すか、理由を添えて見送る。直したら `pnpm check` をやり直し、もう一度だけレビューを依頼する（レビューは最大2回）。終了コード 5（Codex を使えない）のときは止めずに進め、PR に未実施と理由を書く
+6. 変更をコミットし、`git fetch origin` のあと `node scripts/codex-review.mjs` を単独で実行して Codex にレビューを依頼する（数分かかるので、Bash のタイムアウトを 600000 にする）。指摘は1件ずつ判断して、直すか、理由を添えて見送る。直す指摘はまとめて1回で直し、`pnpm check` をやり直してコミットする（再レビューはしない）。終了コード 5（Codex を使えない）のときは止めずに進め、PR に未実施と理由を書く。手順と観点は `.claude/rules/workflow.md` の「Codex のレビュー」にある
 7. PR を作る。本文に `Closes #<issue番号>`、要件ID、確認方法、Codex レビューの指摘と対応を書く（PR テンプレートに従う）
 8. CI が通ったら `node scripts/merge-if-allowed.mjs <PR番号>` でマージを試みる。レビュー必須と判定された場合はそのまま開いておく
 9. 閉じた issue に依存していた issue のラベルを見直し、`docs/progress/` に1件の記録を1ファイルで追加する（書き方は `docs/progress/README.md`）
