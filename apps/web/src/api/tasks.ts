@@ -47,7 +47,8 @@ export function useTaskEvents(taskId: string | null) {
  * タスクの一覧に関わるキャッシュをすべて読み直す（他の画面の表示も古くなるため）。
  * 他のタブにも知らせ、同じように読み直させる（NFR-13）
  */
-const invalidateTasks = (qc: QueryClient) => {
+/** タスクが変わったことを別のタブにも知らせ、一覧を読み直す */
+export const invalidateTasks = (qc: QueryClient) => {
   notifyTasksChanged();
   return reloadTasks(qc);
 };
@@ -56,6 +57,8 @@ const reloadTasks = (qc: QueryClient) =>
   Promise.all([
     qc.invalidateQueries({ queryKey: ['day'] }),
     qc.invalidateQueries({ queryKey: queryKeys.backlog }),
+    // 朝の計画の持ち越し候補（api/morning.ts の carryoverKey）
+    qc.invalidateQueries({ queryKey: ['carryover'] }),
     qc.invalidateQueries({ queryKey: ['events'] }),
   ]);
 

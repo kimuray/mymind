@@ -14,7 +14,7 @@ test.describe('NFR-02 本番の画面とローカルサーバーの保護', () =
       });
     });
 
-    for (const path of ['/', '/backlog', '/reflection', '/timeline', '/dev/mame']) {
+    for (const path of ['/', '/morning', '/backlog', '/reflection', '/timeline', '/dev/mame']) {
       await page.goto(path);
       await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
     }

@@ -36,7 +36,10 @@ export type KeyAction =
   | 'list.moveUp'
   | 'list.moveDown'
   | 'reflection.save'
-  | 'reflection.saveAndRequest'
+  | 'screen.submit'
+  | 'morning.today'
+  | 'morning.backlog'
+  | 'morning.done'
   | 'reflection.togglePreview'
   | 'escape';
 
@@ -80,8 +83,18 @@ export const KEY_BINDINGS: readonly KeyBinding[] = [
   { action: 'list.moveUp', keys: ['Meta+ArrowUp'], label: '上へ並べ替え' },
   { action: 'list.moveDown', keys: ['Meta+ArrowDown'], label: '下へ並べ替え' },
   // 5.3 振り返り。入力欄の中でも使えるよう、修飾キー付きにする
-  { action: 'reflection.saveAndRequest', keys: ['Meta+Enter'], label: '保存してFBをもらう' },
+  // ⌘↵ はその画面の主な操作（振り返りでは保存してFBをもらう、朝の計画では計画を確定）。
+  // 同じキーに画面ごとの操作を割り当てると先の定義しか選ばれないので、1つの操作にして画面が中身を決める
+  {
+    action: 'screen.submit',
+    keys: ['Meta+Enter'],
+    label: '画面の主な操作（保存してFBをもらう、計画を確定）',
+  },
   { action: 'reflection.save', keys: ['Meta+s'], label: '保存のみ' },
+  // 5.3 朝の計画。選択中の持ち越しへの判断
+  { action: 'morning.today', keys: ['1'], label: '今日もやる' },
+  { action: 'morning.backlog', keys: ['2'], label: 'バックログへ' },
+  { action: 'morning.done', keys: ['3'], label: '実は終わった' },
   // ブラウザの印刷と重なるので、振り返りの画面では印刷を止めて切り替えに使う（実機の確認は #35）
   { action: 'reflection.togglePreview', keys: ['Meta+p'], label: '書く / プレビューの切り替え' },
 ];
