@@ -64,7 +64,7 @@ e2e/            Playwright の E2E テスト
 | `pnpm design:check` | デザイントークン以外の色の直書きを検出 |
 | `pnpm test` | 単体テストと結合テスト |
 | `pnpm test:e2e` | E2E テスト |
-| `pnpm screenshots` | 各画面のスクリーンショットを `.data/screenshots/` に出力（先に `pnpm build`。Claude Code のサンドボックスの中では Chromium が起動しないので外で実行） |
+| `pnpm screenshots` | 各画面のスクリーンショットを `.data/screenshots/` に出力（先に `pnpm build`） |
 | `pnpm docs:check` / `pnpm docs:build` | 設計文書のリンク・参照の検査 / 人が読むための HTML の生成 |
 | `pnpm check` | 上記のうち E2E 以外をすべて実行 |
 | `pnpm progress` | 直近の作業記録（`docs/progress/`）を新しい順に表示（件数は `pnpm progress 20` のように指定） |

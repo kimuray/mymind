@@ -2,7 +2,8 @@
 // 撮る画面は docs/design/screenshots.json に書く。
 // 使い方: pnpm screenshots（先に pnpm build で画面の本番ビルドを作る）
 // 実データには触れない：一時的なデータディレクトリでサーバーを起動し、見本のタスクを API で入れてから撮る。
-// Chromium は Claude Code のサンドボックスの中では起動できない（Mach ポートの制限。#15）。
+// Claude Code のサンドボックス（SANDBOX_RUNTIME=1）の中では、Chromium は子プロセスとの通信に使う
+// Mach サービスを登録できずに落ちる（#15）。中では子プロセスを作らない --single-process で起動する。
 import { spawn } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
@@ -41,7 +42,8 @@ await new Promise((resolve, reject) => {
 
 try {
   await seed();
-  const browser = await chromium.launch();
+  const isClaudeSandbox = process.env.SANDBOX_RUNTIME === '1';
+  const browser = await chromium.launch(isClaudeSandbox ? { args: ['--single-process'] } : {});
   const page = await browser.newPage({ viewport: VIEWPORT });
   const ym = businessDay().slice(0, 7);
   for (const screen of screens) {
