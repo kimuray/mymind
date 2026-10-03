@@ -35,7 +35,6 @@ const WEB_DIST = fileURLToPath(new URL('../../web/dist', import.meta.url));
 
 // 日次 FB のプロンプト（architecture.md 7.5）
 // エージェントの待ち時間の上限（architecture.md 7.4 の初期値）
-const AGENT_TIMEOUT_MS = 120_000;
 
 // 業務日の切り替え（FR-D01）。設定画面ができるまでは初期値を使う
 const DAY_OPTIONS = { timeZone: 'Asia/Tokyo', dayStartHour: 5 };
@@ -109,7 +108,7 @@ async function main(): Promise<number> {
     prompt,
     now: () => new Date(),
     newId,
-    timeoutMs: AGENT_TIMEOUT_MS,
+    timeoutMs: agent.timeoutMs,
   });
   jobRunner.start();
   const api = createApi({

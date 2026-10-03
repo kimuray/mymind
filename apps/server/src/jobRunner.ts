@@ -1,4 +1,4 @@
-import { type AgentRunner, parseDailyFeedback, withTimeout } from '@mymind/agent';
+import { type AgentRunner, describeFailure, parseDailyFeedback, withTimeout } from '@mymind/agent';
 import type { DailyLogRepository, Job, JobRepository, TaskRepository } from '@mymind/db';
 import type { JobKind } from '@mymind/domain';
 import { type BuildInputResult, createAgentInputBuilder } from './agentInput';
@@ -70,7 +70,7 @@ export function createJobRunner(deps: JobRunnerDeps) {
           if (t.timedOut()) {
             jobs.fail(
               job.id,
-              `${deps.timeoutMs / 1000}秒以内に応答がなかったため中止しました`,
+              describeFailure('timeout', `${deps.timeoutMs / 1000}秒で中止しました`),
               iso(),
             );
           } else if (result.error.kind !== 'cancelled') {
@@ -104,7 +104,7 @@ export function createJobRunner(deps: JobRunnerDeps) {
         }
         lastError = parsed.error;
       }
-      jobs.fail(job.id, `エージェントの出力の形式が正しくありませんでした（${lastError}）`, iso());
+      jobs.fail(job.id, describeFailure('invalid_output', lastError), iso());
     } finally {
       controllers.delete(job.id);
       recordAgentLog(job, agentInput, attempts);

@@ -271,6 +271,8 @@ CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 - タイムアウト（初期値120秒）を設け、キャンセル時とタイムアウト時はプロセスを終了させる
 - 環境変数から `ANTHROPIC_API_KEY` と `OPENAI_API_KEY` を外し、ログインしたアカウント（プランの利用枠）で動かす
 - 使うモデルは `MYMIND_AGENT_MODEL` で指定できる。省略すると各 CLI の設定に従う
+- タイムアウトは `MYMIND_AGENT_TIMEOUT_SEC`（10〜600秒、初期値120秒）で変えられる。spike では1回の生成に15〜22秒かかった
+- 失敗は種類（コマンドが見つからない、未ログイン、利用上限、モデルが使えない、時間切れ、返答の形式違反）に分け、対処を添えた文にする。未ログインと利用上限の実際の出力は確かめられていないので、CLI の出力の言葉で推定し、種類の分からない失敗で終了コードが 0 以外なら未ログインとして扱う（#23）
 
 テストとE2Eのために、決まったJSONを返す偽のアダプタも用意します。使うアダプタは環境変数 `MYMIND_AGENT`（`claude` / `codex` / `fake`）で選びます。偽のアダプタの振る舞いは `MYMIND_FAKE_AGENT_MODE`（`success` / `invalid` / `invalid-once` / `hang`）と、答えるまでの時間 `MYMIND_FAKE_AGENT_DELAY_MS`（初期値 800）で切り替えます。同じ期間の FB のジョブがまだ終わっていないあいだは、新しく依頼しても同じジョブを返します。
 
