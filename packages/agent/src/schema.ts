@@ -19,6 +19,15 @@ export const dailyFeedbackSchema = z
 
 export type DailyFeedback = z.infer<typeof dailyFeedbackSchema>;
 
+/**
+ * エージェントの構造化出力に渡す JSON Schema（claude --json-schema、codex --output-schema。ADR-0005）。
+ * Claude Code は "$schema"（2020-12 の指定）を解釈できずに止まるので、draft-07 で作って "$schema" を外す
+ */
+export const dailyFeedbackJsonSchema: Record<string, unknown> = (() => {
+  const { $schema: _, ...schema } = z.toJSONSchema(dailyFeedbackSchema, { target: 'draft-7' });
+  return schema;
+})();
+
 export type ParseResult<T> = { ok: true; value: T } | { ok: false; error: string };
 
 /**

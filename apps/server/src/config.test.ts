@@ -12,7 +12,7 @@ describe('NFR-02 起動の設定', () => {
         host: '127.0.0.1',
         port: 4820,
         devPorts: [],
-        agent: { name: 'claude', fakeMode: 'success', fakeDelayMs: 800 },
+        agent: { name: 'claude', model: null, fakeMode: 'success', fakeDelayMs: 800 },
       },
     });
   });
@@ -26,7 +26,7 @@ describe('NFR-02 起動の設定', () => {
         host: '127.0.0.1',
         port: 5000,
         devPorts: [],
-        agent: { name: 'claude', fakeMode: 'success', fakeDelayMs: 800 },
+        agent: { name: 'claude', model: null, fakeMode: 'success', fakeDelayMs: 800 },
       },
     });
   });
@@ -80,6 +80,19 @@ describe('NFR-02 起動の設定', () => {
     ).toMatchObject({
       ok: true,
       value: { agent: { name: 'fake', fakeMode: 'hang', fakeDelayMs: 0 } },
+    });
+  });
+
+  it('エージェントに使わせるモデルを指定でき、省略すると null（各 CLI の設定に従う）', () => {
+    expect(
+      loadConfig({ MYMIND_AGENT: 'codex', MYMIND_AGENT_MODEL: 'gpt-5.6-terra' }),
+    ).toMatchObject({
+      ok: true,
+      value: { agent: { name: 'codex', model: 'gpt-5.6-terra' } },
+    });
+    expect(loadConfig({ MYMIND_AGENT: 'codex' })).toMatchObject({
+      ok: true,
+      value: { agent: { model: null } },
     });
   });
 

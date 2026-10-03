@@ -32,16 +32,16 @@ describe('NFR-21 エージェントを使えるか', () => {
     });
   });
 
-  it('実行ファイルがあればバージョンを返すが、アダプタがまだなければ使えない', async () => {
+  it('実行ファイルがあれば、バージョンを返して使える（claude と codex はアダプタがある、#10）', async () => {
     const status = await detectAgent(
       'codex',
       probeReturning({ ok: true, stdout: 'codex-cli 1.2.3\n' }),
     );
     expect(status).toEqual({
       name: 'codex',
-      usable: false,
+      usable: true,
       executable: { found: true, version: 'codex-cli 1.2.3' },
-      message: 'codex のアダプタはまだ使えません（MYMIND_AGENT=fake で偽のアダプタを使えます）',
+      message: null,
     });
   });
 

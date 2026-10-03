@@ -170,6 +170,19 @@ export type AgentInput<P> = {
   payloadHash: string;
 };
 
+/** プロンプトの中の入力の置き場所（prompts/daily-feedback.md の <data> の中） */
+export const INPUT_PLACEHOLDER = '{{input_json}}';
+
+/**
+ * プロンプトの置き場所に入力の JSON を入れる。置き場所がないプロンプトなら、末尾に <data> を付ける。
+ * 置き場所を残したまま末尾に足すと <data> が2つになり、エージェントが空の方を見て迷う（#10 の spike で見つけた）
+ */
+export function placeData(prompt: string, json: string): string {
+  if (prompt.includes(INPUT_PLACEHOLDER))
+    return `${prompt.trim().replace(INPUT_PLACEHOLDER, () => json)}\n`;
+  return `${prompt.trim()}\n\n<data>\n${json}\n</data>\n`;
+}
+
 /**
  * 日次 FB の入力を組み立てる（architecture.md 7.2、7.5、12.5）。
  * 利用者が書いた内容は <data> で区切ってデータとして渡し、その中の指示には従わないことをプロンプトで伝える。
@@ -189,7 +202,7 @@ export function buildDailyFeedbackInput(
   if (!isDailyPayload(payload)) throw new Error('日次 FB の段階に minimize がありません');
   const json = serializePayload(payload);
   return {
-    text: `${prompt.trim()}\n\n<data>\n${json}\n</data>\n`,
+    text: placeData(prompt, json),
     payload,
     annotations: result.annotations,
     charCount: json.length,
