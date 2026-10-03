@@ -23,14 +23,14 @@ describe('FR-A11 日次 FB のプロンプト', () => {
   });
 
   it('バージョンを読み、状態を日本語で書くよう指示している', () => {
-    expect(prompt.version).toBe('0.3.0');
+    expect(prompt.version).toBe('0.4.0');
     for (const word of ['未着手', '着手中', '中断', '待ち', '完了', '中止']) {
       expect(prompt.text).toContain(word);
     }
   });
 });
 
-describe('FR-A11 0.2.0 の評価から書き足した指示（0.3.0）', () => {
+describe('FR-A11 評価から書き足した指示（0.3.0、0.4.0）', () => {
   const { text } = loadDailyPrompt();
 
   it.each([
@@ -38,6 +38,14 @@ describe('FR-A11 0.2.0 の評価から書き足した指示（0.3.0）', () => {
     ['問いは FB 全体で1つまで', '問いの形にするのは、FB 全体で1つまで'],
     ['調子が低い日は厳しい指摘を1つまで', '厳しい指摘は `insight` 全体で1つまで'],
     ['明日の一手は行動1つ', '行動を1つだけ、1文で書く'],
+    [
+      '厳しく言う場面に当たる日は、調子が低くても指摘する',
+      '厳しく言う場面に当たる日は、調子が低くても',
+    ],
+    [
+      '実行できなかった一手をそのまま繰り返さない',
+      '同じ一手をそのまま繰り返さず、やり方か大きさを変える',
+    ],
   ])('%s', (_name, phrase) => {
     expect(text).toContain(phrase);
   });
@@ -83,7 +91,7 @@ describe('FR-A11 評価用のサンプル', () => {
     expect(result).toMatchObject({
       sample: 'good-day',
       agent: 'fake',
-      promptVersion: '0.3.0',
+      promptVersion: '0.4.0',
       durationMs: 1500,
       valid: true,
       error: null,
