@@ -68,10 +68,13 @@ function invalidateFor(qc: QueryClient, message: RealtimeMessage) {
   if (message.type === 'tasks.changed') {
     qc.invalidateQueries({ queryKey: ['day'] });
     qc.invalidateQueries({ queryKey: ['backlog'] });
+    qc.invalidateQueries({ queryKey: ['carryover'] });
     qc.invalidateQueries({ queryKey: ['events'] });
   } else {
     qc.invalidateQueries({ queryKey: ['jobs', message.jobId] });
     qc.invalidateQueries({ queryKey: ['feedbacks'] });
+    // その日の応答に、最新のジョブと FB と調子が入っている（GET /api/days/:day）
+    qc.invalidateQueries({ queryKey: ['day'] });
   }
 }
 

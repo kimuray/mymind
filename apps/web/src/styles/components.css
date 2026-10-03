@@ -1196,3 +1196,163 @@
   padding: var(--space-5) var(--space-6);
   border-radius: var(--radius-xl);
 }
+
+/* FB の表示（DESIGN.md 4.6、Figma「PC/振り返り」の 詳細/今日のFB） */
+.feedback {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.feedback-condition {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+.feedback-mame {
+  display: flex;
+  padding: var(--space-2);
+  border: var(--button-secondary-border);
+  border-radius: var(--radius-full);
+  background: var(--glass-1);
+}
+
+.feedback-condition-text {
+  display: flex;
+  flex-direction: column;
+}
+
+.feedback-level {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1.4;
+}
+
+.feedback-level[data-mood="best"] {
+  color: var(--mame-best-ink);
+}
+
+.feedback-level[data-mood="good"] {
+  color: var(--mame-good-ink);
+}
+
+.feedback-level[data-mood="normal"] {
+  color: var(--mame-normal-ink);
+}
+
+.feedback-level[data-mood="bad"] {
+  color: var(--mame-bad-ink);
+}
+
+.feedback-level[data-mood="worst"] {
+  color: var(--mame-worst-ink);
+}
+
+.feedback-level[data-mood="sleep"],
+.feedback-level[data-mood="think"] {
+  color: var(--ink-3);
+}
+
+.condition-picker {
+  display: flex;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.condition-option {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  padding: var(--space-2) 0;
+  border: var(--button-secondary-border);
+  border-radius: var(--radius-l);
+  background: var(--button-secondary-bg);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.condition-option[aria-pressed="true"] {
+  background: var(--segmented-active-bg);
+  border: var(--row-selected-border);
+}
+
+.feedback-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.feedback-section h3 {
+  margin: 0 0 var(--space-1);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.feedback-section p {
+  margin: 0;
+  line-height: 1.7;
+}
+
+.feedback-section[data-kind="good"] h3 {
+  color: var(--status-done-text);
+}
+
+.feedback-section[data-kind="insight"] h3 {
+  color: var(--status-waiting-text);
+}
+
+.feedback-next {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-l);
+  background: var(--accent-soft);
+}
+
+.feedback-next h3 {
+  color: var(--accent);
+}
+
+.feedback-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.feedback-none,
+.feedback-generating,
+.feedback-failed {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-3);
+}
+
+.feedback-failed {
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-l);
+  background: var(--status-waiting-bg);
+  color: var(--status-waiting-text);
+}
+
+.feedback-steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding-left: var(--space-5);
+  font-size: 13px;
+  color: var(--ink-4);
+}
+
+.feedback-steps li[data-active="true"] {
+  font-weight: 600;
+  color: var(--ink-1);
+}

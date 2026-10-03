@@ -233,3 +233,45 @@ test.describe('FR-D07 振り返りの冒頭の記録のまとめ', () => {
     await expect(summary.getByRole('heading', { name: /^完了/ })).toBeVisible();
   });
 });
+
+test.describe('FR-A01 FR-A03 FR-A04 FR-A08 振り返りの FB', () => {
+  const panel = (page: Page) => page.getByRole('region', { name: 'この日のフィードバック' });
+
+  test('FB をもらうと生成中を経て表示され、もう一度もらうとまた生成中を経て表示される', async ({
+    page,
+  }) => {
+    await page.goto('/reflection/2026-09-13');
+    await replaceText(page, '思考の整理', 'FB をもらう日の振り返り');
+    await panel(page).getByRole('button', { name: 'FBをもらう' }).click();
+    await expect(panel(page).getByText('マメが考えています')).toBeVisible();
+    await expect(panel(page).getByRole('heading', { name: '明日の一手' })).toBeVisible();
+    await expect(panel(page).getByRole('heading', { name: 'よかったこと' })).toBeVisible();
+
+    await panel(page).getByRole('button', { name: 'もう一度もらう' }).click();
+    await expect(panel(page).getByText('マメが考えています')).toBeVisible();
+    await expect(panel(page).getByRole('button', { name: 'もう一度もらう' })).toBeVisible();
+  });
+
+  test('生成中にキャンセルすると、FB をもらっていない状態に戻る', async ({ page }) => {
+    await page.goto('/reflection/2026-09-14');
+    await replaceText(page, '思考の整理', 'キャンセルする日の振り返り');
+    await panel(page).getByRole('button', { name: 'FBをもらう' }).click();
+    await panel(page).getByRole('button', { name: 'キャンセル' }).click();
+    await expect(panel(page).getByText('まだFBをもらっていません')).toBeVisible();
+  });
+
+  test('調子を手で直すと、読み直しても残り、もう一度押すと AI の判定に戻る', async ({ page }) => {
+    await page.goto('/reflection/2026-09-13');
+    await expect(panel(page).getByRole('heading', { name: '明日の一手' })).toBeVisible();
+    const picker = panel(page).getByRole('group', { name: '調子を直す' });
+    await picker.getByRole('button', { name: '絶不調' }).click();
+    await expect(panel(page).getByText(/手動で修正（AIの判定：/)).toBeVisible();
+    await page.reload();
+    await expect(picker.getByRole('button', { name: '絶不調' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    );
+    await picker.getByRole('button', { name: '絶不調' }).click();
+    await expect(panel(page).getByText(/手動で修正/)).toHaveCount(0);
+  });
+});

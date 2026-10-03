@@ -16,8 +16,11 @@ export function useSaveReflection(day: string) {
 
 /** 送信内容を確かめずに FB を依頼する（設定の「依頼の前に毎回確認する」が無効のとき） */
 export function useRequestFeedback(day: string) {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: async () =>
       unwrap(await api.jobs.$post({ json: { kind: 'daily_feedback', period: day } })),
+    // 依頼したジョブを、すぐに生成中として表示する（進み具合は SSE で読み直す）
+    onSettled: () => qc.invalidateQueries({ queryKey: queryKeys.day(day) }),
   });
 }

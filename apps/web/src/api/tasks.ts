@@ -3,7 +3,8 @@ import { type QueryClient, useMutation, useQuery, useQueryClient } from '@tansta
 import { notifyTasksChanged } from '../realtime';
 import { api, unwrap } from './client';
 
-type DayResponse = Awaited<ReturnType<typeof fetchDay>>;
+/** GET /api/days/:day の応答 */
+export type DayResponse = Awaited<ReturnType<typeof fetchDay>>;
 /** 今日の計画とバックログに共通する行の型（今日の計画だけにある並び順 position は除く） */
 export type ListTask = Omit<DayResponse['tasks'][number], 'position'>;
 export type TaskEventJson = Awaited<ReturnType<typeof fetchEvents>>['events'][number];
