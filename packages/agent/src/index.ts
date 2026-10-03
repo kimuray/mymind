@@ -1,6 +1,7 @@
 export * from './claude';
 export * from './codex';
 export * from './detect';
+export * from './errors';
 export * from './fake';
 export * from './input';
 export * from './pipeline';

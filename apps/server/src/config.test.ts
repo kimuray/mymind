@@ -12,7 +12,13 @@ describe('NFR-02 起動の設定', () => {
         host: '127.0.0.1',
         port: 4820,
         devPorts: [],
-        agent: { name: 'claude', model: null, fakeMode: 'success', fakeDelayMs: 800 },
+        agent: {
+          name: 'claude',
+          model: null,
+          timeoutMs: 120_000,
+          fakeMode: 'success',
+          fakeDelayMs: 800,
+        },
       },
     });
   });
@@ -26,7 +32,13 @@ describe('NFR-02 起動の設定', () => {
         host: '127.0.0.1',
         port: 5000,
         devPorts: [],
-        agent: { name: 'claude', model: null, fakeMode: 'success', fakeDelayMs: 800 },
+        agent: {
+          name: 'claude',
+          model: null,
+          timeoutMs: 120_000,
+          fakeMode: 'success',
+          fakeDelayMs: 800,
+        },
       },
     });
   });
@@ -94,6 +106,14 @@ describe('NFR-02 起動の設定', () => {
       ok: true,
       value: { agent: { model: null } },
     });
+  });
+
+  it('FB の生成を待つ秒数を変えられ、10〜600 秒の外は受け付けない（#23）', () => {
+    expect(loadConfig({ MYMIND_AGENT_TIMEOUT_SEC: '300' })).toMatchObject({
+      ok: true,
+      value: { agent: { timeoutMs: 300_000 } },
+    });
+    expect(loadConfig({ MYMIND_AGENT_TIMEOUT_SEC: '5' })).toMatchObject({ ok: false });
   });
 
   it('知らないエージェントは受け付けない', () => {

@@ -20,6 +20,8 @@ const envSchema = z.object({
    * Codex は設定ファイルで ChatGPT のアカウントでは使えないモデルに固定されていると失敗するので、指定できるようにする（ADR-0005）
    */
   MYMIND_AGENT_MODEL: z.string().min(1).optional(),
+  /** FB の生成を待つ秒数（#23）。spike では 15〜22 秒だったので、初期値 120 秒で十分に余裕がある */
+  MYMIND_AGENT_TIMEOUT_SEC: z.coerce.number().int().min(10).max(600).default(120),
   /** 偽のアダプタの振る舞いと、答えるまでの時間（生成中の表示やキャンセルを確かめるため） */
   MYMIND_FAKE_AGENT_MODE: z.enum(['success', 'invalid', 'invalid-once', 'hang']).default('success'),
   MYMIND_FAKE_AGENT_DELAY_MS: z.coerce.number().int().min(0).max(60_000).default(800),
@@ -35,6 +37,8 @@ export type ServerConfig = {
     name: 'claude' | 'codex' | 'fake';
     /** 省略すると各 CLI の設定に従う */
     model: string | null;
+    /** FB の生成を待つ時間 */
+    timeoutMs: number;
     fakeMode: 'success' | 'invalid' | 'invalid-once' | 'hang';
     fakeDelayMs: number;
   };
@@ -75,6 +79,7 @@ export function loadConfig(
       agent: {
         name: e.MYMIND_AGENT,
         model: e.MYMIND_AGENT_MODEL ?? null,
+        timeoutMs: e.MYMIND_AGENT_TIMEOUT_SEC * 1000,
         fakeMode: e.MYMIND_FAKE_AGENT_MODE,
         fakeDelayMs: e.MYMIND_FAKE_AGENT_DELAY_MS,
       },
