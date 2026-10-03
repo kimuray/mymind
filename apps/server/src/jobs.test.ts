@@ -137,7 +137,7 @@ describe('FR-A08 失敗とキャンセル', () => {
     expect(agent.inputs).toHaveLength(2);
     expect(jobs.find(job.id)).toMatchObject({
       status: 'failed',
-      error: expect.stringContaining('形式が正しくありませんでした'),
+      error: expect.stringContaining('返答が FB の形になっていませんでした'),
     });
     expect(jobs.listFeedbacks('daily', DAY)).toEqual([]);
   });
@@ -148,7 +148,7 @@ describe('FR-A08 失敗とキャンセル', () => {
     await runner.idle();
     expect(jobs.find(job.id)).toMatchObject({
       status: 'failed',
-      error: expect.stringContaining('応答がなかった'),
+      error: expect.stringContaining('時間内に応答がありませんでした'),
     });
   });
 

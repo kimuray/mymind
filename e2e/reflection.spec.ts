@@ -275,3 +275,81 @@ test.describe('FR-A01 FR-A03 FR-A04 FR-A08 振り返りの FB', () => {
     await expect(panel(page).getByText(/手動で修正/)).toHaveCount(0);
   });
 });
+
+test.describe('FR-A08 FB の順番待ちと失敗の表示（#23）', () => {
+  const panel = (page: Page) => page.getByRole('region', { name: 'この日のフィードバック' });
+
+  /** 画面の中から FB を依頼する（状態を変える API にはトークンが要る） */
+  const requestFeedback = (page: Page, period: string) =>
+    page.evaluate(async (period) => {
+      const token =
+        document.querySelector('meta[name="mymind-token"]')?.getAttribute('content') ?? '';
+      const res = await fetch('/api/jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Mymind-Token': token },
+        body: JSON.stringify({ kind: 'daily_feedback', period }),
+      });
+      return res.status;
+    }, period);
+
+  test('前の依頼が生成中のあいだ、あとの依頼は順番待ちと表示し、順番が来ると FB が出る', async ({
+    page,
+  }) => {
+    await page.goto('/reflection/2026-09-16');
+    expect(await requestFeedback(page, '2026-09-15')).toBe(202);
+    expect(await requestFeedback(page, '2026-09-16')).toBe(202);
+    await page.reload();
+    await expect(panel(page).getByText('前の依頼が終わるのを待っています')).toBeVisible();
+    await expect(panel(page).getByRole('heading', { name: '明日の一手' })).toBeVisible({
+      timeout: 10_000,
+    });
+  });
+
+  for (const [kind, message] of [
+    [
+      '未ログイン',
+      'エージェントにログインしていないようです。ターミナルでログインしてから、もう一度依頼してください（claude、終了コード 1：Please run /login）',
+    ],
+    [
+      '利用上限',
+      'エージェントの利用上限に達したようです。しばらく待ってから、もう一度依頼してください（claude：usage limit）',
+    ],
+    [
+      '時間切れ',
+      '時間内に応答がありませんでした。もう一度依頼するか、MYMIND_AGENT_TIMEOUT_SEC を長くしてください（120秒で中止しました）',
+    ],
+    [
+      '形式違反',
+      'エージェントの返答が FB の形になっていませんでした。もう一度依頼してください（JSON が見つかりません）',
+    ],
+  ] as const) {
+    test(`${kind}で失敗したら、理由と対処を出し、再試行できる`, async ({ page }) => {
+      // サーバーの応答を差し替え、その日の最新のジョブを失敗にする（偽のアダプタでは起こせない失敗を見せるため）
+      await page.route('**/api/days/2026-09-17', async (route) => {
+        const res = await route.fetch();
+        const body = (await res.json()) as Record<string, unknown>;
+        await route.fulfill({
+          response: res,
+          json: {
+            ...body,
+            feedback: null,
+            job: {
+              id: 'j-failed',
+              kind: 'daily_feedback',
+              period: '2026-09-17',
+              agent: 'claude',
+              status: 'failed',
+              error: message,
+              createdAt: '2026-09-17T12:00:00.000Z',
+              startedAt: '2026-09-17T12:00:01.000Z',
+              finishedAt: '2026-09-17T12:02:01.000Z',
+            },
+          },
+        });
+      });
+      await page.goto('/reflection/2026-09-17');
+      await expect(panel(page)).toContainText(`FBをもらえませんでした：${message}`);
+      await expect(panel(page).getByRole('button', { name: '再試行' })).toBeVisible();
+    });
+  }
+});

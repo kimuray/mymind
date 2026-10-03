@@ -69,6 +69,13 @@ describe('FR-A08 FB の状態', () => {
   });
 });
 
+describe('FR-A08 順番待ち（#23）', () => {
+  it('待機中のジョブは、前の依頼を待っていることを出し、実行中なら出さない', () => {
+    expect(render({ job: job('queued') })).toContain('前の依頼が終わるのを待っています');
+    expect(render({ job: job('running') })).not.toContain('前の依頼が終わるのを待っています');
+  });
+});
+
 describe('FR-A09 FB のない日', () => {
   it('調子は空欄で、おやすみ中のマメと依頼のボタンを出す', () => {
     const html = render({});

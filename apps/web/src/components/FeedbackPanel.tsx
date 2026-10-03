@@ -131,6 +131,10 @@ export function FeedbackPanel({
                 </li>
               ))}
             </ol>
+            {job.status === 'queued' && (
+              // FB は1件ずつ作るので、ほかの日の依頼が終わるまで待つ（#23、architecture.md 7.1）
+              <p className="text-small">前の依頼が終わるのを待っています。順番が来ると始まります</p>
+            )}
             {onCancel !== undefined && (
               <Button onClick={() => onCancel(job.id)} disabled={busy}>
                 キャンセル

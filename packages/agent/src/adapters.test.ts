@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { claudeArgs, createClaudeRunner, readClaudeOutput } from './claude';
 import { CODEX_DISABLED_FEATURES, codexArgs, createCodexRunner, lastCodexError } from './codex';
+import { classifyFailure, describeFailure } from './errors';
 import { placeData } from './input';
 import type { ProcessResult, RunProcess } from './process';
 import { dailyFeedbackJsonSchema, parseDailyFeedback } from './schema';
@@ -92,7 +93,7 @@ describe('FR-A01 Claude Code のアダプタ', () => {
       error: {
         kind: 'failed',
         message:
-          'claude が失敗しました（終了コード 1）：Invalid API key · Please run /login。ログインしているか確かめてください',
+          'エージェントにログインしていないようです。ターミナルでログインしてから、もう一度依頼してください（claude、終了コード 1：Invalid API key · Please run /login）',
       },
     });
   });
@@ -107,7 +108,11 @@ describe('FR-A01 Claude Code のアダプタ', () => {
     const result = await createClaudeRunner({ run, env }).run('入力', { signal: signal() });
     expect(result).toEqual({
       ok: false,
-      error: { kind: 'failed', message: 'claude がエラーを返しました：上限に達しました' },
+      error: {
+        kind: 'failed',
+        message:
+          'エージェントの利用上限に達したようです。しばらく待ってから、もう一度依頼してください（claude：上限に達しました）',
+      },
     });
   });
 
@@ -127,7 +132,10 @@ describe('FR-A01 Claude Code のアダプタ', () => {
     );
     expect(missing).toMatchObject({
       ok: false,
-      error: { message: 'claude が見つかりません（PATH を確認してください）' },
+      error: {
+        message:
+          'エージェントのコマンドが見つかりません。インストールされているか、PATH を確かめてください（claude）',
+      },
     });
   });
 });
@@ -198,5 +206,41 @@ describe('FR-A01 エージェントに渡す入力', () => {
   it('構造化出力のスキーマは "$schema" を持たない（Claude Code が解釈できないため）', () => {
     expect(dailyFeedbackJsonSchema).not.toHaveProperty('$schema');
     expect(dailyFeedbackJsonSchema).toMatchObject({ type: 'object', additionalProperties: false });
+  });
+});
+
+describe('FR-A08 エージェントの失敗の種類（#23）', () => {
+  it.each([
+    ['Error: You have hit your usage limit. Try again later.', 'rate_limit'],
+    ['429 Too Many Requests', 'rate_limit'],
+    ['利用上限に達しました', 'rate_limit'],
+    ["The 'gpt-5-codex' model is not supported when using Codex with a ChatGPT account.", 'model'],
+    ['Invalid API key · Please run /login', 'auth'],
+    ['401 Unauthorized', 'auth'],
+    ['something unexpected', 'unknown'],
+  ] as const)('「%s」は %s', (reason, kind) => {
+    expect(classifyFailure(reason)).toBe(kind);
+  });
+
+  it('種類ごとに対処を書き、CLI の理由を添える', () => {
+    expect(describeFailure('timeout', '120秒で中止しました')).toBe(
+      '時間内に応答がありませんでした。もう一度依頼するか、MYMIND_AGENT_TIMEOUT_SEC を長くしてください（120秒で中止しました）',
+    );
+    expect(describeFailure('unknown')).toBe('エージェントが FB を返しませんでした');
+  });
+
+  it('Codex のモデルのエラーは、モデルを確かめるよう促す', async () => {
+    const { run } = fakeProcess({ exitCode: 1, stderr: fixture('codex-model-error.txt') });
+    const result = await createCodexRunner({ run, env }).run('入力', { signal: signal() });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toMatch(/^指定したモデルが使えないようです/);
+  });
+
+  it('種類の分からない失敗で終了コードが 0 以外なら、ログインしていないものとして扱う', async () => {
+    const { run } = fakeProcess({ exitCode: 2, stderr: 'boom' });
+    const result = await createCodexRunner({ run, env }).run('入力', { signal: signal() });
+    expect(result.ok).toBe(false);
+    if (!result.ok)
+      expect(result.error.message).toMatch(/^エージェントにログインしていないようです/);
   });
 });
