@@ -1,4 +1,4 @@
-import { type BusinessDayOptions, toBusinessDay } from '@mymind/domain';
+import { type BusinessDayOptions, daysBetween, toBusinessDay } from '@mymind/domain';
 
 // 業務日の切り替え（FR-D01）。設定を読む API ができるまでは初期値を使う（サーバーと同じ値）
 export const DAY_OPTIONS: BusinessDayOptions = { timeZone: 'Asia/Tokyo', dayStartHour: 5 };
@@ -23,3 +23,9 @@ export const formatShortDay = (day: string) => {
   const [, m, d] = day.split('-').map(Number);
   return `${m}/${d}`;
 };
+
+/** 「今日」「昨日」「3日前」。日数は domain の daysBetween で数える */
+export function formatDaysAgo(day: string, today: string): string {
+  const n = daysBetween(day, today);
+  return n <= 0 ? '今日' : n === 1 ? '昨日' : `${n}日前`;
+}

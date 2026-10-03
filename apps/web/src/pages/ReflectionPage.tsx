@@ -181,7 +181,7 @@ function ReflectionEditor({
       if (!busy) void saveOnly();
       return true;
     },
-    'reflection.saveAndRequest': () => {
+    'screen.submit': () => {
       if (!busy) void saveAndRequest();
       return true;
     },
