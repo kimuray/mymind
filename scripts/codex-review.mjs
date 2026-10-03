@@ -5,14 +5,11 @@
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const base = process.argv[2] ?? 'origin/main';
-const root = new URL('..', import.meta.url).pathname;
-
-const PROMPT = `このリポジトリの AGENTS.md と .claude/rules/ のルールに照らして、差分をレビューしてください。
-正しさの誤り、要件（docs/requirements.md）との食い違い、テストの不足、ルール違反を優先し、書き方の好みは挙げないでください。
-指摘は日本語で、1件ごとに「ファイルと行」「重要度（高・中・低）」「理由」「直し方の案」を書いてください。
-指摘がなければ「指摘なし」とだけ書いてください。`;
+// URL の pathname はスペースや日本語を %20 などのまま返すので、ファイルのパスに変換して使う
+const root = fileURLToPath(new URL('..', import.meta.url));
 
 const branch = execFileSync('git', ['rev-parse', '--abbrev-ref', 'HEAD'], {
   encoding: 'utf8',
@@ -22,8 +19,9 @@ let output;
 try {
   output = execFileSync(
     'codex',
-    // レビューでは Codex にファイルを書き換えさせない
-    ['review', '--base', base, '-c', 'sandbox_mode="read-only"', PROMPT],
+    // codex review は --base と指示文を同時に受け付けない。観点は組み込みのレビューに任せる
+    // （Codex はリポジトリの AGENTS.md を自動で読む）。レビューではファイルを書き換えさせない
+    ['review', '--base', base, '-c', 'sandbox_mode="read-only"'],
     {
       encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
