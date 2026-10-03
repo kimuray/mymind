@@ -40,7 +40,11 @@
       "Bash(git fetch:*)",
       "Bash(git pull:*)",
       "Bash(node scripts/merge-if-allowed.mjs:*)",
-      "Bash(node ./scripts/merge-if-allowed.mjs:*)"
+      "Bash(node ./scripts/merge-if-allowed.mjs:*)",
+      "Bash(node scripts/codex-review.mjs)",
+      "Bash(node scripts/codex-review.mjs:*)",
+      "Bash(node ./scripts/codex-review.mjs)",
+      "Bash(node ./scripts/codex-review.mjs:*)"
     ],
     "ask": [
       "Bash(dangerouslyDisableSandbox:true)",
@@ -98,7 +102,11 @@
       "node scripts/merge-if-allowed.mjs:*",
       "node ./scripts/merge-if-allowed.mjs:*",
       "node scripts/github-setup.mjs:*",
-      "node ./scripts/github-setup.mjs:*"
+      "node ./scripts/github-setup.mjs:*",
+      "node scripts/codex-review.mjs",
+      "node scripts/codex-review.mjs:*",
+      "node ./scripts/codex-review.mjs",
+      "node ./scripts/codex-review.mjs:*"
     ],
     "filesystem": {
       "allowWrite": [

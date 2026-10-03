@@ -16,3 +16,4 @@
 | [ADR-0010](./0010-docker-dev-environment.md) | Docker と Docker Compose で開発環境を用意する | 採用 |
 | [ADR-0011](./0011-node-sqlite-with-drizzle-rc.md) | node:sqlite を採用し、Drizzle は 1.0 の rc に固定して同期のトランザクションで使う | 採用 |
 | [ADR-0012](./0012-web-router-and-fonts.md) | 画面のルーターは TanStack Router にし、フォントは @fontsource をそのまま同梱する | 採用 |
+| [ADR-0013](./0013-codex-review-before-pr.md) | PR を作る前に、Codex に差分をレビューしてもらう | 採用 |

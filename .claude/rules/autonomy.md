@@ -17,7 +17,7 @@ description: 自律モードのループ、保留の判断、マージの手順�
 1. **再開の確認**：`pnpm run doctor` を実行し、`pnpm progress` で直近の作業記録を読み、`status:in-progress` の issue を確認する。作業途中の issue があれば、それを先に仕上げる
 2. **選ぶ**：`status:ready` の issue から、優先度（p0 → p2）、マイルストーン（M1 → M5）、番号の順に1つ選ぶ。本文の `依存:` の行の issue がすべて閉じているか確認する
 3. **着手を記録する**：ラベルを `status:in-progress` にし、ブランチを作る
-4. **実装する**：`.claude/rules/workflow.md` の手順と AGENTS.md の完了の定義に従う
+4. **実装する**：`.claude/rules/workflow.md` の手順と AGENTS.md の完了の定義に従う。PR を作る前に、`workflow.md` の「Codex のレビュー」に従ってレビューを受け、指摘に対応する。Codex を使えないときは待たずに、PR に未実施と理由を書いて進む
 5. **PR を作る**：タイトルを Conventional Commits の形式にし、本文に `Closes #番号` を書く。`gh pr checks <PR番号> --watch` で `check`・`e2e`・`pr-policy` の結果を待ち、失敗したら直して push し直す
 6. **マージを試みる**：`node scripts/merge-if-allowed.mjs <PR番号>` を、パイプや `; echo $?` を付けずに単独で実行する（付けるとサンドボックスの中で実行され、`gh` が認証情報を読めない）。レビュー必須の変更を含む場合、スクリプトは `review:required` を付けてマージを拒否するので、その PR は開いたまま次へ進む
 7. **依存を確認する**：issue が閉じると `issue-deps.yml` が、本文の `依存:` の行を読んで依存先のラベルを自動で更新する。更新されていなければ（`依存:` の行がない issue など）、閉じた issue に依存する issue を探し、依存がすべて解消していれば手で `status:ready` に変える

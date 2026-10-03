@@ -8,6 +8,7 @@
 - `gh` は認証情報（`~/.config/gh` とキーチェーン）を読むため、サンドボックスの外で実行する設定（`excludedCommands`）にしています。ただし外で実行されるのは、コマンド全体が `gh`（と除外済みのコマンド）だけでできている場合に限ります。パイプ（`| head`）、`$(...)`、ヒアドキュメント、他のコマンドとの `&&` を含めるとサンドボックスの中で実行され、`failed to read configuration` で失敗します。`gh` は単独で実行し、絞り込みは `--json` と `--jq`、PR や issue の本文は `$TMPDIR` にファイルを書いてから `--body-file` で渡してください
 - `git push` も、SSH の鍵（`~/.ssh`）を使うためサンドボックスの外で実行する設定にしています。`gh` と同じく、単独で実行してください。force push と main への push は `permissions.deny` で禁止したままです。`git fetch` と `git pull` も同じ理由で、サンドボックスの外で実行します
 - `node scripts/merge-if-allowed.mjs <PR番号>` と `node scripts/github-setup.mjs` も、中で `gh` を呼ぶためサンドボックスの外で実行する設定にしています。`gh` と同じく単独で実行してください。終了コード（0 / 2 / 3）は Bash ツールの結果に表示されるので、`; echo $?` や `2>&1` を付ける必要はありません。付けるとサンドボックスの中で実行され、終了コード 4 で止まります
+- PR を作る前の Codex のレビュー（`node scripts/codex-review.mjs`）も、`~/.codex` の認証情報を読むためサンドボックスの外で確認なしに実行する設定にしています。単独で実行し、数分かかるので Bash のタイムアウトを 600000 にしてください。手順は `.claude/rules/workflow.md` の「Codex のレビュー」にあります
 - E2E（`pnpm test:e2e`、`pnpm exec playwright test`）も、サンドボックスの外で確認なしに実行する設定にしています。Chromium がプロセス間の通信に使う Mach ポートをサンドボックスが制限していて、中では起動できないためです（#15）。E2E のサーバーは偽のエージェントと `./.data/e2e` を使うので、外で実行しても実データには触れません。ほかのコマンドと連結すると中で実行されるので、単独で実行してください
 - サンドボックスの中からは `.git/config` に書き込めません。`git switch -c <名前> origin/main` はブランチの追跡設定を書き込むところで失敗し、ブランチが切り替わらないまま進んでしまいます。ブランチは `git switch --no-track -c <名前> origin/main` で作り、追跡の設定は最初の `git push -u` に任せてください
 - 権限は `.claude/settings.json` で管理しています。依存関係の追加、push、PR の作成、エージェントの起動は確認を求められます
