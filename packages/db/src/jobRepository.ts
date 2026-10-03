@@ -1,5 +1,5 @@
 import { canTransitionJob, type JobKind, type JobStatus } from '@mymind/domain';
-import { and, asc, desc, eq, inArray } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, lt } from 'drizzle-orm';
 import type { Database } from './client';
 import { agentJobs, conditions, feedbacks } from './schema';
 import type { SensitiveCodec } from './sensitiveCodec';
@@ -63,7 +63,7 @@ export function createJobRepository({ db, codec }: { db: Database; codec: Sensit
     content: JSON.parse(codec.decode(row.contentJson)) as unknown,
   });
 
-  return {
+  const repo = {
     create(input: {
       id: string;
       kind: JobKind;
@@ -190,12 +190,48 @@ export function createJobRepository({ db, codec }: { db: Database; codec: Sensit
         .map(toFeedback);
     },
 
+    /** その期間の最新のジョブ（生成中・失敗の表示に使う）。なければ undefined */
+    latestJob(kind: JobKind, period: string): Job | undefined {
+      return db
+        .select()
+        .from(agentJobs)
+        .where(and(eq(agentJobs.kind, kind), eq(agentJobs.period, period)))
+        .orderBy(desc(agentJobs.createdAt), desc(agentJobs.id))
+        .get();
+    },
+
+    /**
+     * 前日の FB：day より前で、最後に日次 FB をもらった日の最新の FB（architecture.md 4.5、FR-D02）。
+     * 空白日をはさんでも、最後にもらった日のものを返す
+     */
+    latestDailyFeedbackBefore(day: string): Feedback | undefined {
+      const row = db
+        .select()
+        .from(feedbacks)
+        .where(and(eq(feedbacks.scope, 'daily'), lt(feedbacks.period, day)))
+        .orderBy(desc(feedbacks.period), desc(feedbacks.id))
+        .get();
+      return row === undefined ? undefined : toFeedback(row);
+    },
+
+    /** 調子の手動の値を残す（FR-A03）。AI の判定と根拠は変えない。null で手動の値を外す */
+    setUserLevel(day: string, userLevel: number | null, at: string): Condition {
+      db.insert(conditions)
+        .values({ day, userLevel, updatedAt: at })
+        .onConflictDoUpdate({ target: conditions.day, set: { userLevel, updatedAt: at } })
+        .run();
+      const saved = repo.findCondition(day);
+      if (saved === undefined) throw new Error('調子を保存できませんでした');
+      return saved;
+    },
+
     findCondition(day: string): Condition | undefined {
       const row = db.select().from(conditions).where(eq(conditions.day, day)).get();
       if (row === undefined) return undefined;
       return { ...row, aiReason: row.aiReason === null ? null : codec.decode(row.aiReason) };
     },
   };
+  return repo;
 }
 
 export type JobRepository = ReturnType<typeof createJobRepository>;

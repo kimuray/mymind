@@ -171,3 +171,56 @@ describe('NFR-21 直近の失敗', () => {
     expect(jobs.latestFailure()).toMatchObject({ id: 'j2', error: '新しい失敗' });
   });
 });
+
+describe('FR-A04 FR-D02 その日と前日の FB', () => {
+  /** period の日に日次 FB を1つ保存する */
+  const feedbackOn = (period: string, id: string) => {
+    jobs.create({ id, kind: 'daily_feedback', period, agent: 'fake', createdAt: at(0) });
+    jobs.claimNext(at(1));
+    jobs.succeed({
+      ...success(id),
+      feedback: { ...success(id).feedback, period },
+      condition: { day: period, aiLevel: 3, aiReason: '根拠' },
+    });
+  };
+
+  it('その期間の最新のジョブを返す', () => {
+    jobs.create({ id: 'j1', kind: 'daily_feedback', period: DAY, agent: 'fake', createdAt: at(0) });
+    jobs.create({ id: 'j2', kind: 'daily_feedback', period: DAY, agent: 'fake', createdAt: at(3) });
+    expect(jobs.latestJob('daily_feedback', DAY)?.id).toBe('j2');
+    expect(jobs.latestJob('daily_feedback', '2026-09-22')).toBeUndefined();
+  });
+
+  it('前日の FB は、その日より前で最後にもらった日の最新の FB（空白日をはさんでも）', () => {
+    feedbackOn('2026-09-18', 'a');
+    feedbackOn('2026-09-20', 'b');
+    feedbackOn('2026-09-20', 'c');
+    feedbackOn(DAY, 'd');
+    expect(jobs.latestDailyFeedbackBefore(DAY)).toMatchObject({ id: 'f-c', period: '2026-09-20' });
+    expect(jobs.latestDailyFeedbackBefore('2026-09-18')).toBeUndefined();
+  });
+});
+
+describe('FR-A03 調子の手動の値', () => {
+  it('FB をもらっていない日にも手動の値を付けられる', () => {
+    expect(jobs.setUserLevel(DAY, 2, at(0))).toEqual({
+      day: DAY,
+      aiLevel: null,
+      aiReason: null,
+      userLevel: 2,
+      updatedAt: at(0),
+    });
+  });
+
+  it('AI の判定と根拠を残したまま、手動の値を付けたり外したりできる', () => {
+    createJob();
+    jobs.claimNext(at(1));
+    jobs.succeed(success());
+    expect(jobs.setUserLevel(DAY, 1, at(6))).toMatchObject({
+      aiLevel: 3,
+      aiReason: '設計に集中できた',
+      userLevel: 1,
+    });
+    expect(jobs.setUserLevel(DAY, null, at(7))).toMatchObject({ aiLevel: 3, userLevel: null });
+  });
+});

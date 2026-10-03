@@ -586,3 +586,102 @@ describe('FR-D06 日次 FB に送る振り返り', () => {
     expect(recent.find((r) => r.day === '2026-09-20')?.blank).toBe(true);
   });
 });
+
+describe('FR-A03 FR-A04 FR-D02 その日の FB と調子、前日の FB', () => {
+  const headers = {
+    Host: `127.0.0.1:${PORT}`,
+    'Sec-Fetch-Site': 'same-origin',
+    Origin: `http://127.0.0.1:${PORT}`,
+    [TOKEN_HEADER]: 'token',
+    'Content-Type': 'application/json',
+  };
+  type DayJson = {
+    feedback: { id: string; content: { next_action: string } | null } | null;
+    condition: { aiLevel: number | null; userLevel: number | null } | null;
+    job: { status: string } | null;
+    previous: { day: string; feedback: { id: string } | null } | null;
+  };
+  const getDay = async (app: ReturnType<typeof setup>['app'], day: string) =>
+    (await (await app.request(`/api/days/${day}`, { headers })).json()) as DayJson;
+  const putCondition = (
+    app: ReturnType<typeof setup>['app'],
+    day: string,
+    userLevel: number | null,
+  ) =>
+    app.request(`/api/days/${day}/condition`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ userLevel }),
+    });
+
+  it('FB をもらっていない日は、FB も調子もジョブも null', async () => {
+    const { app } = setup();
+    expect(await getDay(app, DAY)).toMatchObject({
+      feedback: null,
+      condition: null,
+      job: null,
+      previous: null,
+    });
+  });
+
+  it('FB をもらうと、検証した中身と AI の調子、完了したジョブを返し、再依頼すると最新を返す', async () => {
+    const { app, runner } = setup();
+    runner.enqueue('daily_feedback', DAY);
+    await runner.idle();
+    const first = await getDay(app, DAY);
+    expect(first.feedback?.content?.next_action).toBe(FAKE_OUTPUT.next_action);
+    expect(first.condition).toMatchObject({
+      aiLevel: FAKE_OUTPUT.condition.level,
+      userLevel: null,
+    });
+    expect(first.job).toMatchObject({ status: 'succeeded' });
+
+    runner.enqueue('daily_feedback', DAY);
+    await runner.idle();
+    const second = await getDay(app, DAY);
+    expect(second.feedback?.id).not.toBe(first.feedback?.id);
+  });
+
+  it('失敗したジョブは、その日の最新のジョブとして返す', async () => {
+    const { app, runner } = setup('invalid');
+    runner.enqueue('daily_feedback', DAY);
+    await runner.idle();
+    expect(await getDay(app, DAY)).toMatchObject({ feedback: null, job: { status: 'failed' } });
+  });
+
+  it('前日の FB は、空白日をはさんでも最後にもらった日のもの', async () => {
+    const { app, runner } = setup();
+    runner.enqueue('daily_feedback', '2026-09-20');
+    await runner.idle();
+    expect((await getDay(app, DAY)).previous).toMatchObject({
+      day: '2026-09-20',
+      feedback: { id: expect.any(String) },
+    });
+  });
+
+  it('調子を手で直すと、AI の値と手動の値の両方が残り、null で手動の値を外せる', async () => {
+    const { app, runner } = setup();
+    runner.enqueue('daily_feedback', DAY);
+    await runner.idle();
+    expect((await putCondition(app, DAY, 0)).status).toBe(200);
+    expect((await getDay(app, DAY)).condition).toMatchObject({
+      aiLevel: FAKE_OUTPUT.condition.level,
+      userLevel: 0,
+    });
+    await putCondition(app, DAY, null);
+    expect((await getDay(app, DAY)).condition).toMatchObject({ userLevel: null });
+  });
+
+  it('範囲外の値、まだ来ていない日、トークンのない変更は拒否する', async () => {
+    const { app } = setup();
+    expect((await putCondition(app, DAY, 5)).status).toBe(400);
+    expect((await putCondition(app, '2026-09-24', 2)).status).toBe(400);
+    const { [TOKEN_HEADER]: _, ...noToken } = headers;
+    const res = await app.request(`/api/days/${DAY}/condition`, {
+      method: 'PUT',
+      headers: noToken,
+      body: JSON.stringify({ userLevel: 2 }),
+    });
+    expect(res.status).toBe(403);
+  });
+});
