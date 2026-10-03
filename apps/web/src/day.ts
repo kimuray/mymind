@@ -29,3 +29,21 @@ export function formatDaysAgo(day: string, today: string): string {
   const n = daysBetween(day, today);
   return n <= 0 ? '今日' : n === 1 ? '昨日' : `${n}日前`;
 }
+
+// 画面の日時は業務日と同じタイムゾーンで出す（FR-D01。設定を読む API ができるまでは初期値）
+const dateTimeFormat = new Intl.DateTimeFormat('ja-JP', {
+  timeZone: DAY_OPTIONS.timeZone,
+  month: 'numeric',
+  day: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
+
+/** 「9月25日 16:53」の形にする */
+export function formatDateTime(iso: string): string {
+  const parts = Object.fromEntries(
+    dateTimeFormat.formatToParts(new Date(iso)).map((p) => [p.type, p.value]),
+  );
+  return `${parts['month']}月${parts['day']}日 ${parts['hour']}:${parts['minute']}`;
+}

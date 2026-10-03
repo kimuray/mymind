@@ -1,20 +1,21 @@
 import type { DaySummary as DaySummaryData } from '@mymind/domain';
 import { useEffect, useRef, useState } from 'react';
 import { ApiError } from '../api/client';
+import { useCancelJob, useSetCondition } from '../api/feedback';
 import { type ReflectionDraft, useRequestFeedback, useSaveReflection } from '../api/reflection';
 import { useSettings } from '../api/settings';
-import { useDayPlan } from '../api/tasks';
+import { type DayResponse, useDayPlan } from '../api/tasks';
 import { AgentInputPreview } from '../components/AgentInputPreview';
 import { Button } from '../components/Button';
 import { DaySummary } from '../components/DaySummary';
+import { FeedbackPanel } from '../components/FeedbackPanel';
 import { Kbd } from '../components/Kbd';
 import { MarkdownField, type MarkdownMode } from '../components/MarkdownField';
 import { PageLayout } from '../components/PageLayout';
-import { DAY_OPTIONS, formatDayHeading } from '../day';
+import { DAY_OPTIONS, formatDateTime, formatDayHeading } from '../day';
 import { useDayGuard } from '../dayGuard';
 import { useKeyBindings } from '../keyboard';
 import { useReflectionDrafts } from '../useReflectionDrafts';
-import { formatDateTime } from './SettingsPage';
 
 const sameDraft = (a: ReflectionDraft, b: ReflectionDraft) =>
   a.thoughtsMd === b.thoughtsMd && a.learningMd === b.learningMd;
@@ -80,6 +81,7 @@ export function ReflectionPage({ day: dayParam }: { day: string | undefined }) {
           day={day}
           isToday={day === guard.day}
           summary={log.data.summary}
+          dayData={log.data}
           saved={{
             thoughtsMd: log.data.log?.thoughtsMd ?? '',
             learningMd: log.data.log?.learningMd ?? '',
@@ -102,11 +104,14 @@ function ReflectionEditor({
   isToday,
   saved,
   summary,
+  dayData,
 }: {
   day: string;
   isToday: boolean;
   saved: ReflectionDraft & { updatedAt: string | null };
   summary: DaySummaryData;
+  /** その日の FB・調子・最新のジョブ（GET /api/days/:day） */
+  dayData: Pick<DayResponse, 'feedback' | 'condition' | 'job'>;
 }) {
   const savedText = { thoughtsMd: saved.thoughtsMd, learningMd: saved.learningMd };
   const [draft, setDraft] = useState<ReflectionDraft>(savedText);
@@ -124,6 +129,8 @@ function ReflectionEditor({
   const save = useSaveReflection(day);
   const request = useRequestFeedback(day);
   const settings = useSettings();
+  const cancel = useCancelJob(day);
+  const setCondition = useSetCondition(day);
   const heading = formatDayHeading(day);
   const busy = save.isPending || request.isPending;
 
@@ -192,11 +199,27 @@ function ReflectionEditor({
   });
 
   const detail =
-    previewKey === null ? undefined : (
+    previewKey === null ? (
+      <FeedbackPanel
+        heading={isToday ? '今日のフィードバック' : 'この日のフィードバック'}
+        {...(isToday ? {} : { dayLabel: heading.date })}
+        feedback={dayData.feedback}
+        condition={dayData.condition}
+        job={dayData.job}
+        onRequest={() => void saveAndRequest()}
+        onCancel={(jobId) => cancel.mutate(jobId)}
+        onChangeCondition={(level) => setCondition.mutate(level)}
+        busy={busy || cancel.isPending}
+      />
+    ) : (
       <AgentInputPreview
         key={previewKey}
         period={day}
-        onRequested={() => setNotice('FBを依頼しました')}
+        onRequested={() => {
+          setNotice('FBを依頼しました');
+          // 依頼したら送信内容を閉じ、生成の進み具合を見せる
+          setPreviewKey(null);
+        }}
       />
     );
 

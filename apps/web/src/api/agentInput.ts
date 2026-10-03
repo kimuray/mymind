@@ -32,5 +32,7 @@ export function useRequestPreviewedFeedback(period: string) {
     mutationFn: async (payloadHash: string) =>
       unwrap(await api.jobs.$post({ json: { kind: 'daily_feedback', period, payloadHash } })),
     onError: () => qc.invalidateQueries({ queryKey: previewKey(period) }),
+    // 依頼したジョブを、その日の FB の欄にすぐ生成中として出す
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['day', period] }),
   });
 }
