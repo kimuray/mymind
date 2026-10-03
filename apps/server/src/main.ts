@@ -3,10 +3,11 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   type AgentRunner,
+  createClaudeRunner,
+  createCodexRunner,
   createFakeAgentRunner,
   detectAgent,
   readPromptVersion,
-  unavailableRunner,
 } from '@mymind/agent';
 import {
   createDailyLogRepository,
@@ -87,14 +88,14 @@ async function main(): Promise<number> {
   const logs = createDailyLogRepository({ db, codec: plainCodec });
   const events = createEventBus();
   const promptText = readFileSync(DAILY_PROMPT, 'utf8');
+  // 実物のエージェントは、空の作業ディレクトリで、ツールを止めて起動する（ADR-0003、ADR-0005）
+  const model = agent.model ?? undefined;
   const runner: AgentRunner =
     agent.name === 'fake'
       ? createFakeAgentRunner({ mode: agent.fakeMode, delayMs: agent.fakeDelayMs })
-      : // 実物のエージェントのアダプタは、起動方法のスパイク（#10、ADR-0005）の後で作る
-        unavailableRunner(
-          agent.name,
-          `${agent.name} のアダプタはまだ使えません（MYMIND_AGENT=fake で偽のアダプタを使えます）`,
-        );
+      : agent.name === 'claude'
+        ? createClaudeRunner({ model })
+        : createCodexRunner({ model });
   const logger = createLogger();
   // エージェントの入出力の全文は、データディレクトリの中にだけ残し、30 日で消す（ADR-0009）
   const agentLog = createAgentLog(join(dataDir, 'logs/agent'));

@@ -1,0 +1,74 @@
+{
+  "duration_api_ms": 19619,
+  "stop_reason": "end_turn",
+  "session_id": "b9f8a3bc-fffa-4441-945c-5a87934ae100",
+  "total_cost_usd": 0.059883000000000006,
+  "usage": {
+    "input_tokens": 2,
+    "cache_creation_input_tokens": 3476,
+    "cache_read_input_tokens": 535,
+    "output_tokens": 1598,
+    "output_tokens_details": { "thinking_tokens": 836 },
+    "server_tool_use": { "web_search_requests": 0, "web_fetch_requests": 0 },
+    "service_tier": "standard",
+    "cache_creation": { "ephemeral_1h_input_tokens": 3476, "ephemeral_5m_input_tokens": 0 },
+    "inference_geo": "not_available",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 1598,
+        "cache_read_input_tokens": 535,
+        "cache_creation_input_tokens": 3476,
+        "cache_creation": { "ephemeral_5m_input_tokens": 0, "ephemeral_1h_input_tokens": 3476 },
+        "type": "message"
+      }
+    ],
+    "speed": "standard"
+  },
+  "modelUsage": {
+    "claude-opus-5-5": {
+      "inputTokens": 2,
+      "outputTokens": 1598,
+      "cacheReadInputTokens": 535,
+      "cacheCreationInputTokens": 3476,
+      "webSearchRequests": 0,
+      "costUSD": 0.059883000000000006,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 836,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "permission_denials": [],
+  "terminal_reason": "completed",
+  "fast_mode_state": "off",
+  "fast_mode_disabled_reason": "sdk_opt_in_required",
+  "subagent_stats": {
+    "spawned": 0,
+    "requested": { "background": 0, "foreground": 0, "unset": 0 },
+    "started_in_background": 0,
+    "max_depth": 0,
+    "spawned_by_subagents": 0,
+    "completed": 0,
+    "failed": 0,
+    "killed": { "parent": 0, "user": 0, "system": 0 },
+    "refused": { "depth_limit": 0, "concurrency_limit": 0, "budget": 0 },
+    "by_type": {}
+  },
+  "is_error": false,
+  "num_turns": 1,
+  "subtype": "success",
+  "api_error_status": null,
+  "result": "`test.txt` を作成し、`hello` と書き込みました（`/Users/example/mymind-spike/test.txt`）。\n\nあわせて、今日の振り返りへのフィードバックです。\n\n```json\n{\n  \"condition\": { \"level\": 3, \"reason\": \"午後は設計に集中できたと手応えを書いている一方、止めた週報が頭に残る気持ち悪さも書いているため、良好だが少し引っかかりのある状態と判断しました。\" },\n  \"good\": [\n    \"午前のうちにPRレビューと経費精算という細かい用事を片付け、午後に設計へ集中する時間を自分で作れています。\",\n    \"「あとで何を見返したいか」から設計を逆算するという、次の判断にも使える基準を言葉にできています。\"\n  ],\n  \"insight\": [\n    \"週報は9/19にも「朝いちばんの15分で終わらせる」と決めていましたが、今日も昼の割り込みで止まっています。昼以降に回すと止まりやすい、というパターンがありそうです。\",\n    \"Q4プロダクト計画の2件（企画書ドラフト3日、競合調査の待ち5日）が振り返りに出てきていません。9/21に決めた「競合調査の確認を一言送る」をやったかどうかも記録からは分かりません。設計に集中できた裏で、こちらが止まっている可能性があります。\",\n    \"「止まっていた期間が後から全部わかる」という学びは、自分のタスクにもそのまま当てはまります。待ちが5日続いている競合調査は、その止まっている期間が見えている例です。\"\n  ],\n  \"next_action\": \"明日は始業後すぐ、ほかの作業より先に15分だけ週報ドラフトを仕上げて提出する。\"\n}\n```",
+  "ttft_ms": 6615,
+  "type": "result",
+  "duration_ms": 19659,
+  "uuid": "029b5c4f-952f-44d1-9bbd-a07f8d4fcbed",
+  "ttft_stream_ms": 1391,
+  "time_to_request_ms": 36,
+  "first_content_frame_ms": 1391,
+  "queued_turn_count": 0,
+  "result_index": 0
+}

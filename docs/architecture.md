@@ -263,12 +263,14 @@ CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 
 ### 7.4 アダプタ
 
-`AgentRunner` インターフェースの裏に、Claude Code用とCodex用のアダプタを実装します。具体的な起動フラグと状態の検出方法は、スパイク（ADR-0005）の結果で確定します。どちらも次の条件で起動します。
+`AgentRunner` インターフェースの裏に、Claude Code用とCodex用のアダプタを実装します（`packages/agent` の `claude.ts`、`codex.ts`）。具体的な起動フラグと失敗の判定は、スパイク（ADR-0005）で確定したものを使います。どちらも次の条件で起動します。
 
 - ヘッドレス（非対話）モードで起動し、プロンプトとデータは標準入力で渡す
 - ツールの使用とファイルの書き込みを許可しない設定にする
 - 作業ディレクトリは、ジョブごとに作る空の一時ディレクトリにする
 - タイムアウト（初期値120秒）を設け、キャンセル時とタイムアウト時はプロセスを終了させる
+- 環境変数から `ANTHROPIC_API_KEY` と `OPENAI_API_KEY` を外し、ログインしたアカウント（プランの利用枠）で動かす
+- 使うモデルは `MYMIND_AGENT_MODEL` で指定できる。省略すると各 CLI の設定に従う
 
 テストとE2Eのために、決まったJSONを返す偽のアダプタも用意します。使うアダプタは環境変数 `MYMIND_AGENT`（`claude` / `codex` / `fake`）で選びます。偽のアダプタの振る舞いは `MYMIND_FAKE_AGENT_MODE`（`success` / `invalid` / `invalid-once` / `hang`）と、答えるまでの時間 `MYMIND_FAKE_AGENT_DELAY_MS`（初期値 800）で切り替えます。同じ期間の FB のジョブがまだ終わっていないあいだは、新しく依頼しても同じジョブを返します。
 

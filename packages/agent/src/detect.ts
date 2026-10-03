@@ -44,12 +44,9 @@ export type AgentStatus = {
 
 const EXECUTABLES: Record<string, string> = { claude: 'claude', codex: 'codex' };
 
-/** 実物のアダプタを作ったエージェント。起動方法のスパイク（#10、ADR-0005）の後で足す */
-const ADAPTERS: ReadonlySet<string> = new Set();
-
 /**
  * エージェントを使えるかを確かめる（NFR-21、architecture.md 12.8）。
- * 実行ファイルの有無とバージョンを見る。アダプタがまだないエージェントは、実行ファイルがあっても使えない
+ * 実行ファイルの有無とバージョンを見る（claude と codex のアダプタは #10 で作った）
  */
 export async function detectAgent(
   name: string,
@@ -66,13 +63,5 @@ export async function detectAgent(
     ? { found: true, version: result.stdout.trim().split('\n')[0] ?? null }
     : { found: result.kind !== 'not_found', version: null };
   if (!result.ok) return { name, usable: false, executable, message: result.message };
-  if (!ADAPTERS.has(name)) {
-    return {
-      name,
-      usable: false,
-      executable,
-      message: `${name} のアダプタはまだ使えません（MYMIND_AGENT=fake で偽のアダプタを使えます）`,
-    };
-  }
   return { name, usable: true, executable, message: null };
 }

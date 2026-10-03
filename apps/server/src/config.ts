@@ -15,6 +15,11 @@ const envSchema = z.object({
   MYMIND_VITE_PORT: z.coerce.number().int().min(1).max(65535).optional(),
   /** FB を作るエージェント（FR-A07）。fake はテストと開発用の偽のアダプタ */
   MYMIND_AGENT: z.enum(['claude', 'codex', 'fake']).default('claude'),
+  /**
+   * エージェントに使わせるモデル。省略すると各 CLI の設定に従う。
+   * Codex は設定ファイルで ChatGPT のアカウントでは使えないモデルに固定されていると失敗するので、指定できるようにする（ADR-0005）
+   */
+  MYMIND_AGENT_MODEL: z.string().min(1).optional(),
   /** 偽のアダプタの振る舞いと、答えるまでの時間（生成中の表示やキャンセルを確かめるため） */
   MYMIND_FAKE_AGENT_MODE: z.enum(['success', 'invalid', 'invalid-once', 'hang']).default('success'),
   MYMIND_FAKE_AGENT_DELAY_MS: z.coerce.number().int().min(0).max(60_000).default(800),
@@ -28,6 +33,8 @@ export type ServerConfig = {
   devPorts: number[];
   agent: {
     name: 'claude' | 'codex' | 'fake';
+    /** 省略すると各 CLI の設定に従う */
+    model: string | null;
     fakeMode: 'success' | 'invalid' | 'invalid-once' | 'hang';
     fakeDelayMs: number;
   };
@@ -67,6 +74,7 @@ export function loadConfig(
       devPorts: e.MYMIND_VITE_PORT === undefined ? [] : [e.MYMIND_VITE_PORT],
       agent: {
         name: e.MYMIND_AGENT,
+        model: e.MYMIND_AGENT_MODEL ?? null,
         fakeMode: e.MYMIND_FAKE_AGENT_MODE,
         fakeDelayMs: e.MYMIND_FAKE_AGENT_DELAY_MS,
       },

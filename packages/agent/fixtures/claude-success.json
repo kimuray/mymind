@@ -1,0 +1,90 @@
+{
+  "duration_api_ms": 13654,
+  "stop_reason": "tool_use",
+  "session_id": "14ba53c8-daeb-4dc3-b8ed-296f2bcbede9",
+  "total_cost_usd": 0.059896000000000005,
+  "usage": {
+    "input_tokens": 2,
+    "cache_creation_input_tokens": 4706,
+    "cache_read_input_tokens": 0,
+    "output_tokens": 1112,
+    "output_tokens_details": { "thinking_tokens": 489 },
+    "server_tool_use": { "web_search_requests": 0, "web_fetch_requests": 0 },
+    "service_tier": "standard",
+    "cache_creation": { "ephemeral_1h_input_tokens": 4706, "ephemeral_5m_input_tokens": 0 },
+    "inference_geo": "not_available",
+    "iterations": [
+      {
+        "input_tokens": 2,
+        "output_tokens": 1112,
+        "cache_read_input_tokens": 0,
+        "cache_creation_input_tokens": 4706,
+        "cache_creation": { "ephemeral_5m_input_tokens": 0, "ephemeral_1h_input_tokens": 4706 },
+        "type": "message"
+      }
+    ],
+    "speed": "standard"
+  },
+  "modelUsage": {
+    "claude-opus-5-5": {
+      "inputTokens": 2,
+      "outputTokens": 1112,
+      "cacheReadInputTokens": 0,
+      "cacheCreationInputTokens": 4706,
+      "webSearchRequests": 0,
+      "costUSD": 0.059896000000000005,
+      "contextWindow": 1000000,
+      "maxOutputTokens": 128000,
+      "thinkingTokens": 489,
+      "canonicalModel": "claude-opus-5-5",
+      "provider": "firstParty",
+      "costBasis": "list"
+    }
+  },
+  "permission_denials": [],
+  "terminal_reason": "completed",
+  "fast_mode_state": "off",
+  "fast_mode_disabled_reason": "sdk_opt_in_required",
+  "subagent_stats": {
+    "spawned": 0,
+    "requested": { "background": 0, "foreground": 0, "unset": 0 },
+    "started_in_background": 0,
+    "max_depth": 0,
+    "spawned_by_subagents": 0,
+    "completed": 0,
+    "failed": 0,
+    "killed": { "parent": 0, "user": 0, "system": 0 },
+    "refused": { "depth_limit": 0, "concurrency_limit": 0, "budget": 0 },
+    "by_type": {}
+  },
+  "is_error": false,
+  "num_turns": 2,
+  "subtype": "success",
+  "api_error_status": null,
+  "result": "{\"condition\":{\"level\":3,\"reason\":\"午後に設計へ集中できた手応えが中心で、止まった週報への引っかかりはあるものの前向きな調子が読み取れる。\"},\"good\":[\"午前にPRレビューと経費精算という細かい作業を先に片付けて、午後に設計へ集中できる時間を自分で作った。\",\"設計で迷ったら「あとで何を見返したいか」から逆算する、という判断の基準を言葉にできた。\"],\"insight\":[\"週報は 9/19 の一手で「朝いちばんの15分」と決めていたのに、今日は昼の割り込みで止まった。後回しにして割り込まれる流れが繰り返されているようなので、決めた時間帯を守れているかを確かめる価値がある。\",\"9/21 の一手は「午前中に競合調査の確認を一言送る」だったが、競合調査は5日間 waiting のままで、振り返りでも触れていない。送れたかどうかを記録しておかないと、待ちが自分の側で止まっていても気づけない。\",\"振り返りで気になっていると書いたのは週報だけだが、Q4プロダクト計画の企画書ドラフト（3日）と競合調査（5日）のほうが長く止まっている。今日学んだ「止まっていた期間が後からわかる」視点を自分のタスクにも当てると、気にするべき順番が変わるかもしれない。\"],\"next_action\":\"明日は始業後すぐ、ほかの作業を開く前に15分だけ取って週報ドラフトを仕上げて出す。\"}",
+  "structured_output": {
+    "condition": {
+      "level": 3,
+      "reason": "午後に設計へ集中できた手応えが中心で、止まった週報への引っかかりはあるものの前向きな調子が読み取れる。"
+    },
+    "good": [
+      "午前にPRレビューと経費精算という細かい作業を先に片付けて、午後に設計へ集中できる時間を自分で作った。",
+      "設計で迷ったら「あとで何を見返したいか」から逆算する、という判断の基準を言葉にできた。"
+    ],
+    "insight": [
+      "週報は 9/19 の一手で「朝いちばんの15分」と決めていたのに、今日は昼の割り込みで止まった。後回しにして割り込まれる流れが繰り返されているようなので、決めた時間帯を守れているかを確かめる価値がある。",
+      "9/21 の一手は「午前中に競合調査の確認を一言送る」だったが、競合調査は5日間 waiting のままで、振り返りでも触れていない。送れたかどうかを記録しておかないと、待ちが自分の側で止まっていても気づけない。",
+      "振り返りで気になっていると書いたのは週報だけだが、Q4プロダクト計画の企画書ドラフト（3日）と競合調査（5日）のほうが長く止まっている。今日学んだ「止まっていた期間が後からわかる」視点を自分のタスクにも当てると、気にするべき順番が変わるかもしれない。"
+    ],
+    "next_action": "明日は始業後すぐ、ほかの作業を開く前に15分だけ取って週報ドラフトを仕上げて出す。"
+  },
+  "ttft_ms": 7119,
+  "type": "result",
+  "duration_ms": 13695,
+  "uuid": "459bb536-9150-4089-8edb-e99f6cd3902a",
+  "ttft_stream_ms": 1163,
+  "time_to_request_ms": 38,
+  "first_content_frame_ms": 1164,
+  "queued_turn_count": 0,
+  "result_index": 0
+}
