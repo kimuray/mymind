@@ -7,9 +7,11 @@ import {
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
 import { ApiError } from '../api/client';
+import { useSetCondition } from '../api/feedback';
 import { useCarryover, useConfirmPlan } from '../api/morning';
 import { type ListTask, useBacklog, useDayPlan } from '../api/tasks';
 import { Button } from '../components/Button';
+import { FeedbackPanel } from '../components/FeedbackPanel';
 import { Kbd } from '../components/Kbd';
 import { PageLayout } from '../components/PageLayout';
 import { dayOf, formatDayHeading, formatDaysAgo } from '../day';
@@ -35,6 +37,16 @@ export function carryoverHeading(baseDay: string | null, today: string) {
   };
 }
 
+/** 前日の FB の見出しと日付（「昨日のフィードバック」と「9月21日（月）」） */
+export function previousFeedbackLabels(previousDay: string, today: string) {
+  const { date, weekday } = formatDayHeading(previousDay);
+  return {
+    heading:
+      daysBetween(previousDay, today) <= 1 ? '昨日のフィードバック' : `${date}のフィードバック`,
+    dayLabel: `${date}（${weekday.slice(0, 1)}）`,
+  };
+}
+
 /** 状態と日数のチップの文言（「待ち・5日目」「未着手」） */
 const chipText = (task: ListTask, today: string) =>
   task.status === 'todo'
@@ -56,6 +68,9 @@ export function MorningPage() {
   const [additions, setAdditions] = useState<ReadonlySet<string>>(new Set());
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const heading = formatDayHeading(day);
+  const previous = plan.data?.previous ?? null;
+  // 前日の FB の調子をその場で直す（FR-A03）。前日の FB がなければ使わない
+  const setCondition = useSetCondition(previous?.day ?? day);
 
   const candidates = carryover.data?.candidates ?? [];
   const candidateIds = new Set(candidates.map((t) => t.id));
@@ -135,9 +150,25 @@ export function MorningPage() {
     </header>
   );
 
+  // 詳細ペイン：前日の FB と調子（FR-D02）。「前日」は最後に FB をもらった日（architecture.md 4.5）
+  const previousLabels = previous === null ? null : previousFeedbackLabels(previous.day, day);
+  const detail =
+    previous === null || previousLabels === null ? undefined : (
+      <FeedbackPanel
+        heading={previousLabels.heading}
+        dayLabel={previousLabels.dayLabel}
+        feedback={previous.feedback}
+        condition={previous.condition}
+        job={null}
+        nextActionTitle="今日の一手"
+        onChangeCondition={(level) => setCondition.mutate(level)}
+      />
+    );
+  const emptyNote = 'FBをもらうと、次の朝ここに表示されます';
+
   if (confirmedAt !== null) {
     return (
-      <PageLayout emptyNote="昨日のFBはここに表示されます">
+      <PageLayout detail={detail} emptyNote={emptyNote}>
         {guard.dialog}
         <div className="page morning">
           {header}
@@ -154,7 +185,7 @@ export function MorningPage() {
 
   const carryoverTitle = carryoverHeading(carryover.data?.baseDay ?? null, day);
   return (
-    <PageLayout emptyNote="昨日のFBはここに表示されます">
+    <PageLayout detail={detail} emptyNote={emptyNote}>
       {guard.dialog}
       <div className="page morning">
         {header}

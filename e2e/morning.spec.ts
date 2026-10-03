@@ -50,6 +50,39 @@ async function addToBacklog(page: Page, title: string) {
 const carryoverRow = (page: Page, title: string) =>
   page.getByRole('list', { name: '持ち越し' }).getByRole('listitem').filter({ hasText: title });
 
+test.describe('FR-D02 前日の FB と調子', () => {
+  test('前の日に FB をもらっておくと、朝の計画の詳細ペインに表示され、調子を直せる', async ({
+    page,
+  }) => {
+    await page.goto('/morning');
+    const requested = await callApi(page, '/api/jobs', {
+      kind: 'daily_feedback',
+      period: businessDay(1),
+    });
+    expect(requested.status).toBe(202);
+    const jobId = (requested.body['job'] as { id: string }).id;
+    await expect
+      .poll(async () =>
+        page.evaluate(
+          async (id) =>
+            ((await (await fetch(`/api/jobs/${id}`)).json()) as { job: { status: string } }).job
+              .status,
+          jobId,
+        ),
+      )
+      .toBe('succeeded');
+
+    await page.reload();
+    const panel = page.getByRole('region', { name: '昨日のフィードバック' });
+    await expect(panel.getByRole('heading', { name: '今日の一手' })).toBeVisible();
+    await panel
+      .getByRole('group', { name: '調子を直す' })
+      .getByRole('button', { name: '絶好調' })
+      .click();
+    await expect(panel.getByText(/手動で修正（AIの判定：/)).toBeVisible();
+  });
+});
+
 test.describe('FR-D03 FR-D04 FR-D05 朝の計画', () => {
   test('確定する前に画面を離れると、判断も追加も反映しない', async ({ page }) => {
     await page.goto('/morning');

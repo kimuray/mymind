@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { carryoverHeading } from './MorningPage';
+import { carryoverHeading, previousFeedbackLabels } from './MorningPage';
 
 describe('FR-D09 持ち越しの見出し', () => {
   it('前日の計画からなら「昨日の持ち越し」', () => {
@@ -22,5 +22,17 @@ describe('FR-D09 持ち越しの見出し', () => {
 
   it('計画が一度もなければ、見出しだけ', () => {
     expect(carryoverHeading(null, '2026-09-23')).toEqual({ title: '持ち越し', note: null });
+  });
+});
+
+describe('FR-D02 前日の FB の見出し', () => {
+  it('前日なら「昨日のフィードバック」、空白日をはさめばその日付', () => {
+    expect(previousFeedbackLabels('2026-09-21', '2026-09-22')).toEqual({
+      heading: '昨日のフィードバック',
+      dayLabel: '9月21日（月）',
+    });
+    expect(previousFeedbackLabels('2026-09-18', '2026-09-22').heading).toBe(
+      '9月18日のフィードバック',
+    );
   });
 });
