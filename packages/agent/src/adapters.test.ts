@@ -6,7 +6,7 @@ import { CODEX_DISABLED_FEATURES, codexArgs, createCodexRunner, lastCodexError }
 import { classifyFailure, describeFailure } from './errors';
 import { placeData } from './input';
 import type { ProcessResult, RunProcess } from './process';
-import { dailyFeedbackJsonSchema, parseDailyFeedback } from './schema';
+import { dailyFeedbackJsonSchema, monthlySummaryJsonSchema, parseDailyFeedback } from './schema';
 
 // 実物のエージェントは呼ばない（testing.md）。#10 の spike で得た実際の出力を fixture にして、子プロセスを差し替える
 const fixture = (name: string) =>
@@ -46,7 +46,7 @@ const env = {
 
 describe('FR-A01 Claude Code のアダプタ', () => {
   it('ツール・設定・MCP を止め、構造化出力のスキーマを付けて起動する（--bare は使わない）', () => {
-    const args = claudeArgs({ model: 'sonnet' });
+    const args = claudeArgs({ model: 'sonnet', kind: 'daily_feedback' });
     expect(args).toEqual(
       expect.arrayContaining(['-p', '--strict-mcp-config', '--output-format', 'json']),
     );
@@ -61,7 +61,10 @@ describe('FR-A01 Claude Code のアダプタ', () => {
 
   it('実際の出力から構造化出力を取り出し、検証を通る', async () => {
     const { run, calls } = fakeProcess({ stdout: fixture('claude-success.json') });
-    const result = await createClaudeRunner({ run, env }).run('入力', { signal: signal() });
+    const result = await createClaudeRunner({ run, env }).run('入力', {
+      signal: signal(),
+      kind: 'daily_feedback',
+    });
     expect(result.ok).toBe(true);
     if (result.ok) expect(parseDailyFeedback(result.output).ok).toBe(true);
     expect(calls[0]?.stdin).toBe('入力');
@@ -69,7 +72,10 @@ describe('FR-A01 Claude Code のアダプタ', () => {
 
   it('API キーを渡さず、空の作業ディレクトリで動かし、終わったら消す', async () => {
     const { run, calls } = fakeProcess({ stdout: fixture('claude-success.json') });
-    await createClaudeRunner({ run, env }).run('入力', { signal: signal() });
+    await createClaudeRunner({ run, env }).run('入力', {
+      signal: signal(),
+      kind: 'daily_feedback',
+    });
     expect(calls[0]?.env).toEqual({ PATH: '/usr/bin', HOME: '/h' });
     expect(calls[0]?.cwd).toMatch(/mymind-agent-/);
     expect(existsSync(calls[0]?.cwd ?? '')).toBe(false);
@@ -87,7 +93,10 @@ describe('FR-A01 Claude Code のアダプタ', () => {
       stdout: '',
       stderr: 'Invalid API key · Please run /login\n',
     });
-    const result = await createClaudeRunner({ run, env }).run('入力', { signal: signal() });
+    const result = await createClaudeRunner({ run, env }).run('入力', {
+      signal: signal(),
+      kind: 'daily_feedback',
+    });
     expect(result).toEqual({
       ok: false,
       error: {
@@ -105,7 +114,10 @@ describe('FR-A01 Claude Code のアダプタ', () => {
       result: '上限に達しました',
     });
     const { run } = fakeProcess({ stdout });
-    const result = await createClaudeRunner({ run, env }).run('入力', { signal: signal() });
+    const result = await createClaudeRunner({ run, env }).run('入力', {
+      signal: signal(),
+      kind: 'daily_feedback',
+    });
     expect(result).toEqual({
       ok: false,
       error: {
@@ -119,16 +131,12 @@ describe('FR-A01 Claude Code のアダプタ', () => {
   it('中断されたらキャンセル、実行ファイルがなければ PATH の確認を促す', async () => {
     const aborted = await createClaudeRunner({ run: fakeProcess({ aborted: true }).run, env }).run(
       '入力',
-      {
-        signal: signal(),
-      },
+      { signal: signal(), kind: 'daily_feedback' },
     );
     expect(aborted).toMatchObject({ ok: false, error: { kind: 'cancelled' } });
     const missing = await createClaudeRunner({ run: fakeProcess({ notFound: true }).run, env }).run(
       '入力',
-      {
-        signal: signal(),
-      },
+      { signal: signal(), kind: 'daily_feedback' },
     );
     expect(missing).toMatchObject({
       ok: false,
@@ -155,10 +163,13 @@ describe('FR-A01 Codex のアダプタ', () => {
   it('作業ディレクトリにスキーマを置き、最後の返答のファイルを読んで返す', async () => {
     let schema = '';
     const { run, calls } = fakeProcess({ stdout: 'codex のログ' }, (cwd) => {
-      schema = readFileSync(join(cwd, 'daily-feedback.schema.json'), 'utf8');
+      schema = readFileSync(join(cwd, 'output.schema.json'), 'utf8');
       writeFileSync(join(cwd, 'last-message.txt'), fixture('codex-success.txt'));
     });
-    const result = await createCodexRunner({ run, env }).run('入力', { signal: signal() });
+    const result = await createCodexRunner({ run, env }).run('入力', {
+      signal: signal(),
+      kind: 'daily_feedback',
+    });
     expect(JSON.parse(schema)).toEqual(dailyFeedbackJsonSchema);
     expect(result.ok).toBe(true);
     if (result.ok) expect(parseDailyFeedback(result.output).ok).toBe(true);
@@ -167,7 +178,10 @@ describe('FR-A01 Codex のアダプタ', () => {
 
   it('モデルのエラーでは、ログの最後のエラーの行を理由にして失敗にする', async () => {
     const { run } = fakeProcess({ exitCode: 1, stderr: fixture('codex-model-error.txt') });
-    const result = await createCodexRunner({ run, env }).run('入力', { signal: signal() });
+    const result = await createCodexRunner({ run, env }).run('入力', {
+      signal: signal(),
+      kind: 'daily_feedback',
+    });
     expect(result).toMatchObject({ ok: false, error: { kind: 'failed' } });
     if (!result.ok) {
       expect(result.error.message).toContain('終了コード 1');
@@ -181,7 +195,10 @@ describe('FR-A01 Codex のアダプタ', () => {
     const { run } = fakeProcess({ exitCode: 0 }, (cwd) =>
       writeFileSync(join(cwd, 'last-message.txt'), ''),
     );
-    const result = await createCodexRunner({ run, env }).run('入力', { signal: signal() });
+    const result = await createCodexRunner({ run, env }).run('入力', {
+      signal: signal(),
+      kind: 'daily_feedback',
+    });
     expect(result).toMatchObject({ ok: false, error: { kind: 'failed' } });
   });
 
@@ -190,6 +207,28 @@ describe('FR-A01 Codex のアダプタ', () => {
       'ERROR: 2つ目',
     );
     expect(lastCodexError('エラーなし')).toBeNull();
+  });
+});
+
+describe('FR-A06 月次総括の出力の形', () => {
+  it('Claude Code には、月次総括のスキーマを構造化出力に指定する', () => {
+    const args = claudeArgs({ kind: 'monthly_summary' });
+    expect(JSON.parse(args[args.indexOf('--json-schema') + 1] ?? '')).toEqual(
+      monthlySummaryJsonSchema,
+    );
+  });
+
+  it('Codex には、月次総括のスキーマを作業ディレクトリに置く', async () => {
+    let schema = '';
+    const { run } = fakeProcess({}, (cwd) => {
+      schema = readFileSync(join(cwd, 'output.schema.json'), 'utf8');
+      writeFileSync(join(cwd, 'last-message.txt'), '{}');
+    });
+    await createCodexRunner({ run, env }).run('入力', {
+      signal: signal(),
+      kind: 'monthly_summary',
+    });
+    expect(JSON.parse(schema)).toEqual(monthlySummaryJsonSchema);
   });
 });
 
@@ -231,14 +270,20 @@ describe('FR-A08 エージェントの失敗の種類（#23）', () => {
 
   it('Codex のモデルのエラーは、モデルを確かめるよう促す', async () => {
     const { run } = fakeProcess({ exitCode: 1, stderr: fixture('codex-model-error.txt') });
-    const result = await createCodexRunner({ run, env }).run('入力', { signal: signal() });
+    const result = await createCodexRunner({ run, env }).run('入力', {
+      signal: signal(),
+      kind: 'daily_feedback',
+    });
     expect(result.ok).toBe(false);
     if (!result.ok) expect(result.error.message).toMatch(/^指定したモデルが使えないようです/);
   });
 
   it('種類の分からない失敗で終了コードが 0 以外なら、ログインしていないものとして扱う', async () => {
     const { run } = fakeProcess({ exitCode: 2, stderr: 'boom' });
-    const result = await createCodexRunner({ run, env }).run('入力', { signal: signal() });
+    const result = await createCodexRunner({ run, env }).run('入力', {
+      signal: signal(),
+      kind: 'daily_feedback',
+    });
     expect(result.ok).toBe(false);
     if (!result.ok)
       expect(result.error.message).toMatch(/^エージェントにログインしていないようです/);

@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { classifyFailure, describeFailure } from './errors';
 import { agentEnv, firstLine, type RunProcess, runProcess, withEmptyWorkDir } from './process';
 import type { AgentRunner, AgentRunResult } from './runner';
-import { dailyFeedbackJsonSchema } from './schema';
+import { OUTPUT_JSON_SCHEMAS } from './schema';
 
 /**
  * FB の生成で止める Codex の機能（ADR-0005、#10 の spike で確かめたもの。codex-cli 0.160.0）。
@@ -25,7 +25,7 @@ export const CODEX_DISABLED_FEATURES = [
 /** spike で確かめた Codex の版。これと違う版では、止める機能の名前が変わっているかもしれない */
 export const CODEX_TESTED_VERSION = '0.160.0';
 
-const SCHEMA_FILE = 'daily-feedback.schema.json';
+const SCHEMA_FILE = 'output.schema.json';
 const OUTPUT_FILE = 'last-message.txt';
 
 /** codex exec の起動の引数（ADR-0005）。プロンプトは標準入力（-）で渡す */
@@ -66,9 +66,9 @@ export function createCodexRunner(
   const { command = 'codex', run = runProcess, env = process.env } = options;
   return {
     name: 'codex',
-    run: (input, { signal }) =>
+    run: (input, { signal, kind }) =>
       withEmptyWorkDir(async (cwd): Promise<AgentRunResult> => {
-        await writeFile(join(cwd, SCHEMA_FILE), JSON.stringify(dailyFeedbackJsonSchema));
+        await writeFile(join(cwd, SCHEMA_FILE), JSON.stringify(OUTPUT_JSON_SCHEMAS[kind]));
         const result = await run(command, codexArgs({ model: options.model }), {
           stdin: input,
           cwd,

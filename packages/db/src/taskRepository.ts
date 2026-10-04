@@ -4,6 +4,9 @@ import type { Database } from './client';
 import { dayPlans, taskEvents, tasks } from './schema';
 import type { SensitiveCodec } from './sensitiveCodec';
 
+/** まとめて履歴を読むときに、1回の問い合わせに入れるタスクの数 */
+const EVENT_BATCH_SIZE = 500;
+
 export type Task = {
   id: string;
   parentId: string | null;
@@ -337,6 +340,24 @@ export function createTaskRepository({ db, codec, newEventId }: TaskRepositoryDe
         .orderBy(asc(taskEvents.id))
         .all()
         .map(toEvent);
+    },
+
+    /**
+     * 複数のタスクの履歴を、タスクごとに記録した順でまとめて返す（月の集計で、タスクごとに問い合わせないため、NFR-18）。
+     * SQLite の変数の数の上限に当たらないよう、決まった件数ずつに分けて読む
+     */
+    listEventsOfTasks(taskIds: readonly string[]): Map<string, TaskEvent[]> {
+      const result = new Map<string, TaskEvent[]>(taskIds.map((id) => [id, []]));
+      for (let i = 0; i < taskIds.length; i += EVENT_BATCH_SIZE) {
+        const rows = db
+          .select()
+          .from(taskEvents)
+          .where(inArray(taskEvents.taskId, taskIds.slice(i, i + EVENT_BATCH_SIZE)))
+          .orderBy(asc(taskEvents.id))
+          .all();
+        for (const row of rows) result.get(row.taskId)?.push(toEvent(row));
+      }
+      return result;
     },
 
     /**

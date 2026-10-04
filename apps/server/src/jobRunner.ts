@@ -1,5 +1,17 @@
-import { type AgentRunner, describeFailure, parseDailyFeedback, withTimeout } from '@mymind/agent';
-import type { DailyLogRepository, Job, JobRepository, TaskRepository } from '@mymind/db';
+import {
+  type AgentRunner,
+  describeFailure,
+  parseDailyFeedback,
+  parseMonthlySummary,
+  withTimeout,
+} from '@mymind/agent';
+import type {
+  DailyLogRepository,
+  Job,
+  JobRepository,
+  JobSuccess,
+  TaskRepository,
+} from '@mymind/db';
 import type { JobKind } from '@mymind/domain';
 import { type BuildInputResult, createAgentInputBuilder } from './agentInput';
 import type { AgentLog, AgentLogRecord } from './agentLog';
@@ -18,7 +30,11 @@ export type JobRunnerDeps = {
   events: EventBus;
   /** 日次 FB のプロンプト（prompts/daily-feedback.md）とそのバージョン */
   prompt: { text: string; version: string };
+  /** 月次総括のプロンプト（prompts/monthly-summary.md）とそのバージョン（FR-A06） */
+  monthlyPrompt: { text: string; version: string };
   now: () => Date;
+  /** 今の業務日（月次総括を途中経過にするかと、まだ来ていない月の判断に使う） */
+  today: () => string;
   newId: () => string;
   /** エージェントの待ち時間の上限（architecture.md 7.4 の初期値は 120 秒） */
   timeoutMs: number;
@@ -42,6 +58,8 @@ export function createJobRunner(deps: JobRunnerDeps) {
     jobs,
     logs: deps.logs,
     promptText: deps.prompt.text,
+    monthlyPromptText: deps.monthlyPrompt.text,
+    today: deps.today,
   });
   let loop: Promise<void> | null = null;
 
@@ -52,6 +70,57 @@ export function createJobRunner(deps: JobRunnerDeps) {
   const publish = (id: string) => {
     const job = jobs.find(id);
     if (job !== undefined) events.publish({ type: 'job.updated', job });
+  };
+
+  /**
+   * エージェントの出力を種類ごとのスキーマで検証し、保存する形にする。形式が違えば理由を返す。
+   * 日次 FB は調子も保存し、月次総括は月の途中なら途中経過として保存する（FR-A06）
+   */
+  const interpret = (
+    job: Job,
+    built: Extract<BuildInputResult, { ok: true }>,
+    output: string,
+    agent: string,
+  ): { ok: true; value: Omit<JobSuccess, 'finishedAt'> } | { ok: false; error: string } => {
+    const base = { id: deps.newId(), period: job.period, agent };
+    if (built.kind === 'monthly_summary') {
+      const parsed = parseMonthlySummary(output);
+      if (!parsed.ok) return parsed;
+      return {
+        ok: true,
+        value: {
+          jobId: job.id,
+          feedback: {
+            ...base,
+            scope: 'monthly',
+            content: parsed.value,
+            promptVersion: deps.monthlyPrompt.version,
+            isPartial: built.input.payload.partial,
+          },
+          condition: null,
+        },
+      };
+    }
+    const parsed = parseDailyFeedback(output);
+    if (!parsed.ok) return parsed;
+    return {
+      ok: true,
+      value: {
+        jobId: job.id,
+        feedback: {
+          ...base,
+          scope: 'daily',
+          content: parsed.value,
+          promptVersion: deps.prompt.version,
+          isPartial: false,
+        },
+        condition: {
+          day: job.period,
+          aiLevel: parsed.value.condition.level,
+          aiReason: parsed.value.condition.reason,
+        },
+      },
+    };
   };
 
   /** 1件を実行する。形式が違えば1回だけ再試行する（architecture.md 7.1） */
@@ -80,7 +149,7 @@ export function createJobRunner(deps: JobRunnerDeps) {
       let lastError = '';
       for (let attempt = 1; attempt <= 2; attempt++) {
         const t = withTimeout(controller.signal, deps.timeoutMs);
-        const result = await runner.run(input, { signal: t.signal });
+        const result = await runner.run(input, { signal: t.signal, kind: job.kind });
         t.dispose();
         attempts.push(result.ok ? { output: result.output } : { error: result.error.message });
         if (!result.ok) {
@@ -96,27 +165,9 @@ export function createJobRunner(deps: JobRunnerDeps) {
           // キャンセルは cancel() で記録済み
           return;
         }
-        const parsed = parseDailyFeedback(result.output);
+        const parsed = interpret(job, built, result.output, runner.name);
         if (parsed.ok) {
-          const fb = parsed.value;
-          jobs.succeed({
-            jobId: job.id,
-            finishedAt: iso(),
-            feedback: {
-              id: deps.newId(),
-              scope: 'daily',
-              period: job.period,
-              content: fb,
-              agent: runner.name,
-              promptVersion: deps.prompt.version,
-              isPartial: false,
-            },
-            condition: {
-              day: job.period,
-              aiLevel: fb.condition.level,
-              aiReason: fb.condition.reason,
-            },
-          });
+          jobs.succeed({ ...parsed.value, finishedAt: iso() });
           return;
         }
         lastError = parsed.error;
@@ -150,7 +201,8 @@ export function createJobRunner(deps: JobRunnerDeps) {
         kind: job.kind,
         period: job.period,
         agent: job.agent,
-        promptVersion: deps.prompt.version,
+        promptVersion:
+          job.kind === 'monthly_summary' ? deps.monthlyPrompt.version : deps.prompt.version,
         input: input.text,
         annotations: input.annotations,
         charCount: input.charCount,

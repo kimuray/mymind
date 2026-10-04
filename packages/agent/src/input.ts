@@ -196,6 +196,18 @@ export function placeData(prompt: string, json: string): string {
   return `${prompt.trim()}\n\n<data>\n${json}\n</data>\n`;
 }
 
+/** 段階を通した結果から、エージェントに渡す全文と、プレビューとログに使う値を作る */
+function toAgentInput<P>(prompt: string, payload: P, annotations: Annotation[]): AgentInput<P> {
+  const json = serializePayload(payload);
+  return {
+    text: placeData(prompt, json),
+    payload,
+    annotations,
+    charCount: json.length,
+    payloadHash: hashPayload(payload),
+  };
+}
+
 /**
  * 日次 FB の入力を組み立てる（architecture.md 7.2、7.5、12.5）。
  * 利用者が書いた内容は <data> で区切ってデータとして渡し、その中の指示には従わないことをプロンプトで伝える。
@@ -213,12 +225,195 @@ export function buildDailyFeedbackInput(
   });
   const payload = result.input;
   if (!isDailyPayload(payload)) throw new Error('日次 FB の段階に minimize がありません');
-  const json = serializePayload(payload);
-  return {
-    text: placeData(prompt, json),
-    payload,
-    annotations: result.annotations,
-    charCount: json.length,
-    payloadHash: hashPayload(payload),
+  return toAgentInput(prompt, payload, result.annotations);
+}
+
+/** 月次総括の入力の上限（architecture.md 12.5。日次 FB の要点を1か月分渡すので、日次より広くとる） */
+export const MONTHLY_INPUT_MAX_CHARS = 20_000;
+
+/** 日次 FB がない日に渡す、振り返りの冒頭の文字数（architecture.md 12.5） */
+export const REFLECTION_HEAD_CHARS = 200;
+
+/**
+ * 月次総括の元になるデータ（FR-A06）。サーバーが DB から集め、件数と日数はコードで計算して渡す（FR-A10）。
+ * 日は、月の初日から through（月の途中なら今日、過ぎた月なら月末）まで
+ */
+export type MonthlySummaryData = {
+  month: string;
+  /** 月の途中で依頼したか（途中経過として扱う） */
+  isPartial: boolean;
+  through: string;
+  stats: {
+    /** 計画か振り返りのある日 */
+    recordedDays: number;
+    /** 空白日（architecture.md 4.5） */
+    blankDays: number;
+    /** 日次 FB をもらった日 */
+    feedbackDays: number;
+    /** 調子を手で直した日（AI の判定と違う値を付けた日） */
+    correctedDays: number;
+    /** 完了したタスクの数（振り返りの「完了」と同じ定義の合計） */
+    completed: number;
   };
+  days: {
+    day: string;
+    isBlank: boolean;
+    /** AI の判定と手で直した値。どちらもなければ null */
+    condition: { ai: number | null; user: number | null } | null;
+    /** その日の最新の日次 FB の要点 */
+    feedback: { good: string[]; insight: string[]; nextAction: string } | null;
+    /** 振り返り。日次 FB がない日だけ、冒頭を送る */
+    reflection: { thoughtsMd: string; learningMd: string } | null;
+  }[];
+};
+
+/** エージェントに渡す JSON（prompts/monthly-summary.md の「入力」に合わせた名前） */
+export type MonthlyPayload = {
+  month: string;
+  partial: boolean;
+  through: string;
+  stats: {
+    recorded_days: number;
+    blank_days: number;
+    feedback_days: number;
+    corrected_days: number;
+    completed: number;
+  };
+  days: {
+    day: string;
+    blank: boolean;
+    condition_ai: number | null;
+    condition_user: number | null;
+    good?: string[];
+    insight?: string[];
+    next_action?: string;
+    reflection_head?: string;
+  }[];
+};
+
+export type MonthlyStageInput = MonthlySummaryData | MonthlyPayload;
+
+const isMonthlyPayload = (input: MonthlyStageInput): input is MonthlyPayload => 'partial' in input;
+
+/** 振り返りの冒頭。考えと学びをつなげて、REFLECTION_HEAD_CHARS で切る */
+function reflectionHead(reflection: { thoughtsMd: string; learningMd: string }): string | null {
+  const text = [reflection.thoughtsMd.trim(), reflection.learningMd.trim()]
+    .filter((t) => t !== '')
+    .join('\n');
+  if (text === '') return null;
+  return text.length <= REFLECTION_HEAD_CHARS
+    ? text
+    : text.slice(0, REFLECTION_HEAD_CHARS) + TRUNCATION_MARKER;
+}
+
+/**
+ * 必要な項目だけに絞る（architecture.md 12.5）。振り返りの全文は送らず、日次 FB の要点を送る。
+ * 日次 FB がない日は、振り返りの冒頭だけを送る
+ */
+export const minimizeMonthly: Stage<MonthlyStageInput> = {
+  id: 'minimize',
+  apply(data) {
+    if (isMonthlyPayload(data)) return { input: data, annotations: [] };
+    const payload: MonthlyPayload = {
+      month: data.month,
+      partial: data.isPartial,
+      through: data.through,
+      stats: {
+        recorded_days: data.stats.recordedDays,
+        blank_days: data.stats.blankDays,
+        feedback_days: data.stats.feedbackDays,
+        corrected_days: data.stats.correctedDays,
+        completed: data.stats.completed,
+      },
+      days: [...data.days]
+        .sort((a, b) => (a.day < b.day ? -1 : 1))
+        .map((d) => {
+          const head =
+            d.feedback === null && d.reflection !== null ? reflectionHead(d.reflection) : null;
+          return {
+            day: d.day,
+            blank: d.isBlank,
+            condition_ai: d.condition?.ai ?? null,
+            condition_user: d.condition?.user ?? null,
+            ...(d.feedback === null
+              ? {}
+              : {
+                  good: d.feedback.good,
+                  insight: d.feedback.insight,
+                  next_action: d.feedback.nextAction,
+                }),
+            ...(head === null ? {} : { reflection_head: head }),
+          };
+        }),
+    };
+    return { input: payload, annotations: [] };
+  },
+};
+
+const monthlySize = (payload: MonthlyPayload) => serializePayload(payload).length;
+
+type MonthlyDay = MonthlyPayload['days'][number];
+
+/** 上限に収めるために古い日から順に省くもの。前の手順で収まらなければ次へ進む */
+const MONTHLY_TRIMS: readonly {
+  applies: (day: MonthlyDay) => boolean;
+  trim: (day: MonthlyDay) => MonthlyDay;
+  what: string;
+}[] = [
+  {
+    applies: (day) => day.reflection_head !== undefined,
+    trim: ({ reflection_head: _, ...rest }) => rest,
+    what: '振り返りの冒頭',
+  },
+  {
+    applies: (day) => day.good !== undefined || day.insight !== undefined,
+    trim: ({ good: _good, insight: _insight, ...rest }) => rest,
+    what: 'よかったことと気づき',
+  },
+];
+
+/**
+ * 量の上限に収める（architecture.md 12.5）。古い日から順に、振り返りの冒頭を省き、
+ * それでも超えるなら日次 FB の「よかったこと」と「気づき」を省く（調子と明日の一手は残す）。
+ * 週ごとの要約を先に作る段階は、まだない（上限を超える月が出てきたら加える）
+ */
+export const budgetMonthly: Stage<MonthlyStageInput> = {
+  id: 'budget',
+  apply(input, ctx) {
+    if (!isMonthlyPayload(input)) return { input, annotations: [] };
+    let payload = input;
+    const annotations: Annotation[] = [];
+    const limit = `上限の${ctx.maxChars.toLocaleString('ja-JP')}文字`;
+    for (const { applies, trim, what } of MONTHLY_TRIMS) {
+      for (let i = 0; i < payload.days.length && monthlySize(payload) > ctx.maxChars; i++) {
+        const day = payload.days[i];
+        if (day === undefined || !applies(day)) continue;
+        const trimmed = trim(day);
+        payload = { ...payload, days: payload.days.map((d, j) => (j === i ? trimmed : d)) };
+        annotations.push({
+          kind: 'omitted',
+          path: `days.${day.day}`,
+          reason: `${limit}を超えたため、古い日の${what}を省きました`,
+        });
+      }
+    }
+    return { input: payload, annotations };
+  },
+};
+
+/** 月次総括の段階の並び。除外や置き換えを足すときは budget の前に入れる */
+export const MONTHLY_STAGES: readonly Stage<MonthlyStageInput>[] = [minimizeMonthly, budgetMonthly];
+
+/** 月次総括の入力を組み立てる（FR-A06、architecture.md 7.2、12.5） */
+export function buildMonthlySummaryInput(
+  prompt: string,
+  data: MonthlySummaryData,
+  options: { stages?: readonly Stage<MonthlyStageInput>[]; maxChars?: number } = {},
+): AgentInput<MonthlyPayload> {
+  const result = runPipeline(options.stages ?? MONTHLY_STAGES, data, {
+    maxChars: options.maxChars ?? MONTHLY_INPUT_MAX_CHARS,
+  });
+  const payload = result.input;
+  if (!isMonthlyPayload(payload)) throw new Error('月次総括の段階に minimize がありません');
+  return toAgentInput(prompt, payload, result.annotations);
 }

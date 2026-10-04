@@ -1,4 +1,10 @@
-import { type AgentRunner, createFakeAgentRunner, FAKE_OUTPUT, type FakeMode } from '@mymind/agent';
+import {
+  type AgentRunner,
+  createFakeAgentRunner,
+  FAKE_MONTHLY_OUTPUT,
+  FAKE_OUTPUT,
+  type FakeMode,
+} from '@mymind/agent';
 import {
   createDailyLogRepository,
   createJobRepository,
@@ -55,7 +61,9 @@ function setup(
     defaultAgent: options.defaultAgent ?? (() => 'claude'),
     events,
     prompt: { text: '<!-- prompt_version: 0.1.0 -->\nプロンプト', version: '0.1.0' },
+    monthlyPrompt: { text: '月次のプロンプト', version: '0.2.0' },
     now: () => now,
+    today: () => DAY,
     newId,
     timeoutMs,
   });
@@ -418,7 +426,9 @@ describe('NFR-16 エージェントの入出力のログ', () => {
       defaultAgent: () => 'claude',
       events: createEventBus(),
       prompt: { text: 'プロンプト', version: '0.1.0' },
+      monthlyPrompt: { text: '月次のプロンプト', version: '0.2.0' },
       now: () => now,
+      today: () => DAY,
       newId,
       timeoutMs: 1000,
       agentLog: {
@@ -462,7 +472,9 @@ describe('NFR-15 日次 FB に送る入力', () => {
       defaultAgent: () => 'claude',
       events: createEventBus(),
       prompt: { text: 'プロンプト', version: '0.1.0' },
+      monthlyPrompt: { text: '月次のプロンプト', version: '0.2.0' },
       now: () => now,
+      today: () => DAY,
       newId,
       timeoutMs: 1000,
       agentLog: {
@@ -541,9 +553,11 @@ describe('FR-A12 送信内容のプレビュー', () => {
     expect(body.annotations).toEqual([]);
     expect(body.charCount).toBe(JSON.stringify(body.payload, null, 2).length);
     expect(body.payloadHash).toMatch(/^sha256:[0-9a-f]{64}$/);
+    // 種類（kind、FR-A06 で追加）のほかに、プロンプトの全文（text）を返していない
     expect(Object.keys(body).sort()).toEqual([
       'annotations',
       'charCount',
+      'kind',
       'payload',
       'payloadHash',
     ]);
@@ -766,5 +780,120 @@ describe('FR-A03 FR-A04 FR-D02 その日の FB と調子、前日の FB', () => 
       body: JSON.stringify({ userLevel: 2 }),
     });
     expect(res.status).toBe(403);
+  });
+});
+
+describe('FR-A06 月次総括のジョブ', () => {
+  const headers = {
+    Host: `127.0.0.1:${PORT}`,
+    'Sec-Fetch-Site': 'same-origin',
+    Origin: `http://127.0.0.1:${PORT}`,
+    [TOKEN_HEADER]: 'token',
+    'Content-Type': 'application/json',
+  };
+  const post = (app: ReturnType<typeof setup>['app'], path: string, body: unknown) =>
+    app.request(`/api${path}`, { method: 'POST', headers, body: JSON.stringify(body) });
+
+  it('月の途中で依頼すると、月次のプロンプトで生成し、途中経過として保存する', async () => {
+    const { runner, agent } = setup();
+    const { job } = runner.enqueue('monthly_summary', '2026-09');
+    await runner.idle();
+    expect(jobs.find(job.id)?.status).toBe('succeeded');
+    expect(jobs.listFeedbacks('monthly', '2026-09')).toMatchObject([
+      {
+        content: FAKE_MONTHLY_OUTPUT,
+        isPartial: true,
+        promptVersion: '0.2.0',
+        jobId: job.id,
+      },
+    ]);
+    expect(agent.inputs[0]).toContain('月次のプロンプト');
+    expect(agent.inputs[0]).toContain('"through": "2026-09-23"');
+  });
+
+  it('過ぎた月は、月末までのデータで途中経過ではない総括にする', async () => {
+    const { runner, agent } = setup();
+    runner.enqueue('monthly_summary', '2026-08');
+    await runner.idle();
+    expect(jobs.listFeedbacks('monthly', '2026-08')).toMatchObject([{ isPartial: false }]);
+    expect(agent.inputs[0]).toContain('"through": "2026-08-31"');
+  });
+
+  it('月次総括では調子を保存しない', async () => {
+    const { runner } = setup();
+    runner.enqueue('monthly_summary', '2026-09');
+    await runner.idle();
+    expect(jobs.findCondition('2026-09')).toBeUndefined();
+  });
+
+  it('形式に合わない出力が続けば、形式違反として失敗にする', async () => {
+    const { runner } = setup('invalid');
+    const { job } = runner.enqueue('monthly_summary', '2026-09');
+    await runner.idle();
+    expect(jobs.find(job.id)).toMatchObject({ status: 'failed' });
+    expect(jobs.listFeedbacks('monthly', '2026-09')).toEqual([]);
+  });
+
+  it('POST /api/jobs で月を指定して依頼でき、GET /api/feedbacks で月次の総括を取得できる', async () => {
+    const { app, runner } = setup();
+    const res = await post(app, '/jobs', { kind: 'monthly_summary', period: '2026-09' });
+    expect(res.status).toBe(202);
+    await runner.idle();
+    const fb = await app.request('/api/feedbacks?scope=monthly&period=2026-09', { headers });
+    expect(await fb.json()).toMatchObject({
+      feedbacks: [{ content: FAKE_MONTHLY_OUTPUT, isPartial: true }],
+    });
+  });
+
+  it.each([
+    ['まだ来ていない月', { kind: 'monthly_summary', period: '2026-10' }],
+    ['月次総括に業務日を指定', { kind: 'monthly_summary', period: '2026-09-23' }],
+    ['日次 FB に月を指定', { kind: 'daily_feedback', period: '2026-09' }],
+    ['1970年より前の月', { kind: 'monthly_summary', period: '1969-12' }],
+    ['0年の月', { kind: 'monthly_summary', period: '0000-01' }],
+  ])('%s は 400 でジョブを作らない', async (_, body) => {
+    const { app } = setup();
+    expect((await post(app, '/jobs', body)).status).toBe(400);
+    expect(jobs.findActive('monthly_summary', '2026-10')).toBeUndefined();
+    expect(jobs.findActive('monthly_summary', '2026-09-23')).toBeUndefined();
+    expect(jobs.findActive('daily_feedback', '2026-09')).toBeUndefined();
+  });
+
+  it('1970年より前の月の送信内容は 400 にする', async () => {
+    const { app } = setup();
+    const res = await post(app, '/agent-input/preview', {
+      kind: 'monthly_summary',
+      period: '1969-12',
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('調子を手で直した日は、AI の判定と違う値を付けた日だけを数える', async () => {
+    const { app, runner } = setup();
+    // 9月20日：FB をもらい、AI の判定と違う値に直した。9月21日：FB なしで手で付けただけ
+    runner.enqueue('daily_feedback', '2026-09-20');
+    await runner.idle();
+    jobs.setUserLevel('2026-09-20', FAKE_OUTPUT.condition.level - 1, now.toISOString());
+    jobs.setUserLevel('2026-09-21', 2, now.toISOString());
+    const res = await post(app, '/agent-input/preview', {
+      kind: 'monthly_summary',
+      period: '2026-09',
+    });
+    expect(await res.json()).toMatchObject({
+      payload: { stats: { corrected_days: 1, feedback_days: 1 } },
+    });
+  });
+
+  it('送信内容のプレビューは種類を付けて返し、月次の送る内容を確かめられる', async () => {
+    const { app } = setup();
+    const res = await post(app, '/agent-input/preview', {
+      kind: 'monthly_summary',
+      period: '2026-09',
+    });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({
+      kind: 'monthly_summary',
+      payload: { month: '2026-09', partial: true, through: '2026-09-23' },
+    });
   });
 });

@@ -4,6 +4,7 @@ import type { AgentInputPreview } from '../api/agentInput';
 import { AgentInputPreviewView, groupAnnotations, renderedPaths } from './AgentInputPreview';
 
 const base: AgentInputPreview = {
+  kind: 'daily_feedback',
   payload: {
     day: '2026-09-23',
     reflection: {

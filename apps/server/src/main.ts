@@ -15,6 +15,7 @@ import {
   openDatabase,
   plainCodec,
 } from '@mymind/db';
+import { toBusinessDay } from '@mymind/domain';
 import { createAgentLog } from './agentLog';
 import { type AgentRunners, initialAgentChoice } from './agents';
 import { createApi } from './api';
@@ -26,7 +27,7 @@ import { createEventBus } from './events';
 import { createJobRunner } from './jobRunner';
 import { listen } from './listen';
 import { createLogger } from './logger';
-import { loadDailyPrompt } from './prompts';
+import { loadDailyPrompt, loadMonthlyPrompt } from './prompts';
 import { createSettingsReader } from './settingsApi';
 import { createUlidGenerator } from './ulid';
 import { createDevRedirect, createWebRoutes } from './web';
@@ -86,6 +87,7 @@ async function main(): Promise<number> {
   const logs = createDailyLogRepository({ db, codec: plainCodec });
   const events = createEventBus();
   const prompt = loadDailyPrompt();
+  const monthlyPrompt = loadMonthlyPrompt();
   // 実物のエージェントは、空の作業ディレクトリで、ツールを止めて起動する（ADR-0003、ADR-0005）
   // モデルの指定は CLI ごとに名前が違うので、MYMIND_AGENT で選んだエージェントにだけ渡す
   const modelFor = (name: string) =>
@@ -116,7 +118,9 @@ async function main(): Promise<number> {
     defaultAgent: () => currentSettings().defaultAgent,
     events,
     prompt,
+    monthlyPrompt,
     now: () => new Date(),
+    today: () => toBusinessDay(new Date(), DAY_OPTIONS),
     newId,
     timeoutMs: agent.timeoutMs,
   });

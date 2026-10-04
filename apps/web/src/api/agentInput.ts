@@ -6,7 +6,11 @@ import type { AgentChoice } from './settings';
 const fetchPreview = async (period: string) =>
   unwrap(await api['agent-input'].preview.$post({ json: { kind: 'daily_feedback', period } }));
 
-export type AgentInputPreview = Awaited<ReturnType<typeof fetchPreview>>;
+/** 日次 FB の送信内容。応答は種類（kind）で中身の形が分かれ、月次総括の表示はカレンダーの issue で加える */
+export type AgentInputPreview = Extract<
+  Awaited<ReturnType<typeof fetchPreview>>,
+  { kind: 'daily_feedback' }
+>;
 export type DailyPayload = AgentInputPreview['payload'];
 export type InputAnnotation = AgentInputPreview['annotations'][number];
 

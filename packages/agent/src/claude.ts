@@ -1,8 +1,9 @@
+import type { JobKind } from '@mymind/domain';
 import { z } from 'zod';
 import { classifyFailure, describeFailure } from './errors';
 import { agentEnv, firstLine, type RunProcess, runProcess, withEmptyWorkDir } from './process';
 import type { AgentRunner, AgentRunResult } from './runner';
-import { dailyFeedbackJsonSchema } from './schema';
+import { OUTPUT_JSON_SCHEMAS } from './schema';
 
 /**
  * claude -p の起動の引数（ADR-0005、#10 の spike で確かめたもの）。
@@ -10,7 +11,7 @@ import { dailyFeedbackJsonSchema } from './schema';
  * - --setting-sources "" と --strict-mcp-config：設定ファイル（とその中のフック）と MCP サーバーを読まない
  * - --bare は使わない：ログイン（OAuth）を読まず API キーだけで動くため、プランの利用枠で使えない
  */
-export function claudeArgs(options: { model?: string | undefined } = {}): string[] {
+export function claudeArgs(options: { model?: string | undefined; kind: JobKind }): string[] {
   return [
     '-p',
     '--tools',
@@ -21,7 +22,7 @@ export function claudeArgs(options: { model?: string | undefined } = {}): string
     '--output-format',
     'json',
     '--json-schema',
-    JSON.stringify(dailyFeedbackJsonSchema),
+    JSON.stringify(OUTPUT_JSON_SCHEMAS[options.kind]),
     ...(options.model === undefined ? [] : ['--model', options.model]),
   ];
 }
@@ -72,9 +73,9 @@ export function createClaudeRunner(
   const { command = 'claude', run = runProcess, env = process.env } = options;
   return {
     name: 'claude',
-    run: (input, { signal }) =>
+    run: (input, { signal, kind }) =>
       withEmptyWorkDir(async (cwd): Promise<AgentRunResult> => {
-        const result = await run(command, claudeArgs({ model: options.model }), {
+        const result = await run(command, claudeArgs({ model: options.model, kind }), {
           stdin: input,
           cwd,
           env: agentEnv(env),

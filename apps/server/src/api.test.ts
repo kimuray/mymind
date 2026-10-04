@@ -8,6 +8,7 @@ import {
   openDatabase,
   plainCodec,
 } from '@mymind/db';
+import { toBusinessDay } from '@mymind/domain';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createApi } from './api';
 import { createApp } from './app';
@@ -42,7 +43,9 @@ beforeEach(() => {
     defaultAgent: () => 'claude',
     events,
     prompt: { text: 'プロンプト', version: '0.1.0' },
+    monthlyPrompt: { text: '月次のプロンプト', version: '0.1.0' },
     now: () => now,
+    today: () => toBusinessDay(now, { timeZone: 'Asia/Tokyo', dayStartHour: 5 }),
     newId,
     timeoutMs: 1000,
   });

@@ -6,16 +6,20 @@ import { z } from 'zod';
 import { agentChoiceSchema } from './agents';
 import type { EventBus, NumberedEvent } from './events';
 import type { JobRunner } from './jobRunner';
+import { monthParam } from './params';
 
 export type JobsApiDeps = { runner: JobRunner; jobs: JobRepository; events: EventBus };
 
 const dayParam = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD の形式で指定してください');
 
-const inputTarget = { kind: z.literal('daily_feedback'), period: dayParam };
+/** 依頼の対象。日次 FB は業務日、月次総括は月（FR-A06）で指定する */
+const inputTargets = [
+  { kind: z.literal('daily_feedback'), period: dayParam },
+  { kind: z.literal('monthly_summary'), period: monthParam },
+] as const;
 
-/** FB の依頼（FR-A01、FR-A05）。過去の日の FB も依頼できるので、業務日の一致は求めない */
-const createJobBody = z.strictObject({
-  ...inputTarget,
+/** 依頼に共通する項目 */
+const requestFields = {
   /** 送信内容のプレビュー（FR-A12）を見てから依頼したときの、確認した入力のハッシュ */
   payloadHash: z
     .string()
@@ -23,12 +27,24 @@ const createJobBody = z.strictObject({
     .optional(),
   /** 使うエージェント（FR-A07）。省略すると設定の既定のエージェントを使う */
   agent: agentChoiceSchema.optional(),
-});
+};
+
+/** FB と総括の依頼（FR-A01、FR-A05、FR-A06）。過去の日の FB も依頼できるので、業務日の一致は求めない */
+const createJobBody = z.discriminatedUnion('kind', [
+  z.strictObject({ ...inputTargets[0], ...requestFields }),
+  z.strictObject({ ...inputTargets[1], ...requestFields }),
+]);
 
 /** 送信内容のプレビュー（FR-A12） */
-const previewBody = z.strictObject(inputTarget);
+const previewBody = z.discriminatedUnion('kind', [
+  z.strictObject(inputTargets[0]),
+  z.strictObject(inputTargets[1]),
+]);
 
-const feedbackQuery = z.strictObject({ scope: z.literal('daily'), period: dayParam });
+const feedbackQuery = z.discriminatedUnion('scope', [
+  z.strictObject({ scope: z.literal('daily'), period: dayParam }),
+  z.strictObject({ scope: z.literal('monthly'), period: monthParam }),
+]);
 
 /** SSE の接続を保つための空のコメントを送る間隔 */
 const KEEP_ALIVE_MS = 15_000;
@@ -54,10 +70,17 @@ export function createJobsApi({ runner, jobs, events }: JobsApiDeps) {
       }),
       (c) => {
         const { kind, period, payloadHash, agent } = c.req.valid('json');
+        // 依頼の時点で入力を作れるか確かめる（まだ来ていない月の総括などは、ジョブにせず断る）
+        const built = runner.buildInput(kind, period);
+        if (!built.ok) {
+          return c.json(
+            { error: { code: 'INVALID_REQUEST' as const, message: built.message, issues: [] } },
+            400,
+          );
+        }
         if (payloadHash !== undefined) {
-          // 依頼の時点で入力を作り直し、確認した後に振り返りやタスクが変わっていたら送らない（architecture.md 12.5）
-          const built = runner.buildInput(kind, period);
-          if (built.ok && built.input.payloadHash !== payloadHash) {
+          // 確認した後に振り返りやタスクが変わっていたら送らない（architecture.md 12.5）
+          if (built.input.payloadHash !== payloadHash) {
             return c.json(
               {
                 error: {
@@ -90,9 +113,30 @@ export function createJobsApi({ runner, jobs, events }: JobsApiDeps) {
             400,
           );
         }
-        // 全文（プロンプトを含む text）は返さない。利用者が確かめるのは送るデータ（<data> の中身）
-        const { payload, annotations, charCount, payloadHash } = built.input;
-        return c.json({ payload, annotations, charCount, payloadHash }, 200);
+        // 全文（プロンプトを含む text）は返さない。利用者が確かめるのは送るデータ（<data> の中身）。
+        // 画面が種類で中身の形を見分けられるよう、kind を付けて返す（分岐は、応答の型を種類ごとに分けるため）
+        const { annotations, charCount, payloadHash } = built.input;
+        return built.kind === 'monthly_summary'
+          ? c.json(
+              {
+                kind: built.kind,
+                payload: built.input.payload,
+                annotations,
+                charCount,
+                payloadHash,
+              },
+              200,
+            )
+          : c.json(
+              {
+                kind: built.kind,
+                payload: built.input.payload,
+                annotations,
+                charCount,
+                payloadHash,
+              },
+              200,
+            );
       },
     )
 

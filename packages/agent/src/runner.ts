@@ -1,3 +1,5 @@
+import type { JobKind } from '@mymind/domain';
+
 /**
  * エージェントを起動する境界（ADR-0003、architecture.md 7.4）。
  * サーバーはこのインターフェースだけを使い、child_process を直接使わない。
@@ -5,8 +7,11 @@
 export type AgentRunner = {
   /** 設定や FB の記録に残す名前（claude / codex / fake） */
   readonly name: string;
-  /** 決まった入力を渡し、出力の文字列を受け取る。signal が中断されたら、すぐにやめて cancelled を返す */
-  run(input: string, options: { signal: AbortSignal }): Promise<AgentRunResult>;
+  /**
+   * 決まった入力を渡し、出力の文字列を受け取る。signal が中断されたら、すぐにやめて cancelled を返す。
+   * kind は求める出力の種類で、アダプタはそれに合う形（OUTPUT_JSON_SCHEMAS）を構造化出力に指定する
+   */
+  run(input: string, options: { signal: AbortSignal; kind: JobKind }): Promise<AgentRunResult>;
 };
 
 export type AgentRunResult =

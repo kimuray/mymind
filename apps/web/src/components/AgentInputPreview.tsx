@@ -255,6 +255,14 @@ export function AgentInputPreview({
     );
   }
   const data = preview.data;
+  // この部品は日次 FB の送信内容だけを表示する（日次 FB を頼んでいるので、ほかの種類は返ってこない）
+  if (data.kind !== 'daily_feedback') {
+    return (
+      <p className="settings-note" role="alert">
+        この種類の送信内容は、まだ表示できません
+      </p>
+    );
+  }
   const footer = (
     <div className="input-preview-actions">
       <p className="text-small" aria-live="polite">
