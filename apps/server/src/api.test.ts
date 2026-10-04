@@ -921,6 +921,14 @@ describe('FR-R06 棚卸しの API', () => {
     expect((await stale()).tasks.map((t) => t.id)).toEqual([task.id]);
   });
 
+  it('まだ日数が経っていないタスクの判断は 409 にし、何も変えない', async () => {
+    const recent = await addBacklogOn('2026-09-20', '最近のタスク');
+    expect(await (await decide(recent, 'drop')).json()).toMatchObject({
+      error: { code: 'NOT_REVIEW_TARGET' },
+    });
+    expect(await backlogIds()).toEqual([recent.id]);
+  });
+
   it('バックログにないタスクは 409、知らない判断は 400', async () => {
     const planned = await addTask({ planFor: 'today' });
     expect(await (await decide(planned, 'keep')).json()).toMatchObject({

@@ -157,7 +157,8 @@ type ErrorCode =
   | 'INVALID_TRANSITION'
   | 'DEPTH_EXCEEDED'
   | 'PLAN_CONFIRMED'
-  | 'NOT_IN_BACKLOG';
+  | 'NOT_IN_BACKLOG'
+  | 'NOT_REVIEW_TARGET';
 
 /** エラーの応答。状態コードを型に残し、Hono RPC のクライアントが成功と失敗を区別できるようにする */
 function fail<S extends ContentfulStatusCode>(
@@ -602,6 +603,13 @@ export function createApi({
       }
       if (!tasks.listBacklog(input.expectedDay).some((t) => t.id === task.id)) {
         return fail(c, 409, 'NOT_IN_BACKLOG', 'バックログにないタスクは棚卸しできません', {
+          taskId: task.id,
+        });
+      }
+      // 対象は、今の設定の日数が経ったタスクだけ（GET /review/stale に出ないタスクは判断させない）
+      const touchedDay = toBusinessDay(new Date(task.lastTouchedAt), dayOptions);
+      if (!isReviewTarget(touchedDay, input.expectedDay, currentSettings().reviewAfterDays)) {
+        return fail(c, 409, 'NOT_REVIEW_TARGET', '棚卸しの対象ではないタスクです', {
           taskId: task.id,
         });
       }

@@ -75,6 +75,8 @@ export function notifySettingsChanged() {
 function invalidateFor(qc: QueryClient, message: RealtimeMessage) {
   if (message.type === 'settings.changed') {
     qc.invalidateQueries({ queryKey: ['settings'] });
+    // 棚卸しの日数（FR-R06）で対象が変わる
+    qc.invalidateQueries({ queryKey: ['review'] });
   } else if (message.type === 'tasks.changed') {
     qc.invalidateQueries({ queryKey: ['day'] });
     qc.invalidateQueries({ queryKey: ['backlog'] });

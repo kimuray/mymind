@@ -29,11 +29,13 @@ export function useDayPlan(day: string) {
   });
 }
 
+const fetchBacklog = async () => unwrap(await api.backlog.$get());
+
+/** GET /api/backlog の応答 */
+export type BacklogResponse = Awaited<ReturnType<typeof fetchBacklog>>;
+
 export function useBacklog() {
-  return useQuery({
-    queryKey: queryKeys.backlog,
-    queryFn: async () => unwrap(await api.backlog.$get()),
-  });
+  return useQuery({ queryKey: queryKeys.backlog, queryFn: fetchBacklog });
 }
 
 export function useTaskEvents(taskId: string | null) {

@@ -79,4 +79,27 @@ test.describe('FR-R06 棚卸し', () => {
     await expect(row).toContainText('今日');
     await expect(row).not.toContainText('棚卸しの対象');
   });
+
+  test('別のタブで日数を変えると、開いているバックログの棚卸しに反映される', async ({
+    context,
+  }) => {
+    const backlog = await context.newPage();
+    const subscribed = backlog.waitForRequest((r) => r.url().endsWith('/api/events'));
+    await backlog.goto('/backlog');
+    await subscribed;
+    await backlog.getByLabel('バックログに追加').fill(uniqueTitle('同期の確かめ'));
+    await backlog.keyboard.press('Enter');
+    await backlog.keyboard.press('Escape');
+    const panel = backlog.getByRole('region', { name: '棚卸し' });
+    await expect(panel).toHaveCount(0);
+
+    const settings = await context.newPage();
+    await settings.goto('/settings');
+    try {
+      await settings.getByRole('spinbutton', { name: '棚卸しの対象にする日数' }).fill('0');
+      await expect(panel).toBeVisible();
+    } finally {
+      await patchSettings(settings, { reviewAfterDays: 30 });
+    }
+  });
 });
