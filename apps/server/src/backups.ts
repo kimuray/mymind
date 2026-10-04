@@ -87,12 +87,27 @@ export function runDailyBackup(
   }
 }
 
+const dailyPattern = /^daily-(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z\.db$/;
+
+/** 保存先にある毎日のスナップショットのうち、いちばん新しいものの時刻。なければ null */
+export function latestDailyBackupAt(dir: string): Date | null {
+  if (!existsSync(dir)) return null;
+  let latest: Date | null = null;
+  for (const file of readdirSync(dir)) {
+    const m = file.match(dailyPattern);
+    if (m === null) continue;
+    const [, y, mo, d, h, mi, s] = m;
+    const at = new Date(`${y}-${mo}-${d}T${h}:${mi}:${s}Z`);
+    if (latest === null || at > latest) latest = at;
+  }
+  return latest;
+}
+
 /** 毎日のスナップショットのうち、新しい順に generations 件を残して消す。消したファイルのパスを返す */
 function pruneDailyBackups(dir: string, generations: number): string[] {
-  const pattern = new RegExp(`^${DAILY_PREFIX}-\\d{8}T\\d{6}Z\\.db$`);
   // ファイル名の時刻は桁がそろっているので、名前の順が時刻の順になる
   const files = readdirSync(dir)
-    .filter((f) => pattern.test(f))
+    .filter((f) => dailyPattern.test(f))
     .sort()
     .reverse();
   const removed = files.slice(generations).map((f) => join(dir, f));

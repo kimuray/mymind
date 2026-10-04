@@ -138,15 +138,14 @@ async function main(): Promise<number> {
     timeZone: DAY_OPTIONS.timeZone,
     logger,
   });
-  scheduler.add(
-    createDailyBackupJob({
-      client: db.$client,
-      dataDir,
-      settings: currentSettings,
-      now: () => new Date(),
-      logger,
-    }),
-  );
+  const dailyBackup = createDailyBackupJob({
+    client: db.$client,
+    dataDir,
+    settings: currentSettings,
+    now: () => new Date(),
+    logger,
+  });
+  scheduler.add(dailyBackup);
   scheduler.start();
   const api = createApi({
     tasks,
@@ -204,6 +203,8 @@ async function main(): Promise<number> {
     lock.release();
     process.exit(0);
   };
+  // 止まっていた間に毎日のバックアップの時刻を過ぎていれば、次の 3:30 を待たずに取る（NFR-23）
+  dailyBackup.runIfStale();
   process.once('SIGINT', shutdown);
   process.once('SIGTERM', shutdown);
   // 標準出力は起動の確認に使う（console.log はロガーに置き換えるまで使わない）

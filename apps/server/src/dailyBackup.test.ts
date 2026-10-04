@@ -15,6 +15,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { readDailyBackupStatus, runDailyBackup } from './backups';
 import { createDailyBackupJob } from './dailyBackup';
 import type { Logger } from './logger';
+import { createScheduler, type TimerHandle } from './scheduler';
 
 let dataDir: string;
 beforeEach(() => {
@@ -140,5 +141,60 @@ describe('NFR-23 毎日のバックアップの検査と失敗', () => {
   it('失敗の記録が読めなければ、記録なし（null）として扱う', () => {
     writeFileSync(join(dataDir, 'daily-backup.json'), '{ 壊れた');
     expect(readDailyBackupStatus(dataDir)).toBeNull();
+  });
+});
+
+describe('NFR-23 毎日のバックアップを取りこぼさない', () => {
+  const job = (now: () => Date) =>
+    createDailyBackupJob({
+      client: mymindDb(),
+      dataDir,
+      settings: () => ({ backupDir: null, backupGenerations: 14 }),
+      now,
+      logger: silent,
+    });
+  const files = () => {
+    const dir = join(dataDir, 'backups');
+    return existsSync(dir) ? dailyFiles(dir) : [];
+  };
+
+  it('3:30 を2時間より過ぎてスリープから復帰しても、見送らずにその日の分を取る', () => {
+    // 10月5日 3:00（日本時間）に眠り、3:30 を2時間以上過ぎた 6:00 に復帰する
+    let wall = new Date('2026-10-04T18:00:00.000Z').getTime();
+    let mono = 0;
+    const timer: { fire: () => void } = { fire: () => {} };
+    const scheduler = createScheduler({
+      now: () => new Date(wall),
+      timeZone: 'Asia/Tokyo',
+      monotonic: () => mono,
+      setTimer: (fn): TimerHandle => {
+        timer.fire = fn;
+        return { cancel: () => {} };
+      },
+    });
+    scheduler.add(job(() => new Date(wall)));
+    scheduler.start();
+    wall = new Date('2026-10-04T21:00:00.000Z').getTime();
+    mono += 1000;
+    timer.fire();
+    expect(files()).toEqual(['daily-20261004T210000Z.db']);
+    expect(scheduler.nextRun('daily-backup')).toEqual(new Date('2026-10-05T18:30:00.000Z'));
+  });
+
+  it('起動したとき、毎日のバックアップがまだなければ取る', () => {
+    job(() => at(1)).runIfStale();
+    expect(files()).toEqual(['daily-20261001T183000Z.db']);
+  });
+
+  it('起動したとき、最後の毎日のバックアップが24時間以内なら取らず、24時間より古ければ取る', () => {
+    let now = at(1);
+    const j = job(() => now);
+    j.runIfStale();
+    now = new Date(at(2).getTime() - 1000);
+    j.runIfStale();
+    expect(files()).toHaveLength(1);
+    now = new Date(at(2).getTime() + 1000);
+    j.runIfStale();
+    expect(files()).toEqual(['daily-20261001T183000Z.db', 'daily-20261002T183001Z.db']);
   });
 });

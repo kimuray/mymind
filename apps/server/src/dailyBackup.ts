@@ -1,5 +1,11 @@
 import type { DatabaseSync } from 'node:sqlite';
-import { backupsDir, DAILY_BACKUP_TIME, runDailyBackup, writeDailyBackupStatus } from './backups';
+import {
+  backupsDir,
+  DAILY_BACKUP_TIME,
+  latestDailyBackupAt,
+  runDailyBackup,
+  writeDailyBackupStatus,
+} from './backups';
 import type { Logger } from './logger';
 import type { ScheduledJob } from './scheduler';
 
@@ -16,35 +22,50 @@ export type DailyBackupDeps = {
 export const dailyBackupDir = (dataDir: string, backupDir: string | null) =>
   backupDir ?? backupsDir(dataDir);
 
+/** 最後の毎日のバックアップがこれより古ければ、起動したときに取る（失うデータを24時間分までにする、NFR-23） */
+const STALE_MS = 24 * 60 * 60 * 1000;
+
+export type DailyBackupJob = ScheduledJob & {
+  /** 起動したときに呼ぶ。毎日のバックアップがまだないか24時間より古ければ、予定の時刻を待たずに取る */
+  runIfStale: () => void;
+};
+
 /**
  * 毎日のバックアップの予定（NFR-04、architecture.md 10章）。スケジューラに加えて使う。
- * 結果は成功・失敗とも記録し、状態の画面（NFR-21）に出す
+ * 3:30 をスリープで大きく過ぎても見送らずに取る（runIfLate）。結果は成功・失敗とも記録し、状態の画面（NFR-21）に出す
  */
-export function createDailyBackupJob(deps: DailyBackupDeps): ScheduledJob {
+export function createDailyBackupJob(deps: DailyBackupDeps): DailyBackupJob {
+  const run = () => {
+    const { backupDir, backupGenerations } = deps.settings();
+    const dir = dailyBackupDir(deps.dataDir, backupDir);
+    const at = deps.now();
+    const result = runDailyBackup(deps.client, dir, backupGenerations, at);
+    if (result.ok) {
+      deps.logger.info('毎日のバックアップを作りました', {
+        path: result.value.path,
+        removed: result.value.removed.length,
+      });
+    } else {
+      deps.logger.error('毎日のバックアップに失敗しました', {
+        dir,
+        error: result.error.message,
+      });
+    }
+    writeDailyBackupStatus(deps.dataDir, {
+      at: at.toISOString(),
+      result: result.ok ? 'succeeded' : 'failed',
+      error: result.ok ? null : result.error.message,
+    });
+  };
   return {
     id: 'daily-backup',
     spec: () => ({ time: DAILY_BACKUP_TIME }),
-    run: () => {
-      const { backupDir, backupGenerations } = deps.settings();
-      const dir = dailyBackupDir(deps.dataDir, backupDir);
-      const at = deps.now();
-      const result = runDailyBackup(deps.client, dir, backupGenerations, at);
-      if (result.ok) {
-        deps.logger.info('毎日のバックアップを作りました', {
-          path: result.value.path,
-          removed: result.value.removed.length,
-        });
-      } else {
-        deps.logger.error('毎日のバックアップに失敗しました', {
-          dir,
-          error: result.error.message,
-        });
-      }
-      writeDailyBackupStatus(deps.dataDir, {
-        at: at.toISOString(),
-        result: result.ok ? 'succeeded' : 'failed',
-        error: result.ok ? null : result.error.message,
-      });
+    run,
+    runIfLate: true,
+    runIfStale: () => {
+      const dir = dailyBackupDir(deps.dataDir, deps.settings().backupDir);
+      const latest = latestDailyBackupAt(dir);
+      if (latest === null || deps.now().getTime() - latest.getTime() > STALE_MS) run();
     },
   };
 }
