@@ -46,3 +46,21 @@ export function statusSinceDay(events: readonly TaskEvent[]): string | null {
 export function dayOrdinalSince(sinceDay: string, today: string): number {
   return Math.max(1, daysBetween(sinceDay, today) + 1);
 }
+
+/**
+ * 月（YYYY-MM）の業務日を、1日から月末まで順に返す（FR-R04 のカレンダー）。
+ * 形式が違う月や存在しない月は例外にする（入力は境界で検証してから渡す）
+ */
+export function daysOfMonth(ym: string): string[] {
+  const match = /^(\d{4})-(\d{2})$/.exec(ym);
+  const month = Number(match?.[2]);
+  if (match === null || month < 1 || month > 12) {
+    throw new RangeError(`月の形式ではありません: ${ym}`);
+  }
+  const first = `${ym}-01`;
+  // 翌月の1日の前日が月末
+  const next = new Date(Date.UTC(Number(match[1]), month, 1)).toISOString().slice(0, 10);
+  return Array.from({ length: daysBetween(first, next) }, (_, i) =>
+    new Date((toUtcDays(first) + i) * 86_400_000).toISOString().slice(0, 10),
+  );
+}

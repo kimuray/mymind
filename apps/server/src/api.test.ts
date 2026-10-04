@@ -23,6 +23,8 @@ const TOMORROW = '2026-09-24';
 /** 2026-09-23 10:00（日本時間） */
 let now = new Date('2026-09-23T01:00:00.000Z');
 let app: ReturnType<typeof createApp>;
+/** FB の生成を待つテストで使う */
+let jobRunner: ReturnType<typeof createJobRunner>;
 
 beforeEach(() => {
   now = new Date('2026-09-23T01:00:00.000Z');
@@ -44,6 +46,7 @@ beforeEach(() => {
     newId,
     timeoutMs: 1000,
   });
+  jobRunner = runner;
   const api = createApi({
     tasks,
     now: () => now,
@@ -730,5 +733,96 @@ describe('FR-D03 FR-D04 FR-D05 FR-D09 朝の計画', () => {
       ).status,
     ).toBe(400);
     expect((await confirm(TOMORROW, {})).status).toBe(409);
+  });
+});
+
+describe('FR-R04 FR-A09 月の API', () => {
+  type MonthJson = {
+    ym: string;
+    today: string;
+    days: {
+      day: string;
+      isFuture: boolean;
+      isBlank: boolean;
+      completedCount: number;
+      hasReflection: boolean;
+      hasFeedback: boolean;
+      condition: { aiLevel: number | null; userLevel: number | null } | null;
+    }[];
+  };
+  const month = async (ym: string) => (await (await get(`/months/${ym}`)).json()) as MonthJson;
+  const dayOf = (m: MonthJson, day: string) => m.days.find((d) => d.day === day);
+
+  it('月の日を1日から月末まで並べ、今日より後の日はまだ来ていない日として中身を返さない', async () => {
+    const m = await month('2026-09');
+    expect(m).toMatchObject({ ym: '2026-09', today: TODAY });
+    expect(m.days).toHaveLength(30);
+    expect(dayOf(m, TODAY)?.isFuture).toBe(false);
+    expect(dayOf(m, TOMORROW)).toEqual({
+      day: TOMORROW,
+      isFuture: true,
+      isBlank: false,
+      completedCount: 0,
+      hasReflection: false,
+      hasFeedback: false,
+      condition: null,
+    });
+  });
+
+  it('完了件数を、振り返りの「完了」と同じ定義でその日に数える', async () => {
+    const task = await addTask({ planFor: 'today' });
+    const doing = ((await (await transition(task, 'doing')).json()) as { task: TaskJson }).task;
+    expect((await transition(doing, 'done')).status).toBe(200);
+    await addTask({ planFor: 'today', title: '未着手のまま' });
+    expect(dayOf(await month('2026-09'), TODAY)).toMatchObject({
+      completedCount: 1,
+      isBlank: false,
+    });
+  });
+
+  it('計画も振り返りもない日は空白日にし、FB のない日は調子を空にする', async () => {
+    const m = await month('2026-09');
+    expect(dayOf(m, '2026-09-20')).toMatchObject({
+      isBlank: true,
+      hasReflection: false,
+      hasFeedback: false,
+      condition: null,
+    });
+  });
+
+  it('振り返りと FB と調子があれば、その日に示す', async () => {
+    const day = '2026-09-21';
+    expect(
+      (await send('PUT', `/days/${day}/log`, { thoughtsMd: '集中できた', learningMd: '' })).status,
+    ).toBe(200);
+    expect((await send('POST', '/jobs', { kind: 'daily_feedback', period: day })).status).toBe(202);
+    await jobRunner.idle();
+    expect((await send('PUT', `/days/${day}/condition`, { userLevel: 1 })).status).toBe(200);
+    expect(dayOf(await month('2026-09'), day)).toMatchObject({
+      isBlank: false,
+      hasReflection: true,
+      hasFeedback: true,
+      condition: { aiLevel: expect.any(Number), userLevel: 1 },
+    });
+  });
+
+  it('空白だけの振り返りは、振り返りありとしない', async () => {
+    const day = '2026-09-19';
+    await send('PUT', `/days/${day}/log`, { thoughtsMd: '  \n', learningMd: '' });
+    expect(dayOf(await month('2026-09'), day)).toMatchObject({
+      isBlank: false,
+      hasReflection: false,
+    });
+  });
+
+  it('年末の月と、まだ来ていない月も返す', async () => {
+    const m = await month('2026-12');
+    expect(m.days).toHaveLength(31);
+    expect(m.days.at(-1)?.day).toBe('2026-12-31');
+    expect(m.days.every((d) => d.isFuture)).toBe(true);
+  });
+
+  it.each(['2026-13', '2026-9', '202609', 'abcd-ef'])('%s は 400', async (ym) => {
+    expect((await get(`/months/${ym}`)).status).toBe(400);
   });
 });
