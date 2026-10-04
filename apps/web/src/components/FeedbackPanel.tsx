@@ -10,8 +10,14 @@ type Job = NonNullable<DayResponse['job']>;
 /** 調子の5段階（0:絶不調 〜 4:絶好調、FR-A02）とマメの表情 */
 const LEVEL_MOODS: readonly Mood[] = ['worst', 'bad', 'normal', 'good', 'best'];
 
+/** 調子の段階のマメの表情。調子がなければ「おやすみ中」（FR-A09） */
+export const moodOfLevel = (level: number | null): Mood =>
+  level === null ? 'sleep' : (LEVEL_MOODS[level] ?? 'sleep');
+
 /** 表示する調子。手動で直した値があればそれ、なければ AI の判定（FR-A03） */
-export function effectiveLevel(condition: Condition | null): number | null {
+export function effectiveLevel(
+  condition: Pick<Condition, 'aiLevel' | 'userLevel'> | null,
+): number | null {
   return condition?.userLevel ?? condition?.aiLevel ?? null;
 }
 
@@ -93,8 +99,7 @@ export function FeedbackPanel({
 }) {
   const state = feedbackState(feedback, job);
   const level = effectiveLevel(condition);
-  const mood: Mood =
-    state === 'generating' ? 'think' : level === null ? 'sleep' : (LEVEL_MOODS[level] ?? 'sleep');
+  const mood: Mood = state === 'generating' ? 'think' : moodOfLevel(level);
   const content = feedback?.content ?? null;
 
   return (

@@ -58,6 +58,12 @@ test.describe('NFR-22 透明度・動きの設定への対応', () => {
   });
 });
 
+/** 今の業務日（Asia/Tokyo、5時で切り替え）の月 */
+const currentMonth = () =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo' })
+    .format(new Date(Date.now() - 5 * 60 * 60 * 1000))
+    .slice(0, 7);
+
 test.describe('NFR-06 コントラスト', () => {
   for (const [name, path] of [
     ['今日', '/'],
@@ -66,6 +72,7 @@ test.describe('NFR-06 コントラスト', () => {
     ['振り返り', '/reflection'],
     ['マメの表情', '/dev/mame'],
     ['設定', '/settings'],
+    ['カレンダー', `/calendar/${currentMonth()}`],
   ] as const) {
     test(`${name}の画面に、WCAG 2 AA のコントラストの違反がない`, async ({ page }) => {
       // ガラスの面とにじみの背景では、axe が文字の背景色を決められず判定できない（incomplete）ので、

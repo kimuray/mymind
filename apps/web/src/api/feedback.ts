@@ -18,6 +18,10 @@ export function useSetCondition(day: string) {
   return useMutation({
     mutationFn: async (userLevel: number | null) =>
       unwrap(await api.days[':day'].condition.$put({ param: { day }, json: { userLevel } })),
-    onSettled: () => qc.invalidateQueries({ queryKey: ['day'] }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['day'] });
+      // カレンダーのマメの表情（FR-R04）
+      qc.invalidateQueries({ queryKey: ['month'] });
+    },
   });
 }
