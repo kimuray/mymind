@@ -219,7 +219,7 @@ async function main(): Promise<number> {
     settingsDefaults,
     settingsRuntime: { fakeAgent: agent.name === 'fake', defaultBackupDir: backupsDir(dataDir) },
     logs,
-    notifications: { pending: pendingNotifications, permission: browserPermission },
+    notifications: { pending: pendingNotifications, permission: browserPermission, events },
   });
   // 開発時は Vite が画面を配信する。古い本番ビルドを出さないよう、画面の URL は Vite へ移す（#97）
   const vitePort = devPorts[0];

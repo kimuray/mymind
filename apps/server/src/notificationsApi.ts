@@ -2,6 +2,7 @@ import { NOTIFICATION_KINDS } from '@mymind/domain';
 import { Hono } from 'hono';
 import { validator } from 'hono/validator';
 import { z } from 'zod';
+import type { EventBus } from './events';
 import {
   BROWSER_PERMISSIONS,
   type BrowserPermissionState,
@@ -11,6 +12,8 @@ import {
 export type NotificationsApiDeps = {
   pending: PendingNotifications;
   permission: BrowserPermissionState;
+  /** バナーを閉じたことを、ほかのタブに知らせる（NFR-13） */
+  events: EventBus;
 };
 
 const kindParam = z.enum(NOTIFICATION_KINDS);
@@ -34,7 +37,7 @@ export function createNotificationsApi(deps: NotificationsApiDeps) {
     .delete('/notifications/pending/:kind', (c) => {
       const kind = kindParam.safeParse(c.req.param('kind'));
       if (!kind.success) return c.json(invalid(kind.error.issues), 400);
-      deps.pending.dismiss(kind.data);
+      if (deps.pending.dismiss(kind.data)) deps.events.publish({ type: 'notifications.changed' });
       return c.json({ notifications: deps.pending.list() }, 200);
     })
     .put(

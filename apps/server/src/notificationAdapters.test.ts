@@ -178,7 +178,13 @@ describe('FR-N05 画面のバナーとブラウザの通知の API', () => {
   const api = () => {
     const pending = createPendingNotifications(() => NOW);
     const permission = createBrowserPermissionState();
-    return { app: createNotificationsApi({ pending, permission }), pending, permission };
+    const events = createEventBus();
+    return {
+      app: createNotificationsApi({ pending, permission, events }),
+      pending,
+      permission,
+      events,
+    };
   };
   const json = (body: unknown) => ({
     headers: { 'Content-Type': 'application/json' },
@@ -192,6 +198,16 @@ describe('FR-N05 画面のバナーとブラウザの通知の API', () => {
     expect(listed).toEqual({ notifications: [{ ...morning, at: NOW.toISOString() }] });
     const res = await app.request('/notifications/pending/morning', { method: 'DELETE' });
     expect(await res.json()).toEqual({ notifications: [] });
+  });
+
+  it('NFR-13 閉じたら、ほかのタブにも知らせる。閉じるものがなければ知らせない', async () => {
+    const { app, pending, events } = api();
+    const otherTab: ServerEvent[] = [];
+    events.subscribe((e) => otherTab.push(e.event));
+    pending.add(morning);
+    await app.request('/notifications/pending/morning', { method: 'DELETE' });
+    await app.request('/notifications/pending/morning', { method: 'DELETE' });
+    expect(otherTab).toEqual([{ type: 'notifications.changed' }]);
   });
 
   it('知らない種類は 400', async () => {

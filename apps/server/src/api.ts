@@ -250,6 +250,7 @@ export function createApi({
   notifications = {
     pending: createPendingNotifications(now),
     permission: createBrowserPermissionState(),
+    events: jobs.events,
   },
 }: ApiDeps) {
   /**
