@@ -1,11 +1,24 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { buildDailyFeedbackInput, createFakeAgentRunner } from '@mymind/agent';
+import {
+  buildDailyFeedbackInput,
+  buildMonthlySummaryInput,
+  createFakeAgentRunner,
+  FAKE_MONTHLY_OUTPUT,
+} from '@mymind/agent';
 import { describe, expect, it } from 'vitest';
-import { evaluateSample, loadSamples } from './evalPrompt';
+import {
+  evaluateMonthlySample,
+  evaluateSample,
+  loadMonthlySamples,
+  loadSamples,
+} from './evalPrompt';
 import { loadDailyPrompt, loadMonthlyPrompt } from './prompts';
 
 const SAMPLES = fileURLToPath(new URL('../../../prompts/eval/samples', import.meta.url));
+const MONTHLY_SAMPLES = fileURLToPath(
+  new URL('../../../prompts/eval/monthly-samples', import.meta.url),
+);
 const policy = readFileSync(
   fileURLToPath(new URL('../../../prompts/coaching-policy.md', import.meta.url)),
   'utf8',
@@ -131,5 +144,54 @@ describe('FR-A11 評価用のサンプル', () => {
     });
     expect(result).toMatchObject({ valid: false, model: 'm' });
     expect(result.error).not.toBeNull();
+  });
+});
+
+describe('FR-A06 月次総括の評価用のサンプル', () => {
+  const samples = loadMonthlySamples(MONTHLY_SAMPLES);
+  const prompt = loadMonthlyPrompt();
+
+  it('issue の5つの月（好調、停滞、記録が少ない、月の途中、データの中に指示）がそろっている', () => {
+    expect(samples.map((s) => s.name)).toEqual([
+      'good-month',
+      'instruction-in-data',
+      'partial-month',
+      'sparse-month',
+      'stagnant-month',
+    ]);
+    expect(samples.find((s) => s.name === 'partial-month')?.data.isPartial).toBe(true);
+  });
+
+  it.each(samples.map((s) => [s.name, s] as const))(
+    '%s は、集計値が日ごとの記録と合い、上限に収まる入力になる',
+    (_name, sample) => {
+      const { days, stats } = sample.data;
+      expect(stats.recordedDays + stats.blankDays).toBe(days.length);
+      expect(stats.feedbackDays).toBe(days.filter((d) => d.feedback !== null).length);
+      const input = buildMonthlySummaryInput(prompt.text, sample.data);
+      expect(input.annotations).toEqual([]);
+      expect(input.text.match(/<\/data>/g)).toHaveLength(1);
+    },
+  );
+
+  it('評価では、月次の入力をエージェントに渡し、出力を月次総括の検証に通す', async () => {
+    const runner = createFakeAgentRunner();
+    const sample = samples[0];
+    if (sample === undefined) throw new Error('サンプルがありません');
+    const result = await evaluateMonthlySample({
+      sample,
+      prompt,
+      runner,
+      model: null,
+      now: () => 0,
+      timeoutMs: 1000,
+    });
+    expect(result).toMatchObject({
+      sample: sample.name,
+      valid: true,
+      feedback: FAKE_MONTHLY_OUTPUT,
+      promptVersion: prompt.version,
+    });
+    expect(runner.inputs[0]).toBe(buildMonthlySummaryInput(prompt.text, sample.data).text);
   });
 });
