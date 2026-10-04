@@ -102,7 +102,14 @@ describe('FR-R04 月の業務日', () => {
     expect(daysOfMonth('2027-02')).toHaveLength(28);
   });
 
-  it.each(['2026-13', '2026-00', '2026-9', '2026/09'])('%s は例外にする', (ym) => {
-    expect(() => daysOfMonth(ym)).toThrow(RangeError);
+  it.each(['2026-13', '2026-00', '2026-9', '2026/09', '0000-01', '0001-01', '0099-12', '1969-12'])(
+    '%s は例外にする',
+    (ym) => {
+      expect(() => daysOfMonth(ym)).toThrow(RangeError);
+    },
+  );
+
+  it('扱う最も古い年の1月から返す', () => {
+    expect(daysOfMonth('1970-01')[0]).toBe('1970-01-01');
   });
 });

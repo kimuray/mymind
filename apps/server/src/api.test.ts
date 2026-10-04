@@ -822,7 +822,10 @@ describe('FR-R04 FR-A09 月の API', () => {
     expect(m.days.every((d) => d.isFuture)).toBe(true);
   });
 
-  it.each(['2026-13', '2026-9', '202609', 'abcd-ef'])('%s は 400', async (ym) => {
-    expect((await get(`/months/${ym}`)).status).toBe(400);
-  });
+  it.each(['2026-13', '2026-9', '202609', 'abcd-ef', '0001-01', '1969-12'])(
+    '%s は 400',
+    async (ym) => {
+      expect((await get(`/months/${ym}`)).status).toBe(400);
+    },
+  );
 });
