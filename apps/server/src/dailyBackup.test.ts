@@ -132,9 +132,10 @@ describe('NFR-23 毎日のバックアップの検査と失敗', () => {
   });
 
   it('保存先に書けなければ、例外にせず失敗として返す', () => {
-    const readOnly = join(dataDir, 'readonly');
-    mkdirSync(readOnly, { mode: 0o500 });
-    const result = runDailyBackup(mymindDb(), join(readOnly, 'sub'), 14, at(1));
+    // ディレクトリを置くはずの場所にファイルがあると、root で動かしても（Docker の CI）ディレクトリを作れない
+    const blocked = join(dataDir, 'blocked');
+    writeFileSync(blocked, '');
+    const result = runDailyBackup(mymindDb(), join(blocked, 'sub'), 14, at(1));
     expect(result.ok).toBe(false);
   });
 
