@@ -57,3 +57,28 @@ test.describe('NFR-13 画面間の同期', () => {
     await expect(other.getByRole('button', { name: `${title}：`, exact: false })).toHaveCount(0);
   });
 });
+
+test.describe('NFR-13 FR-A07 設定の同期', () => {
+  test('片方のタブで既定のエージェントを変えると、もう片方の振り返りの選択に反映される', async ({
+    context,
+  }) => {
+    const settings = await context.newPage();
+    const reflection = await context.newPage();
+    await settings.goto('/settings');
+    const subscribed = reflection.waitForRequest((r) => r.url().endsWith('/api/events'));
+    await reflection.goto('/reflection/2026-09-10');
+    await subscribed;
+    const select = reflection.getByRole('combobox', { name: 'エージェント' });
+    await expect(select).toHaveValue('claude');
+
+    const defaultAgent = settings.getByRole('combobox', { name: '既定のエージェント' });
+    try {
+      await defaultAgent.selectOption('codex');
+      await expect(select).toHaveValue('codex');
+    } finally {
+      // すべてのテストが1つの DB を共有するので、既定に戻す
+      await defaultAgent.selectOption('claude');
+      await expect(select).toHaveValue('claude');
+    }
+  });
+});

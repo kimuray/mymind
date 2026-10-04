@@ -8,6 +8,8 @@ import { useEffect } from 'react';
 export type RealtimeMessage =
   /** タスク・計画・履歴が変わった（別のタブでの操作） */
   | { type: 'tasks.changed' }
+  /** 設定が変わった（別のタブでの操作。既定のエージェントなど、依頼に使う値が変わる） */
+  | { type: 'settings.changed' }
   /** エージェントのジョブの状態が変わった（サーバーから） */
   | { type: 'job.updated'; jobId: string; status: string };
 
@@ -64,8 +66,16 @@ export function notifyTasksChanged() {
   tabChannel().publish({ type: 'tasks.changed' });
 }
 
+/** このタブで設定を変えたことを、他のタブに知らせる（FR-A07 の既定のエージェントを古いまま使わせないため） */
+export function notifySettingsChanged() {
+  if (typeof BroadcastChannel === 'undefined') return;
+  tabChannel().publish({ type: 'settings.changed' });
+}
+
 function invalidateFor(qc: QueryClient, message: RealtimeMessage) {
-  if (message.type === 'tasks.changed') {
+  if (message.type === 'settings.changed') {
+    qc.invalidateQueries({ queryKey: ['settings'] });
+  } else if (message.type === 'tasks.changed') {
     qc.invalidateQueries({ queryKey: ['day'] });
     qc.invalidateQueries({ queryKey: ['backlog'] });
     qc.invalidateQueries({ queryKey: ['carryover'] });

@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { notifySettingsChanged } from '../realtime';
 import { api, unwrap } from './client';
 
 /** 画面から変えられる設定（GET / PATCH /api/settings） */
@@ -21,7 +22,10 @@ export function useUpdateSettings() {
   return useMutation({
     mutationFn: async (patch: Partial<AppSettings>) =>
       unwrap(await api.settings.$patch({ json: patch })),
-    onSuccess: (data) => qc.setQueryData(settingsKey, data),
+    onSuccess: (data) => {
+      qc.setQueryData(settingsKey, data);
+      notifySettingsChanged();
+    },
     onSettled: () => qc.invalidateQueries({ queryKey: settingsKey }),
   });
 }
