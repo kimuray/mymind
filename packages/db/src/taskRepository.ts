@@ -1,8 +1,23 @@
 import type { Status, StatusChangeEvent, TaskEvent } from '@mymind/domain';
-import { and, asc, eq, gte, inArray, max, notExists, notInArray, or } from 'drizzle-orm';
+import {
+  and,
+  asc,
+  between,
+  eq,
+  gte,
+  inArray,
+  lt,
+  max,
+  notExists,
+  notInArray,
+  or,
+} from 'drizzle-orm';
 import type { Database } from './client';
 import { dayPlans, taskEvents, tasks } from './schema';
 import type { SensitiveCodec } from './sensitiveCodec';
+
+/** ステータスが変わるイベントの種類 */
+const STATUS_EVENT_TYPES = ['status_changed', 'completion_undone'] as const;
 
 /** まとめて履歴を読むときに、1回の問い合わせに入れるタスクの数 */
 const EVENT_BATCH_SIZE = 500;
@@ -374,6 +389,42 @@ export function createTaskRepository({ db, codec, newEventId }: TaskRepositoryDe
             inArray(tasks.status, ['doing', 'waiting']),
           ),
         )
+        .orderBy(asc(tasks.sortOrder))
+        .all()
+        .map(toTask);
+    },
+
+    /**
+     * タイムライン（FR-R01）に横棒を描くタスク：期間の中で状態が変わったタスクと、
+     * 期間の初日の前から着手中・中断・待ちが続いているタスク（期間の中にイベントがなくても描くため）
+     */
+    listTimelineTasks(from: string, to: string): Task[] {
+      const changedInRange = db
+        .selectDistinct({ id: taskEvents.taskId })
+        .from(taskEvents)
+        .where(and(between(taskEvents.day, from, to), inArray(taskEvents.type, STATUS_EVENT_TYPES)))
+        .all()
+        .map((r) => r.id);
+      // 期間の初日より前の、タスクごとの最後のステータスの変更
+      const lastBefore = db
+        .select({ lastId: max(taskEvents.id).as('last_id') })
+        .from(taskEvents)
+        .where(and(lt(taskEvents.day, from), inArray(taskEvents.type, STATUS_EVENT_TYPES)))
+        .groupBy(taskEvents.taskId)
+        .as('last_before');
+      const continuing = db
+        .select({ id: taskEvents.taskId })
+        .from(taskEvents)
+        .innerJoin(lastBefore, eq(taskEvents.id, lastBefore.lastId))
+        .where(inArray(taskEvents.toStatus, ['doing', 'paused', 'waiting']))
+        .all()
+        .map((r) => r.id);
+      const ids = [...new Set([...changedInRange, ...continuing])];
+      if (ids.length === 0) return [];
+      return db
+        .select()
+        .from(tasks)
+        .where(inArray(tasks.id, ids))
         .orderBy(asc(tasks.sortOrder))
         .all()
         .map(toTask);

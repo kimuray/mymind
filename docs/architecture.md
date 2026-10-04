@@ -214,7 +214,7 @@ CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 | 調子の修正 | `PUT /api/days/:day/condition` | `user_level` のみ更新（0〜4、null で外す）。FBのない日にも付けられる。まだ来ていない業務日は 400 |
 | バックログ | `GET /api/backlog` | |
 | 棚卸し | `GET /api/review/stale`、`POST /api/review/decisions` | |
-| タイムライン | `GET /api/timeline?from=&to=` | 区間と内訳を計算済みで返す |
+| タイムライン | `GET /api/timeline?from=&to=` | 期間（14日まで）に横棒を描くタスクごとに、区間（`domain` の `timelineSegments`）と、着手してから今日までの内訳（`timelineBreakdown`）を計算済みで返す。期間の中で状態が変わったタスクと、期間の前から着手中・中断・待ちが続くタスクが対象。日ごとの調子（FB も手動の値もなければ空、FR-A09）と、まだ来ていない日かも返す。まだ来ていない日には区間を描かない（FR-R01〜R03） |
 | 月 | `GET /api/months/:ym` | 日ごとの調子（AI の判定と手動の値。FB も手動の値もなければ空）、完了件数（振り返りの「完了」と同じ定義）、振り返りと FB の有無、空白日か、まだ来ていない日か（FR-R04、FR-A09）。まだ来ていない月も返す。日付を選んだときの記録は `GET /api/days/:day` を使う。総括は月次総括の issue で加える |
 | 送信内容の確認 | `POST /api/agent-input/preview` | 実際に送る入力、加工の注記、文字数、ハッシュを、種類（`kind`）を付けて返す（FR-A12）。月次総括は `period` に月（`YYYY-MM`）を渡す |
 | FBの依頼 | `POST /api/jobs` | `202` でジョブIDを返す。`kind` が `daily_feedback` なら業務日、`monthly_summary` なら月を `period` に渡す（FR-A06）。まだ来ていない月など、入力を作れない依頼は 400。プレビューを経た場合は `payloadHash` を渡し、不一致なら 409。`agent`（`claude` / `codex`）で使うエージェントを指定でき、省略すると設定の既定のエージェントを使う（FR-A07） |

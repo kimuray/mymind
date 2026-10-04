@@ -832,3 +832,114 @@ describe('FR-R04 FR-A09 月の API', () => {
     },
   );
 });
+
+describe('FR-R01 FR-R02 FR-R03 タイムラインの API', () => {
+  type TimelineJson = {
+    from: string;
+    to: string;
+    today: string;
+    days: {
+      day: string;
+      isFuture: boolean;
+      condition: { aiLevel: number | null; userLevel: number | null } | null;
+    }[];
+    tasks: {
+      id: string;
+      title: string;
+      parentTitle: string | null;
+      segments: { status: string; from: string; to: string; continuesAfter: boolean }[];
+      breakdown: { doing: number; paused: number; waiting: number; startedDay: string | null };
+    }[];
+  };
+  const timeline = async (from: string, to: string) =>
+    (await (await get(`/timeline?from=${from}&to=${to}`)).json()) as TimelineJson;
+
+  /** day の 10:00（日本時間）に、その日の操作として状態を変える */
+  const changeOn = async (task: TaskJson, day: string, to: string): Promise<TaskJson> => {
+    now = new Date(`${day}T01:00:00.000Z`);
+    const res = await transition(task, to, { expectedDay: day });
+    expect(res.status).toBe(200);
+    return ((await res.json()) as { task: TaskJson }).task;
+  };
+
+  /** day の 10:00（日本時間）に、その日のタスクとして追加する */
+  const addTaskOn = async (day: string, extra: Record<string, unknown> = {}) => {
+    now = new Date(`${day}T01:00:00.000Z`);
+    return addTask({ expectedDay: day, ...extra });
+  };
+
+  it('期間の中の区間と、着手してから今日までの内訳を返す', async () => {
+    const parent = await addTaskOn('2026-09-20', { title: 'Q4計画' });
+    const task = await addTaskOn('2026-09-20', { title: '企画書を書く', parentId: parent.id });
+    const untouched = await addTaskOn('2026-09-20', { title: '着手しないタスク' });
+    const doing = await changeOn(task, '2026-09-20', 'doing');
+    await changeOn(doing, '2026-09-22', 'paused');
+    now = new Date('2026-09-23T01:00:00.000Z');
+
+    const t = await timeline('2026-09-17', '2026-09-23');
+    expect(t).toMatchObject({ from: '2026-09-17', to: '2026-09-23', today: TODAY });
+    const row = t.tasks.find((r) => r.id === task.id);
+    expect(row).toMatchObject({
+      title: '企画書を書く',
+      parentTitle: 'Q4計画',
+      segments: [
+        { status: 'doing', from: '2026-09-20', to: '2026-09-21' },
+        { status: 'paused', from: '2026-09-22', to: '2026-09-23', continuesAfter: true },
+      ],
+      breakdown: { doing: 2, paused: 2, waiting: 0, startedDay: '2026-09-20' },
+    });
+    // 子に着手すると、自動のルールで親も着手中になるので描く。着手していないタスクは描かない
+    expect(t.tasks.map((r) => r.id)).toContain(parent.id);
+    expect(t.tasks.map((r) => r.id)).not.toContain(untouched.id);
+  });
+
+  it('期間の前から続くタスクも、期間の中にイベントがなくても描く', async () => {
+    const task = await addTaskOn('2026-09-01');
+    await changeOn(task, '2026-09-01', 'doing');
+    now = new Date('2026-09-23T01:00:00.000Z');
+    const t = await timeline('2026-09-17', '2026-09-23');
+    expect(t.tasks.find((r) => r.id === task.id)?.segments).toMatchObject([
+      { status: 'doing', from: '2026-09-17', to: '2026-09-23' },
+    ]);
+  });
+
+  it('日ごとの調子を並べ、FB のない日は空にし、今日より後の日は区間を描かない', async () => {
+    const task = await addTaskOn('2026-09-22');
+    await changeOn(task, '2026-09-22', 'doing');
+    now = new Date('2026-09-23T01:00:00.000Z');
+    expect((await send('PUT', '/days/2026-09-21/condition', { userLevel: 3 })).status).toBe(200);
+
+    const t = await timeline('2026-09-20', '2026-09-26');
+    expect(t.days).toHaveLength(7);
+    expect(t.days.find((d) => d.day === '2026-09-21')?.condition).toEqual({
+      aiLevel: null,
+      userLevel: 3,
+    });
+    expect(t.days.find((d) => d.day === '2026-09-20')?.condition).toBeNull();
+    expect(t.days.filter((d) => d.isFuture).map((d) => d.day)).toEqual([
+      '2026-09-24',
+      '2026-09-25',
+      '2026-09-26',
+    ]);
+    expect(t.tasks.find((r) => r.id === task.id)?.segments.at(-1)?.to).toBe(TODAY);
+  });
+
+  it('期間がまるごと先なら、タスクは返さない', async () => {
+    const task = await addTask();
+    await changeOn(task, TODAY, 'doing');
+    expect((await timeline('2026-09-24', '2026-09-30')).tasks).toEqual([]);
+  });
+
+  it.each([
+    ['from が to より後', '/timeline?from=2026-09-23&to=2026-09-17'],
+    ['15日以上の期間', '/timeline?from=2026-09-01&to=2026-09-15'],
+    ['業務日の形式でない', '/timeline?from=2026-9-1&to=2026-09-07'],
+    ['to がない', '/timeline?from=2026-09-01'],
+  ])('%s は 400', async (_, path) => {
+    expect((await get(path)).status).toBe(400);
+  });
+
+  it('2週間（14日）までは受け付ける', async () => {
+    expect((await get('/timeline?from=2026-09-10&to=2026-09-23')).status).toBe(200);
+  });
+});

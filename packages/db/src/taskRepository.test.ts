@@ -90,6 +90,52 @@ describe('FR-R04 NFR-18 複数のタスクの履歴をまとめて読む', () =>
   });
 });
 
+describe('FR-R01 タイムラインに描くタスク', () => {
+  /** 指定した業務日にステータスを変える。version は作成時の1から、変えるたびに1つ増える */
+  const changeOn = (taskId: string, day: string, path: Status[]) => {
+    path.slice(1).forEach((to, i) => {
+      const from = path[i];
+      if (from === undefined) return;
+      const result = changeStatus({ taskId, at: `${day}T01:00:00.000Z`, day, from, to });
+      if (!result.ok) throw new Error(`遷移できません: ${from} → ${to}`);
+      repo.applyStatusChange(result.value, repo.findMany([taskId])[0]?.version ?? 0);
+    });
+  };
+  const timelineIds = (from: string, to: string) =>
+    repo
+      .listTimelineTasks(from, to)
+      .map((t) => t.id)
+      .sort();
+
+  it('期間の中で状態が変わったタスクと、期間の前から着手中・中断・待ちが続くタスクを返す', () => {
+    for (const id of ['inRange', 'continuing', 'pausedBefore', 'doneBefore', 'neverStarted']) {
+      createTask(id);
+    }
+    changeOn('inRange', '2026-09-10', ['todo', 'doing']);
+    changeOn('continuing', '2026-09-01', ['todo', 'doing']);
+    changeOn('pausedBefore', '2026-09-02', ['todo', 'doing', 'paused']);
+    changeOn('doneBefore', '2026-09-03', ['todo', 'doing', 'done']);
+    expect(timelineIds('2026-09-09', '2026-09-15')).toEqual([
+      'continuing',
+      'inRange',
+      'pausedBefore',
+    ]);
+  });
+
+  it('期間の後に初めて着手したタスクは返さない', () => {
+    createTask('later');
+    changeOn('later', '2026-09-20', ['todo', 'doing']);
+    expect(timelineIds('2026-09-09', '2026-09-15')).toEqual([]);
+  });
+
+  it('期間の前に完了し、期間の中で取り消したタスクは返す', () => {
+    createTask('undone');
+    changeOn('undone', '2026-09-01', ['todo', 'doing', 'done']);
+    changeOn('undone', '2026-09-12', ['done', 'doing']);
+    expect(timelineIds('2026-09-09', '2026-09-15')).toEqual(['undone']);
+  });
+});
+
 describe('ADR-0004 tasks.status とイベントの整合', () => {
   it('ステータスの変更で、tasks.status・version・最終操作時刻をイベントに合わせて更新する', () => {
     createTask();
