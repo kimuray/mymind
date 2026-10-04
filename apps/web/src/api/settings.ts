@@ -26,6 +26,10 @@ export function useUpdateSettings() {
       qc.setQueryData(settingsKey, data);
       notifySettingsChanged();
     },
-    onSettled: () => qc.invalidateQueries({ queryKey: settingsKey }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: settingsKey });
+      // 棚卸しの日数（FR-R06）で対象が変わる
+      qc.invalidateQueries({ queryKey: ['review'] });
+    },
   });
 }

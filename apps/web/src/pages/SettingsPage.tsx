@@ -238,6 +238,61 @@ function FeedbackSettings() {
   );
 }
 
+/** 棚卸しの日数として保存できる入力か。空の入力は Number で 0 になるので、先に除く */
+export const isReviewAfterDays = (input: string): boolean => {
+  if (input.trim() === '') return false;
+  const n = Number(input);
+  return Number.isInteger(n) && n >= 0 && n <= 365;
+};
+
+/** 棚卸しの対象にする日数（FR-R06）。0〜365日（0 ならバックログのすべてが対象）。入力のたびに保存し、範囲の外の値は保存しない */
+function ReviewSettings() {
+  const settings = useSettings();
+  const update = useUpdateSettings();
+  // 入力中の文字列。空や範囲の外の値も、打ち終わるまでは消さずに見せる
+  const [draft, setDraft] = useState<string | null>(null);
+  const value = draft ?? String(settings.data?.settings.reviewAfterDays ?? '');
+  const isValid = isReviewAfterDays(value);
+  return (
+    <section className="task-list settings-status glass-2" aria-label="棚卸し">
+      <div className="settings-status-head">
+        <h2>棚卸し</h2>
+      </div>
+      <label className="settings-toggle">
+        <span className="settings-row-value">
+          <span className="settings-row-main">棚卸しの対象にする日数</span>
+          <span className="settings-row-note">
+            最後に触れてからこの日数が経ったバックログのタスクを、バックログの画面で棚卸しの対象にします（0〜365日。0
+            ならすべてのタスク）
+          </span>
+        </span>
+        <input
+          type="number"
+          className="settings-number"
+          min={0}
+          max={365}
+          value={value}
+          disabled={settings.data === undefined}
+          aria-invalid={!isValid}
+          onChange={(e) => {
+            const next = e.target.value;
+            setDraft(next);
+            if (isReviewAfterDays(next)) {
+              update.mutate({ reviewAfterDays: Number(next) }, { onSuccess: () => setDraft(null) });
+            }
+          }}
+        />
+        <span>日</span>
+      </label>
+      {!isValid && (
+        <p className="settings-note" role="alert">
+          0〜365 の整数で入力してください
+        </p>
+      )}
+    </section>
+  );
+}
+
 /** 設定（Figma「PC/設定」）。アプリの状態（NFR-21）と、FB の依頼の設定（FR-A12）を表示する */
 export function SettingsPage() {
   const health = useHealth();
@@ -257,7 +312,7 @@ export function SettingsPage() {
       <div className="page">
         <header className="page-header">
           <h1 className="text-display">設定</h1>
-          <p className="text-small">アプリの状態と FB の依頼</p>
+          <p className="text-small">アプリの状態、FB の依頼、棚卸し</p>
         </header>
         <section className="task-list settings-status glass-2" aria-label="状態">
           <div className="settings-status-head">
@@ -303,6 +358,7 @@ export function SettingsPage() {
           状態は開いたときと「もう一度確かめる」を押したときに確かめます。
         </p>
         <FeedbackSettings />
+        <ReviewSettings />
       </div>
     </PageLayout>
   );
