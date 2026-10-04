@@ -68,7 +68,7 @@ describe('FR-R01 タイムラインの区間', () => {
     ]);
   });
 
-  it('完了は完了になった日だけを描き、その後の日は描かない', () => {
+  it('完了したタスクは、着手から完了までを完了したタスクの期間として描き、完了の後の日は描かない', () => {
     const events = [
       created('2026-09-09'),
       change('2026-09-10', 'todo', 'doing'),
@@ -76,20 +76,44 @@ describe('FR-R01 タイムラインの区間', () => {
     ];
     expect(timelineSegments(events, { from: '2026-09-09', to: '2026-09-15' })).toEqual([
       {
-        status: 'doing',
-        from: '2026-09-10',
-        to: '2026-09-11',
-        continuesBefore: false,
-        continuesAfter: false,
-      },
-      {
         status: 'done',
-        from: '2026-09-12',
+        from: '2026-09-10',
         to: '2026-09-12',
         continuesBefore: false,
         continuesAfter: false,
       },
     ]);
+  });
+
+  it('完了したタスクでも、中断と待ちの区間はそのまま描き分ける', () => {
+    const events = [
+      created('2026-09-11'),
+      change('2026-09-11', 'todo', 'doing'),
+      change('2026-09-12', 'doing', 'waiting'),
+      change('2026-09-17', 'waiting', 'done'),
+    ];
+    expect(
+      timelineSegments(events, { from: '2026-09-09', to: '2026-09-22' }).map((s) => [
+        s.status,
+        s.from,
+        s.to,
+      ]),
+    ).toEqual([
+      ['done', '2026-09-11', '2026-09-11'],
+      ['waiting', '2026-09-12', '2026-09-16'],
+      ['done', '2026-09-17', '2026-09-17'],
+    ]);
+  });
+
+  it('表示期間の後に完了したタスクは、期間の中では着手中として描く', () => {
+    const events = [
+      created('2026-09-09'),
+      change('2026-09-09', 'todo', 'doing'),
+      change('2026-09-20', 'doing', 'done'),
+    ];
+    expect(
+      timelineSegments(events, { from: '2026-09-09', to: '2026-09-15' }).map((s) => s.status),
+    ).toEqual(['doing']);
   });
 
   it('同じ日に何度変わっても、その日の最後の状態で描く', () => {
@@ -143,22 +167,22 @@ describe('FR-R01 タイムラインの区間', () => {
     const events = [
       created('2026-09-20'),
       change('2026-09-20', 'todo', 'doing'),
-      change('2026-09-27', 'doing', 'done'),
+      change('2026-09-24', 'doing', 'waiting'),
     ];
     expect(timelineSegments(events, { from: '2026-09-20', to: '2026-09-27' })).toEqual([
       {
         status: 'doing',
         from: '2026-09-20',
-        to: '2026-09-26',
+        to: '2026-09-23',
         continuesBefore: false,
         continuesAfter: false,
       },
       {
-        status: 'done',
-        from: '2026-09-27',
+        status: 'waiting',
+        from: '2026-09-24',
         to: '2026-09-27',
         continuesBefore: false,
-        continuesAfter: false,
+        continuesAfter: true,
       },
     ]);
   });

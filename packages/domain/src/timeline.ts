@@ -60,7 +60,8 @@ function statusByDay(events: readonly TaskEvent[]): (day: string) => Status | nu
 
 /**
  * 表示期間（from〜to の業務日）の横棒を計算する（FR-R01）。
- * 空白日をまたいでも区間は途切れない（architecture.md 4.5）。完了は、完了になった日だけを1日の区間として返す。
+ * 空白日をまたいでも区間は途切れない（architecture.md 4.5）。完了の後の日は描かない。
+ * 表示期間の末日までに完了したタスクは、着手中の区間を完了の区間として返す（完了したタスクの期間）。
  * まだ来ていない日を描かないよう、to には今日より後の日を渡さないこと
  */
 export function timelineSegments(
@@ -99,7 +100,25 @@ export function timelineSegments(
   if (last !== undefined && last.to === range.to) {
     last.continuesAfter = drawnOn(addDays(range.to, 1)) === last.status;
   }
-  return segments;
+  // 表示期間の末日までに完了したタスクは、着手中の期間を「完了したタスクの期間」として描く（DESIGN.md 4.8 の凡例、
+  // Figma「PC/タイムライン」）。中断と待ちは、そのまま描き分ける
+  return at(range.to) === 'done' ? asCompletedPeriod(segments) : segments;
+}
+
+/** 着手中の区間を完了に置き換え、隣り合った完了の区間を1本にまとめる */
+function asCompletedPeriod(segments: readonly TimelineSegment[]): TimelineSegment[] {
+  const merged: TimelineSegment[] = [];
+  for (const s of segments) {
+    const status = s.status === 'doing' ? 'done' : s.status;
+    const prev = merged.at(-1);
+    if (prev !== undefined && prev.status === status && prev.to === addDays(s.from, -1)) {
+      prev.to = s.to;
+      prev.continuesAfter = s.continuesAfter;
+      continue;
+    }
+    merged.push({ ...s, status });
+  }
+  return merged;
 }
 
 /**
