@@ -8,20 +8,25 @@ export type HealthDeps = {
   checkDatabase: () => { ok: true } | { ok: false; message: string };
   /** DB のファイル（本体と -wal、-shm）。サイズの合計を返す */
   databaseFiles: string[];
-  /** バックアップの置き場所（backups/） */
-  backupsDir: string;
+  /** バックアップの置き場所。データディレクトリの backups/ と、設定した毎日のバックアップの保存先 */
+  backupsDirs: () => string[];
+  /** 最後の毎日のバックアップの結果。失敗はファイルが残らないので、こちらで知る */
+  dailyBackup: () => { at: string; result: 'succeeded' | 'failed'; error: string | null } | null;
   jobs: Pick<JobRepository, 'latestFailure'>;
   /** 使うエージェントの状態（実行ファイルの有無とバージョン） */
   agentStatus: () => Promise<AgentStatus>;
 };
 
 export type LatestBackup = {
-  file: string;
+  /** 失敗したときは null */
+  file: string | null;
   /** pre-migration（マイグレーションの前）、before-restore（復元の前）など */
   kind: string;
   at: string;
-  /** 書き出しを終えたファイルだけが残るので、ある以上は成功（毎日のバックアップの失敗は NFR-04 のスケジューラで記録する） */
-  result: 'succeeded';
+  /** ファイルは書き出しを終えたものだけが残るので成功。毎日のバックアップの失敗は、記録した結果から出す */
+  result: 'succeeded' | 'failed';
+  /** 失敗の理由 */
+  error: string | null;
 };
 
 /** backups/<種類>-<20260925T075324Z>.db のうち、いちばん新しいもの */
@@ -33,7 +38,27 @@ export function findLatestBackup(dir: string): LatestBackup | null {
     if (m === null) continue;
     const [, kind = '', y, mo, d, h, mi, s] = m;
     const at = `${y}-${mo}-${d}T${h}:${mi}:${s}.000Z`;
-    if (latest === null || at > latest.at) latest = { file, kind, at, result: 'succeeded' };
+    if (latest === null || at > latest.at)
+      latest = { file, kind, at, result: 'succeeded', error: null };
+  }
+  return latest;
+}
+
+/**
+ * 状態の画面に出す最後のバックアップ。どの置き場所のファイルより、毎日のバックアップの失敗が新しければ失敗を出す
+ * （成功したのに古いファイルを見せて、止まっていることに気づけないのを防ぐ、NFR-23）
+ */
+export function latestBackupOf(
+  deps: Pick<HealthDeps, 'backupsDirs' | 'dailyBackup'>,
+): LatestBackup | null {
+  let latest: LatestBackup | null = null;
+  for (const dir of new Set(deps.backupsDirs())) {
+    const found = findLatestBackup(dir);
+    if (found !== null && (latest === null || found.at > latest.at)) latest = found;
+  }
+  const daily = deps.dailyBackup();
+  if (daily?.result === 'failed' && (latest === null || daily.at > latest.at)) {
+    return { file: null, kind: 'daily', at: daily.at, result: 'failed', error: daily.error };
   }
   return latest;
 }
@@ -58,7 +83,7 @@ export function createHealthApi(deps: HealthDeps) {
         sizeBytes: sizeOf(deps.databaseFiles),
       },
       agent,
-      backup: findLatestBackup(deps.backupsDir),
+      backup: latestBackupOf(deps),
       recentFailure:
         failure === undefined
           ? null

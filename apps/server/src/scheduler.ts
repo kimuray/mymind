@@ -8,6 +8,11 @@ export type ScheduledJob = {
   spec: () => ScheduleSpec | null;
   /** 予定の時刻に動かす処理。scheduledAt は、本来動かすはずだった時刻 */
   run: (scheduledAt: Date) => Promise<void> | void;
+  /**
+   * 時刻を2時間より過ぎても、見送らずに1回だけ動かす。通知のように遅れると意味のなくなるものは見送り、
+   * 毎日のバックアップのように遅れても取るべきものに使う（NFR-23）
+   */
+  runIfLate?: boolean;
 };
 
 export type TimerHandle = { cancel: () => void };
@@ -109,7 +114,7 @@ export function createScheduler(deps: SchedulerDeps) {
       // 何日も眠っていた場合も、過ぎた回をまとめて動かさず、次は今より後の回にする
       entry.next = plan(entry.job, now);
       const at = reference.getTime() < scheduledAt.getTime() ? scheduledAt : reference;
-      if (isWithinGrace(scheduledAt, at)) {
+      if (entry.job.runIfLate === true || isWithinGrace(scheduledAt, at)) {
         void runJob(entry.job, scheduledAt);
       } else {
         deps.logger?.info('時刻を大きく過ぎた定期処理を見送りました', {
