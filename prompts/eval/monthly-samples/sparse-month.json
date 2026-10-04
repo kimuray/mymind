@@ -1,0 +1,254 @@
+{
+  "title": "記録の少ない月：5日だけ記録があり、FB は3日だけ",
+  "data": {
+    "month": "2026-06",
+    "isPartial": false,
+    "through": "2026-06-30",
+    "stats": {
+      "recordedDays": 5,
+      "blankDays": 25,
+      "feedbackDays": 3,
+      "correctedDays": 0,
+      "completed": 4
+    },
+    "days": [
+      {
+        "day": "2026-06-01",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-06-02",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["計画を3件に絞った"],
+          "insight": [],
+          "nextAction": "明日は1件だけ終わらせる"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-06-03",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-06-04",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-06-05",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-06-06",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-06-07",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-06-08",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-06-09",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": null
+        },
+        "feedback": {
+          "good": ["計画を3件に絞った"],
+          "insight": [],
+          "nextAction": "明日は1件だけ終わらせる"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-06-10",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-06-11",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-06-12",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-06-13",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-06-14",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-06-15",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-06-16",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-06-17",
+        "isBlank": false,
+        "condition": null,
+        "feedback": null,
+        "reflection": {
+          "thoughtsMd": "疲れた",
+          "learningMd": ""
+        }
+      },
+      {
+        "day": "2026-06-18",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-06-19",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-06-20",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-06-21",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-06-22",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-06-23",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-06-24",
+        "isBlank": false,
+        "condition": {
+          "ai": 1,
+          "user": null
+        },
+        "feedback": {
+          "good": ["計画を3件に絞った"],
+          "insight": [],
+          "nextAction": "明日は1件だけ終わらせる"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-06-25",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-06-26",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-06-27",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-06-28",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-06-29",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-06-30",
+        "isBlank": false,
+        "condition": null,
+        "feedback": null,
+        "reflection": {
+          "thoughtsMd": "月末。ほとんど記録できなかった",
+          "learningMd": ""
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,464 @@
+{
+  "title": "停滞した月：待ちと持ち越しが続き、同じ一手を実行できていない",
+  "data": {
+    "month": "2026-07",
+    "isPartial": false,
+    "through": "2026-07-31",
+    "stats": {
+      "recordedDays": 23,
+      "blankDays": 8,
+      "feedbackDays": 23,
+      "correctedDays": 5,
+      "completed": 9
+    },
+    "days": [
+      {
+        "day": "2026-07-01",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": 1
+        },
+        "feedback": {
+          "good": ["会議の議事録をまとめた"],
+          "insight": [
+            "競合調査が先方の返答待ちのまま、催促していない",
+            "同じタスクを3日続けて持ち越している"
+          ],
+          "nextAction": "競合調査の催促メールを朝に送る"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-07-02",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": null
+        },
+        "feedback": {
+          "good": ["見積もりの依頼を出した"],
+          "insight": [
+            "競合調査が先方の返答待ちのまま、催促していない",
+            "同じタスクを3日続けて持ち越している"
+          ],
+          "nextAction": "競合調査の催促メールを朝に送る"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-07-03",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": null
+        },
+        "feedback": {
+          "good": ["会議の議事録をまとめた"],
+          "insight": [
+            "競合調査が先方の返答待ちのまま、催促していない",
+            "同じタスクを3日続けて持ち越している"
+          ],
+          "nextAction": "競合調査の催促メールを朝に送る"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-07-04",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-07-05",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-07-06",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": 1
+        },
+        "feedback": {
+          "good": ["見積もりの依頼を出した"],
+          "insight": [
+            "競合調査が先方の返答待ちのまま、催促していない",
+            "同じタスクを3日続けて持ち越している"
+          ],
+          "nextAction": "競合調査の催促メールを朝に送る"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-07-07",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": null
+        },
+        "feedback": {
+          "good": ["会議の議事録をまとめた"],
+          "insight": [
+            "競合調査が先方の返答待ちのまま、催促していない",
+            "同じタスクを3日続けて持ち越している"
+          ],
+          "nextAction": "競合調査の催促メールを朝に送る"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-07-08",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": null
+        },
+        "feedback": {
+          "good": ["見積もりの依頼を出した"],
+          "insight": [
+            "競合調査が先方の返答待ちのまま、催促していない",
+            "同じタスクを3日続けて持ち越している"
+          ],
+          "nextAction": "競合調査の催促メールを朝に送る"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-07-09",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": null
+        },
+        "feedback": {
+          "good": ["会議の議事録をまとめた"],
+          "insight": [
+            "競合調査が先方の返答待ちのまま、催促していない",
+            "同じタスクを3日続けて持ち越している"
+          ],
+          "nextAction": "競合調査の催促メールを朝に送る"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-07-10",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": null
+        },
+        "feedback": {
+          "good": ["見積もりの依頼を出した"],
+          "insight": [
+            "競合調査が先方の返答待ちのまま、催促していない",
+            "同じタスクを3日続けて持ち越している"
+          ],
+          "nextAction": "競合調査の催促メールを朝に送る"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-07-11",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-07-12",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-07-13",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": null
+        },
+        "feedback": {
+          "good": ["会議の議事録をまとめた"],
+          "insight": [
+            "競合調査が先方の返答待ちのまま、催促していない",
+            "同じタスクを3日続けて持ち越している"
+          ],
+          "nextAction": "競合調査の催促メールを朝に送る"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-07-14",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": null
+        },
+        "feedback": {
+          "good": ["見積もりの依頼を出した"],
+          "insight": [
+            "競合調査が先方の返答待ちのまま、催促していない",
+            "同じタスクを3日続けて持ち越している"
+          ],
+          "nextAction": "競合調査の催促メールを朝に送る"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-07-15",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": null
+        },
+        "feedback": {
+          "good": ["会議の議事録をまとめた"],
+          "insight": [
+            "競合調査が先方の返答待ちのまま、催促していない",
+            "同じタスクを3日続けて持ち越している"
+          ],
+          "nextAction": "競合調査の催促メールを朝に送る"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-07-16",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": 1
+        },
+        "feedback": {
+          "good": ["見積もりの依頼を出した"],
+          "insight": [
+            "競合調査が先方の返答待ちのまま、催促していない",
+            "同じタスクを3日続けて持ち越している"
+          ],
+          "nextAction": "競合調査の催促メールを朝に送る"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-07-17",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": null
+        },
+        "feedback": {
+          "good": ["会議の議事録をまとめた"],
+          "insight": [
+            "競合調査が先方の返答待ちのまま、催促していない",
+            "同じタスクを3日続けて持ち越している"
+          ],
+          "nextAction": "競合調査の催促メールを朝に送る"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-07-18",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-07-19",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-07-20",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": null
+        },
+        "feedback": {
+          "good": ["見積もりの依頼を出した"],
+          "insight": [
+            "競合調査が先方の返答待ちのまま、催促していない",
+            "同じタスクを3日続けて持ち越している"
+          ],
+          "nextAction": "競合調査の催促メールを朝に送る"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-07-21",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": 1
+        },
+        "feedback": {
+          "good": ["会議の議事録をまとめた"],
+          "insight": [
+            "競合調査が先方の返答待ちのまま、催促していない",
+            "同じタスクを3日続けて持ち越している"
+          ],
+          "nextAction": "競合調査の催促メールを朝に送る"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-07-22",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": null
+        },
+        "feedback": {
+          "good": ["見積もりの依頼を出した"],
+          "insight": [
+            "競合調査が先方の返答待ちのまま、催促していない",
+            "同じタスクを3日続けて持ち越している"
+          ],
+          "nextAction": "競合調査の催促メールを朝に送る"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-07-23",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": null
+        },
+        "feedback": {
+          "good": ["会議の議事録をまとめた"],
+          "insight": [
+            "競合調査が先方の返答待ちのまま、催促していない",
+            "同じタスクを3日続けて持ち越している"
+          ],
+          "nextAction": "競合調査の催促メールを朝に送る"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-07-24",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": null
+        },
+        "feedback": {
+          "good": ["見積もりの依頼を出した"],
+          "insight": [
+            "競合調査が先方の返答待ちのまま、催促していない",
+            "同じタスクを3日続けて持ち越している"
+          ],
+          "nextAction": "競合調査の催促メールを朝に送る"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-07-25",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-07-26",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-07-27",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": null
+        },
+        "feedback": {
+          "good": ["会議の議事録をまとめた"],
+          "insight": [
+            "競合調査が先方の返答待ちのまま、催促していない",
+            "同じタスクを3日続けて持ち越している"
+          ],
+          "nextAction": "競合調査の催促メールを朝に送る"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-07-28",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": null
+        },
+        "feedback": {
+          "good": ["見積もりの依頼を出した"],
+          "insight": [
+            "競合調査が先方の返答待ちのまま、催促していない",
+            "同じタスクを3日続けて持ち越している"
+          ],
+          "nextAction": "競合調査の催促メールを朝に送る"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-07-29",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": null
+        },
+        "feedback": {
+          "good": ["会議の議事録をまとめた"],
+          "insight": [
+            "競合調査が先方の返答待ちのまま、催促していない",
+            "同じタスクを3日続けて持ち越している"
+          ],
+          "nextAction": "競合調査の催促メールを朝に送る"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-07-30",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": null
+        },
+        "feedback": {
+          "good": ["見積もりの依頼を出した"],
+          "insight": [
+            "競合調査が先方の返答待ちのまま、催促していない",
+            "同じタスクを3日続けて持ち越している"
+          ],
+          "nextAction": "競合調査の催促メールを朝に送る"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-07-31",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": 1
+        },
+        "feedback": {
+          "good": ["会議の議事録をまとめた"],
+          "insight": [
+            "競合調査が先方の返答待ちのまま、催促していない",
+            "同じタスクを3日続けて持ち越している"
+          ],
+          "nextAction": "競合調査の催促メールを朝に送る"
+        },
+        "reflection": null
+      }
+    ]
+  }
+}
