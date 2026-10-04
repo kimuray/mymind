@@ -95,7 +95,7 @@ export const KEY_BINDINGS: readonly KeyBinding[] = [
   { action: 'morning.today', keys: ['1'], label: '今日もやる' },
   { action: 'morning.backlog', keys: ['2'], label: 'バックログへ' },
   { action: 'morning.done', keys: ['3'], label: '実は終わった' },
-  // ブラウザの印刷と重なるので、振り返りの画面では印刷を止めて切り替えに使う（実機の確認は #35）
+  // ブラウザの印刷と重なるので、振り返りの画面では印刷を止めて切り替えに使う（実機のブラウザで確認済み、#35）
   { action: 'reflection.togglePreview', keys: ['Meta+p'], label: '書く / プレビューの切り替え' },
 ];
 
