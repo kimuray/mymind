@@ -18,6 +18,11 @@ export type SchedulerDeps = {
   timeZone: string;
   /** タイマー。テストでは差し替える */
   setTimer?: (fn: () => void, delayMs: number) => TimerHandle;
+  /**
+   * スリープ中に進まない時計（ミリ秒）。壁時計との差でスリープに気づく。初期値は performance.now。
+   * テストでは差し替える
+   */
+  monotonic?: () => number;
   logger?: Logger;
   /**
    * 1回のタイマーで待つ最長の時間。macOS ではスリープ中にタイマーの経過時間が進まず、
@@ -28,6 +33,9 @@ export type SchedulerDeps = {
 
 /** 待つ最長の時間の初期値。スリープから復帰して、過ぎた予定に気づくまでの遅れの上限になる */
 export const DEFAULT_MAX_WAIT_MS = 15 * 60 * 1000;
+
+/** 壁時計がスリープしない時計よりこれ以上進んでいたら、その間に眠っていたとみなす */
+const SLEEP_DETECT_MS = 60 * 1000;
 
 const realTimer = (fn: () => void, delayMs: number): TimerHandle => {
   const t = setTimeout(fn, delayMs);
@@ -43,7 +51,10 @@ const realTimer = (fn: () => void, delayMs: number): TimerHandle => {
  */
 export function createScheduler(deps: SchedulerDeps) {
   const setTimer = deps.setTimer ?? realTimer;
+  const monotonic = deps.monotonic ?? (() => performance.now());
   const maxWait = deps.maxWaitMs ?? DEFAULT_MAX_WAIT_MS;
+  // タイマーを置いたときの壁時計と、スリープしない時計
+  let armedAt = { wall: deps.now().getTime(), mono: monotonic() };
   const entries = new Map<string, { job: ScheduledJob; next: Date | null }>();
   let timer: TimerHandle | null = null;
   let running = false;
@@ -60,7 +71,9 @@ export function createScheduler(deps: SchedulerDeps) {
     const nexts = [...entries.values()].flatMap((e) => (e.next === null ? [] : [e.next]));
     if (nexts.length === 0) return;
     const earliest = Math.min(...nexts.map((d) => d.getTime()));
-    const delay = Math.min(Math.max(earliest - deps.now().getTime(), 0), maxWait);
+    const now = deps.now().getTime();
+    const delay = Math.min(Math.max(earliest - now, 0), maxWait);
+    armedAt = { wall: now, mono: monotonic() };
     timer = setTimer(tick, delay);
   };
 
@@ -76,14 +89,27 @@ export function createScheduler(deps: SchedulerDeps) {
     }
   };
 
+  /**
+   * 過ぎた予定を動かすかを決めるときの基準の時刻。眠っていた場合は、タイマーが発火したときではなく、
+   * 復帰した時刻で判断する（復帰が猶予の終わりの直前でも取りこぼさないため）。復帰した時刻は分からないので、
+   * 起きていた時間をすべて復帰の後とみなした、いちばん早い復帰の時刻を使う（遅れても最長の待ち時間まで甘く判断する）
+   */
+  const judgedAt = (now: Date): Date => {
+    const awake = monotonic() - armedAt.mono;
+    const slept = now.getTime() - armedAt.wall - awake;
+    return slept > SLEEP_DETECT_MS ? new Date(now.getTime() - awake) : now;
+  };
+
   function tick() {
     const now = deps.now();
+    const reference = judgedAt(now);
     for (const entry of entries.values()) {
       const scheduledAt = entry.next;
       if (scheduledAt === null || scheduledAt.getTime() > now.getTime()) continue;
       // 何日も眠っていた場合も、過ぎた回をまとめて動かさず、次は今より後の回にする
       entry.next = plan(entry.job, now);
-      if (isWithinGrace(scheduledAt, now)) {
+      const at = reference.getTime() < scheduledAt.getTime() ? scheduledAt : reference;
+      if (isWithinGrace(scheduledAt, at)) {
         void runJob(entry.job, scheduledAt);
       } else {
         deps.logger?.info('時刻を大きく過ぎた定期処理を見送りました', {

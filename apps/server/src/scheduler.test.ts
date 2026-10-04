@@ -7,11 +7,14 @@ const jst = (s: string) => new Date(`${s.replace(' ', 'T')}:00+09:00`);
 /** 時計とタイマーを手で進めるための偽物 */
 function setup(start: string) {
   let now = jst(start);
+  // スリープしない時計。fireAt で眠っていた時間を渡すと、その分だけ壁時計より遅れる
+  let mono = 0;
   let pending: { fn: () => void; delayMs: number } | null = null;
   const lines: string[] = [];
   const scheduler = createScheduler({
     now: () => now,
     timeZone: 'Asia/Tokyo',
+    monotonic: () => mono,
     setTimer: (fn, delayMs) => {
       pending = { fn, delayMs };
       return {
@@ -26,8 +29,9 @@ function setup(start: string) {
     scheduler,
     lines,
     pending: () => pending,
-    /** 時計を進めて、置いてあるタイマーを発火させる */
-    fireAt: async (at: Date) => {
+    /** 時計を進めて、置いてあるタイマーを発火させる。sleptMs はその間に眠っていた時間 */
+    fireAt: async (at: Date, sleptMs = 0) => {
+      mono += at.getTime() - now.getTime() - sleptMs;
       now = at;
       const p = pending;
       if (p === null) throw new Error('タイマーがありません');
@@ -137,6 +141,26 @@ describe('NFR-19 スケジューラ', () => {
     await t.fireAt(jst('2026-09-23 08:30'));
     expect(runs).toEqual([jst('2026-09-23 08:30')]);
     expect(t.lines.join('\n')).toContain('定期処理に失敗しました');
+  });
+
+  it('予定の前に眠り、猶予の終わりの直前に復帰したら、タイマーが少し遅れて発火しても動かす', async () => {
+    const t = setup('2026-09-23 21:20');
+    const runs: Date[] = [];
+    t.scheduler.add(job('night', '21:30', runs));
+    t.scheduler.start();
+    // 21:20 にタイマー（10分）を置いてすぐ眠り、23:29 に復帰。残りの10分を待って 23:39 に発火する
+    await t.fireAt(jst('2026-09-23 23:39'), (2 * 60 + 9) * 60 * 1000);
+    expect(runs).toEqual([jst('2026-09-23 21:30')]);
+  });
+
+  it('眠っていても、復帰が猶予を過ぎていれば見送る', async () => {
+    const t = setup('2026-09-23 21:20');
+    const runs: Date[] = [];
+    t.scheduler.add(job('night', '21:30', runs));
+    t.scheduler.start();
+    // 23:40 に復帰し、10分後の 23:50 に発火する
+    await t.fireAt(jst('2026-09-23 23:50'), (2 * 60 + 20) * 60 * 1000);
+    expect(runs).toEqual([]);
   });
 
   it('止めたら、タイマーを外す', () => {
