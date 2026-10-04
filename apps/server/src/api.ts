@@ -31,7 +31,7 @@ import { validator } from 'hono/validator';
 import { z } from 'zod';
 import { createHealthApi, type HealthDeps } from './health';
 import { createJobsApi, type JobsApiDeps } from './jobsApi';
-import { createSettingsApi } from './settingsApi';
+import { type AppSettings, createSettingsApi } from './settingsApi';
 
 export type ApiDeps = {
   tasks: TaskRepository;
@@ -47,6 +47,8 @@ export type ApiDeps = {
   health: HealthDeps;
   /** 画面から変えられる設定 */
   settings: SettingsRepository;
+  /** 保存されていない設定の値（既定のエージェントは MYMIND_AGENT から決める、FR-A07） */
+  settingsDefaults?: Partial<AppSettings>;
   /** 業務日ごとの振り返り（FR-D06） */
   logs: DailyLogRepository;
 };
@@ -172,6 +174,7 @@ export function createApi({
   jobs,
   health,
   settings,
+  settingsDefaults = {},
   logs,
 }: ApiDeps) {
   /**
@@ -550,7 +553,7 @@ export function createApi({
   return taskRoutes
     .route('/', createJobsApi(jobs))
     .route('/', createHealthApi(health))
-    .route('/', createSettingsApi(settings));
+    .route('/', createSettingsApi(settings, settingsDefaults));
 }
 
 export type Api = ReturnType<typeof createApi>;

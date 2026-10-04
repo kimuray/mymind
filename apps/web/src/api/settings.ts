@@ -6,6 +6,9 @@ const fetchSettings = async () => unwrap(await api.settings.$get());
 
 export type AppSettings = Awaited<ReturnType<typeof fetchSettings>>['settings'];
 
+/** FB を書くエージェント（FR-A07） */
+export type AgentChoice = AppSettings['defaultAgent'];
+
 const settingsKey = ['settings'] as const;
 
 export function useSettings() {

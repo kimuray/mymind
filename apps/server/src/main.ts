@@ -1,7 +1,6 @@
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  type AgentRunner,
   createClaudeRunner,
   createCodexRunner,
   createFakeAgentRunner,
@@ -17,6 +16,7 @@ import {
   plainCodec,
 } from '@mymind/db';
 import { createAgentLog } from './agentLog';
+import { type AgentRunners, initialAgentChoice } from './agents';
 import { createApi } from './api';
 import { createApp } from './app';
 import { backupsDir, databasePath, snapshotBeforeMigration } from './backups';
@@ -27,6 +27,7 @@ import { createJobRunner } from './jobRunner';
 import { listen } from './listen';
 import { createLogger } from './logger';
 import { loadDailyPrompt } from './prompts';
+import { createSettingsReader } from './settingsApi';
 import { createUlidGenerator } from './ulid';
 import { createDevRedirect, createWebRoutes } from './web';
 
@@ -86,13 +87,21 @@ async function main(): Promise<number> {
   const events = createEventBus();
   const prompt = loadDailyPrompt();
   // 実物のエージェントは、空の作業ディレクトリで、ツールを止めて起動する（ADR-0003、ADR-0005）
-  const model = agent.model ?? undefined;
-  const runner: AgentRunner =
+  // モデルの指定は CLI ごとに名前が違うので、MYMIND_AGENT で選んだエージェントにだけ渡す
+  const modelFor = (name: string) =>
+    agent.name === name && agent.model !== null ? agent.model : undefined;
+  const fake = createFakeAgentRunner({ mode: agent.fakeMode, delayMs: agent.fakeDelayMs });
+  const runners: AgentRunners =
     agent.name === 'fake'
-      ? createFakeAgentRunner({ mode: agent.fakeMode, delayMs: agent.fakeDelayMs })
-      : agent.name === 'claude'
-        ? createClaudeRunner({ model })
-        : createCodexRunner({ model });
+      ? { claude: fake, codex: fake }
+      : {
+          claude: createClaudeRunner({ model: modelFor('claude') }),
+          codex: createCodexRunner({ model: modelFor('codex') }),
+        };
+  const settings = createSettingsRepository({ db });
+  // 設定で既定のエージェントを選んでいなければ、MYMIND_AGENT のエージェントを使う（FR-A07）
+  const settingsDefaults = { defaultAgent: initialAgentChoice(agent.name) };
+  const currentSettings = createSettingsReader(settings, settingsDefaults);
   const logger = createLogger();
   // エージェントの入出力の全文は、データディレクトリの中にだけ残し、30 日で消す（ADR-0009）
   const agentLog = createAgentLog(join(dataDir, 'logs/agent'));
@@ -103,7 +112,8 @@ async function main(): Promise<number> {
     jobs,
     tasks,
     logs,
-    runner,
+    runners,
+    defaultAgent: () => currentSettings().defaultAgent,
     events,
     prompt,
     now: () => new Date(),
@@ -129,9 +139,12 @@ async function main(): Promise<number> {
       databaseFiles: ['', '-wal', '-shm'].map((suffix) => databasePath(dataDir) + suffix),
       backupsDir: backupsDir(dataDir),
       jobs,
-      agentStatus: () => detectAgent(agent.name),
+      // 状態の表示は、依頼で既定に使うエージェントを確かめる
+      agentStatus: () =>
+        detectAgent(agent.name === 'fake' ? 'fake' : currentSettings().defaultAgent),
     },
-    settings: createSettingsRepository({ db }),
+    settings,
+    settingsDefaults,
     logs,
   });
   // 開発時は Vite が画面を配信する。古い本番ビルドを出さないよう、画面の URL は Vite へ移す（#97）

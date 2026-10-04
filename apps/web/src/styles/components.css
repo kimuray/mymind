@@ -663,6 +663,25 @@
   accent-color: var(--accent);
 }
 
+/* エージェントの選択（DESIGN.md 4.7、4.11、FR-A07）。枠と塗りは副ボタンと同じ */
+.agent-select {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  white-space: nowrap;
+}
+
+.agent-select select {
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border: var(--button-secondary-border);
+  border-radius: var(--radius-m);
+  background: var(--button-secondary-bg);
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink-1);
+}
+
 /* 送信内容のプレビュー（DESIGN.md 4.11、FR-A12） */
 .input-preview {
   display: flex;

@@ -21,14 +21,18 @@ const patch = (body: unknown) =>
 describe('FR-A12 設定「依頼の前に毎回確認する」', () => {
   it('保存していなければ、確認しない（false）を返す', async () => {
     const res = await app.request('/settings');
-    expect(await res.json()).toEqual({ settings: { confirmBeforeRequest: false } });
+    expect(await res.json()).toEqual({
+      settings: { confirmBeforeRequest: false, defaultAgent: 'claude' },
+    });
   });
 
   it('PATCH で変えた値を保存し、GET で読み出せる', async () => {
     const res = await patch({ confirmBeforeRequest: true });
-    expect(await res.json()).toEqual({ settings: { confirmBeforeRequest: true } });
+    expect(await res.json()).toEqual({
+      settings: { confirmBeforeRequest: true, defaultAgent: 'claude' },
+    });
     expect(await (await app.request('/settings')).json()).toEqual({
-      settings: { confirmBeforeRequest: true },
+      settings: { confirmBeforeRequest: true, defaultAgent: 'claude' },
     });
   });
 
@@ -44,11 +48,42 @@ describe('FR-A12 設定「依頼の前に毎回確認する」', () => {
   it('保存されている値が読めなければ、初期値として扱う', async () => {
     repo.setMany({ confirmBeforeRequest: 'not json' });
     expect(await (await app.request('/settings')).json()).toEqual({
-      settings: { confirmBeforeRequest: false },
+      settings: { confirmBeforeRequest: false, defaultAgent: 'claude' },
     });
     repo.setMany({ confirmBeforeRequest: '"true"' });
     expect(await (await app.request('/settings')).json()).toEqual({
-      settings: { confirmBeforeRequest: false },
+      settings: { confirmBeforeRequest: false, defaultAgent: 'claude' },
+    });
+  });
+});
+
+describe('FR-A07 設定「既定のエージェント」', () => {
+  it('保存していなければ、起動の設定で渡した既定値を返す', async () => {
+    const withCodex = createSettingsApi(repo, { defaultAgent: 'codex' });
+    const res = await withCodex.request('/settings');
+    expect(await res.json()).toMatchObject({ settings: { defaultAgent: 'codex' } });
+  });
+
+  it('PATCH で選んだエージェントを保存し、起動の設定より優先する', async () => {
+    await patch({ defaultAgent: 'codex' });
+    const withClaude = createSettingsApi(repo, { defaultAgent: 'claude' });
+    expect(await (await withClaude.request('/settings')).json()).toMatchObject({
+      settings: { defaultAgent: 'codex' },
+    });
+  });
+
+  it.each([
+    ['開発用の fake', 'fake'],
+    ['知らないエージェント', 'gemini'],
+  ])('%s は 400 で保存しない', async (_, value) => {
+    expect((await patch({ defaultAgent: value })).status).toBe(400);
+    expect(repo.getAll()).toEqual({});
+  });
+
+  it('保存されている値が選べるエージェントでなければ、既定値として扱う', async () => {
+    repo.setMany({ defaultAgent: '"fake"' });
+    expect(await (await app.request('/settings')).json()).toMatchObject({
+      settings: { defaultAgent: 'claude' },
     });
   });
 });

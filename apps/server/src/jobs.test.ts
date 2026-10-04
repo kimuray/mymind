@@ -1,4 +1,4 @@
-import { createFakeAgentRunner, FAKE_OUTPUT, type FakeMode } from '@mymind/agent';
+import { type AgentRunner, createFakeAgentRunner, FAKE_OUTPUT, type FakeMode } from '@mymind/agent';
 import {
   createDailyLogRepository,
   createJobRepository,
@@ -12,6 +12,7 @@ import {
 } from '@mymind/db';
 import { beforeEach, describe, expect, it } from 'vitest';
 import type { AgentLogRecord } from './agentLog';
+import type { AgentChoice, AgentRunners } from './agents';
 import { createApi } from './api';
 import { createApp } from './app';
 import { createEventBus, type ServerEvent } from './events';
@@ -37,7 +38,11 @@ beforeEach(() => {
 
 const newId = () => `id${String(++seq).padStart(5, '0')}`;
 
-function setup(mode: FakeMode = 'success', timeoutMs = 1000) {
+function setup(
+  mode: FakeMode = 'success',
+  timeoutMs = 1000,
+  options: { runners?: AgentRunners; defaultAgent?: () => AgentChoice } = {},
+) {
   const tasks = createTaskRepository({ db, codec: plainCodec, newEventId: newId });
   const events = createEventBus();
   events.subscribe((e) => published.push(e.event));
@@ -46,7 +51,8 @@ function setup(mode: FakeMode = 'success', timeoutMs = 1000) {
     jobs,
     tasks,
     logs: createDailyLogRepository({ db, codec: plainCodec }),
-    runner: agent,
+    runners: options.runners ?? { claude: agent, codex: agent },
+    defaultAgent: options.defaultAgent ?? (() => 'claude'),
     events,
     prompt: { text: '<!-- prompt_version: 0.1.0 -->\nプロンプト', version: '0.1.0' },
     now: () => now,
@@ -269,6 +275,79 @@ describe('FR-A01 ジョブと FB の API', () => {
   });
 });
 
+describe('FR-A07 使うエージェントの選択', () => {
+  const headers = {
+    Host: `127.0.0.1:${PORT}`,
+    'Sec-Fetch-Site': 'same-origin',
+    Origin: `http://127.0.0.1:${PORT}`,
+    [TOKEN_HEADER]: 'token',
+    'Content-Type': 'application/json',
+  };
+
+  /** 名前の違う2つの偽のアダプタ。どちらで生成したかを、名前と受け取った入力で確かめる */
+  const namedRunners = () => {
+    const claude = createFakeAgentRunner();
+    const codex = createFakeAgentRunner();
+    return {
+      claude,
+      codex,
+      runners: { claude: { ...claude, name: 'claude' }, codex: { ...codex, name: 'codex' } },
+    };
+  };
+
+  const request = (app: ReturnType<typeof setup>['app'], body: unknown) =>
+    app.request('/api/jobs', { method: 'POST', headers, body: JSON.stringify(body) });
+
+  it('エージェントを指定しなければ、設定の既定のエージェントで生成する', async () => {
+    const { claude, codex, runners } = namedRunners();
+    const { app, runner } = setup('success', 1000, { runners, defaultAgent: () => 'codex' });
+    const res = await request(app, { kind: 'daily_feedback', period: DAY });
+    expect(await res.json()).toMatchObject({ job: { agent: 'codex' } });
+    await runner.idle();
+    expect(codex.inputs).toHaveLength(1);
+    expect(claude.inputs).toHaveLength(0);
+    expect(jobs.listFeedbacks('daily', DAY)).toMatchObject([{ agent: 'codex' }]);
+  });
+
+  it('依頼でエージェントを指定すると、既定に関係なくそのエージェントで生成する', async () => {
+    const { claude, codex, runners } = namedRunners();
+    const { app, runner } = setup('success', 1000, { runners, defaultAgent: () => 'codex' });
+    const res = await request(app, { kind: 'daily_feedback', period: DAY, agent: 'claude' });
+    expect(res.status).toBe(202);
+    await runner.idle();
+    expect(claude.inputs).toHaveLength(1);
+    expect(codex.inputs).toHaveLength(0);
+    expect(jobs.listFeedbacks('daily', DAY)).toMatchObject([{ agent: 'claude' }]);
+  });
+
+  it.each([
+    ['開発用の fake', 'fake'],
+    ['知らないエージェント', 'gemini'],
+  ])('%s を指定すると 400 で依頼しない', async (_, agent) => {
+    const { app } = setup();
+    const res = await request(app, { kind: 'daily_feedback', period: DAY, agent });
+    expect(res.status).toBe(400);
+    expect(jobs.findActive('daily_feedback', DAY)).toBeUndefined();
+  });
+
+  it('記録したエージェントのアダプタがなければ、ジョブを失敗にする', async () => {
+    jobs.create({
+      id: 'old',
+      kind: 'daily_feedback',
+      period: DAY,
+      agent: 'codex',
+      createdAt: now.toISOString(),
+    });
+    const { runner } = setup();
+    runner.start();
+    await runner.idle();
+    expect(jobs.find('old')).toMatchObject({
+      status: 'failed',
+      error: 'エージェント（codex）を使えません。もう一度依頼してください',
+    });
+  });
+});
+
 describe('ADR-0008 GET /api/events', () => {
   it('ジョブの進み具合を SSE で配信する', async () => {
     const { app, runner } = setup();
@@ -330,11 +409,13 @@ describe('NFR-16 エージェントの入出力のログ', () => {
     }[] = [];
     const lines: string[] = [];
     const tasks = createTaskRepository({ db, codec: plainCodec, newEventId: newId });
+    const invalid = createFakeAgentRunner({ mode: 'invalid' });
     const runner = createJobRunner({
       jobs,
       tasks,
       logs: createDailyLogRepository({ db, codec: plainCodec }),
-      runner: createFakeAgentRunner({ mode: 'invalid' }),
+      runners: { claude: invalid, codex: invalid },
+      defaultAgent: () => 'claude',
       events: createEventBus(),
       prompt: { text: 'プロンプト', version: '0.1.0' },
       now: () => now,
@@ -366,17 +447,19 @@ describe('NFR-15 日次 FB に送る入力', () => {
     const tasks = createTaskRepository({ db, codec: plainCodec, newEventId: newId });
     const inputs: string[] = [];
     const logged: AgentLogRecord[] = [];
+    const recording: AgentRunner = {
+      name: 'fake',
+      run: async (input) => {
+        inputs.push(input);
+        return { ok: true, output: JSON.stringify(FAKE_OUTPUT) };
+      },
+    };
     const runner = createJobRunner({
       jobs,
       tasks,
       logs: createDailyLogRepository({ db, codec: plainCodec }),
-      runner: {
-        name: 'fake',
-        run: async (input) => {
-          inputs.push(input);
-          return { ok: true, output: JSON.stringify(FAKE_OUTPUT) };
-        },
-      },
+      runners: { claude: recording, codex: recording },
+      defaultAgent: () => 'claude',
       events: createEventBus(),
       prompt: { text: 'プロンプト', version: '0.1.0' },
       now: () => now,

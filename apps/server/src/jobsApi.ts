@@ -3,6 +3,7 @@ import { Hono } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import { validator } from 'hono/validator';
 import { z } from 'zod';
+import { agentChoiceSchema } from './agents';
 import type { EventBus, NumberedEvent } from './events';
 import type { JobRunner } from './jobRunner';
 
@@ -20,6 +21,8 @@ const createJobBody = z.strictObject({
     .string()
     .regex(/^sha256:[0-9a-f]{64}$/, 'sha256:（16進数64桁）の形式で指定してください')
     .optional(),
+  /** 使うエージェント（FR-A07）。省略すると設定の既定のエージェントを使う */
+  agent: agentChoiceSchema.optional(),
 });
 
 /** 送信内容のプレビュー（FR-A12） */
@@ -50,7 +53,7 @@ export function createJobsApi({ runner, jobs, events }: JobsApiDeps) {
         return parsed.success ? parsed.data : c.json(invalid(parsed.error.issues), 400);
       }),
       (c) => {
-        const { kind, period, payloadHash } = c.req.valid('json');
+        const { kind, period, payloadHash, agent } = c.req.valid('json');
         if (payloadHash !== undefined) {
           // 依頼の時点で入力を作り直し、確認した後に振り返りやタスクが変わっていたら送らない（architecture.md 12.5）
           const built = runner.buildInput(kind, period);
@@ -66,7 +69,7 @@ export function createJobsApi({ runner, jobs, events }: JobsApiDeps) {
             );
           }
         }
-        const { job } = runner.enqueue(kind, period);
+        const { job } = runner.enqueue(kind, period, agent);
         // 生成は非同期で進むので、すぐにジョブを返す。進み具合は GET /api/events で知らせる
         return c.json({ job }, 202);
       },

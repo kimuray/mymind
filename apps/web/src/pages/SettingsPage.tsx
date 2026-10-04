@@ -1,7 +1,8 @@
 import type { Status } from '@mymind/domain';
 import { useState } from 'react';
 import { type Health, useHealth } from '../api/health';
-import { useSettings, useUpdateSettings } from '../api/settings';
+import { type AgentChoice, useSettings, useUpdateSettings } from '../api/settings';
+import { AgentSelect } from '../components/AgentSelect';
 import { Button } from '../components/Button';
 import { PageLayout } from '../components/PageLayout';
 import { formatDateTime } from '../day';
@@ -149,8 +150,9 @@ function AgentDetail({ agent }: { agent: Health['agent'] }) {
       </section>
       <p className="text-small">
         ターミナルで <code>{agent.name} --version</code>{' '}
-        が動くか確かめてから、「もう一度確かめる」を押してください。使うエージェントは環境変数
-        MYMIND_AGENT で切り替えられます（claude / codex / fake）。
+        が動くか確かめてから、「もう一度確かめる」を押してください。確かめるのは「FB
+        の依頼」で選んだ既定のエージェントです。開発用の偽のアダプタは環境変数 MYMIND_AGENT=fake
+        で使います。
       </p>
     </div>
   );
@@ -173,13 +175,15 @@ function RowDetail({ row }: { row: Row }) {
   );
 }
 
-/** FB の依頼の設定（FR-A12）。送信内容のプレビューを依頼の前に毎回はさむか */
+/** FB の依頼の設定。送信内容のプレビューを依頼の前に毎回はさむか（FR-A12）と、既定のエージェント（FR-A07） */
 function FeedbackSettings() {
   const settings = useSettings();
   const update = useUpdateSettings();
   // 保存を待たずに表示を変える。react-query の状態の通知は次のタスクに回るので、クリックの中で決まるよう手元の状態に持つ
   const [pending, setPending] = useState<boolean | null>(null);
+  const [pendingAgent, setPendingAgent] = useState<AgentChoice | null>(null);
   const checked = pending ?? settings.data?.settings.confirmBeforeRequest ?? false;
+  const defaultAgent = pendingAgent ?? settings.data?.settings.defaultAgent ?? 'claude';
   return (
     <section className="task-list settings-status glass-2" aria-label="FB の依頼">
       <div className="settings-status-head">
@@ -204,6 +208,26 @@ function FeedbackSettings() {
           </span>
         </span>
       </label>
+      <div className="settings-toggle">
+        <span className="settings-row-value">
+          <span className="settings-row-main">既定のエージェント</span>
+          <span className="settings-row-note">
+            振り返りで FB
+            を依頼するときに、はじめに選ばれているエージェントです。依頼のたびに振り返りの画面で切り替えられます
+          </span>
+        </span>
+        <AgentSelect
+          id="settings-default-agent"
+          label="既定のエージェント"
+          showLabel={false}
+          value={defaultAgent}
+          disabled={settings.data === undefined}
+          onChange={(value) => {
+            setPendingAgent(value);
+            update.mutate({ defaultAgent: value }, { onSettled: () => setPendingAgent(null) });
+          }}
+        />
+      </div>
       {(settings.isError || update.isError) && (
         <p className="settings-note" role="alert">
           設定を{settings.isError ? '読み込め' : '保存でき'}
