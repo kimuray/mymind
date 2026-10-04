@@ -29,11 +29,13 @@ export function useDayPlan(day: string) {
   });
 }
 
+const fetchBacklog = async () => unwrap(await api.backlog.$get());
+
+/** GET /api/backlog の応答 */
+export type BacklogResponse = Awaited<ReturnType<typeof fetchBacklog>>;
+
 export function useBacklog() {
-  return useQuery({
-    queryKey: queryKeys.backlog,
-    queryFn: async () => unwrap(await api.backlog.$get()),
-  });
+  return useQuery({ queryKey: queryKeys.backlog, queryFn: fetchBacklog });
 }
 
 export function useTaskEvents(taskId: string | null) {
@@ -60,6 +62,8 @@ const reloadTasks = (qc: QueryClient) =>
     qc.invalidateQueries({ queryKey: queryKeys.backlog }),
     // 朝の計画の持ち越し候補（api/morning.ts の carryoverKey）
     qc.invalidateQueries({ queryKey: ['carryover'] }),
+    // 棚卸しの対象（api/review.ts、FR-R06）。触れると対象から外れる
+    qc.invalidateQueries({ queryKey: ['review'] }),
     qc.invalidateQueries({ queryKey: ['events'] }),
   ]);
 

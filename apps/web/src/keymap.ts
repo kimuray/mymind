@@ -37,9 +37,9 @@ export type KeyAction =
   | 'list.moveDown'
   | 'reflection.save'
   | 'screen.submit'
-  | 'morning.today'
-  | 'morning.backlog'
-  | 'morning.done'
+  | 'decide.first'
+  | 'decide.second'
+  | 'decide.third'
   | 'reflection.togglePreview'
   | 'palette.open'
   | 'help.open'
@@ -95,10 +95,22 @@ export const KEY_BINDINGS: readonly KeyBinding[] = [
     label: '画面の主な操作（保存してFBをもらう、計画を確定）',
   },
   { action: 'reflection.save', keys: ['Meta+s'], label: '保存のみ' },
-  // 5.3 朝の計画。選択中の持ち越しへの判断
-  { action: 'morning.today', keys: ['1'], label: '今日もやる' },
-  { action: 'morning.backlog', keys: ['2'], label: 'バックログへ' },
-  { action: 'morning.done', keys: ['3'], label: '実は終わった' },
+  // 5.3 朝の計画の持ち越しと、棚卸しの判断。⌘↵ と同じく、同じキーを1つの操作にして画面が中身を決める
+  {
+    action: 'decide.first',
+    keys: ['1'],
+    label: '1つ目の判断（朝の計画：今日もやる、棚卸し：今週やる）',
+  },
+  {
+    action: 'decide.second',
+    keys: ['2'],
+    label: '2つ目の判断（朝の計画：バックログへ、棚卸し：残す）',
+  },
+  {
+    action: 'decide.third',
+    keys: ['3'],
+    label: '3つ目の判断（朝の計画：実は終わった、棚卸し：中止）',
+  },
   // ブラウザの印刷と重なるので、振り返りの画面では印刷を止めて切り替えに使う（実機のブラウザで確認済み、#35）
   { action: 'reflection.togglePreview', keys: ['Meta+p'], label: '書く / プレビューの切り替え' },
 ];

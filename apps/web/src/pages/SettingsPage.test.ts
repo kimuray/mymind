@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatBytes, formatDateTime } from './SettingsPage';
+import { formatBytes, formatDateTime, isReviewAfterDays } from './SettingsPage';
 
 describe('NFR-21 設定画面の表示', () => {
   it('DB のサイズを読みやすい単位にする', () => {
@@ -13,5 +13,21 @@ describe('NFR-21 設定画面の表示', () => {
     expect(formatDateTime('2026-09-25T07:53:24.000Z')).toBe('9月25日 16:53');
     // 日本時間では翌日になる時刻
     expect(formatDateTime('2026-12-31T15:05:00.000Z')).toBe('1月1日 00:05');
+  });
+});
+
+describe('FR-R06 棚卸しの日数の入力', () => {
+  it.each([
+    ['0', true],
+    ['30', true],
+    ['365', true],
+    ['', false],
+    [' ', false],
+    ['-1', false],
+    ['366', false],
+    ['1.5', false],
+    ['abc', false],
+  ])('「%s」は保存できるか：%s', (input, expected) => {
+    expect(isReviewAfterDays(input)).toBe(expected);
   });
 });

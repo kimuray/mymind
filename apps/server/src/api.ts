@@ -16,13 +16,18 @@ import {
   carryoverCandidates,
   changeStatus,
   daysOfMonth,
+  daysSinceTouched,
+  isReviewTarget,
   MIN_YEAR,
   nextDay,
   planMorning,
   planMove,
+  planReviewDecision,
+  REVIEW_DECISIONS,
   rulesOnMoveToBacklog,
   rulesOnStatusChange,
   STATUSES,
+  type Status,
   statusSinceDay,
   summarizeDay,
   type TaskEvent,
@@ -34,7 +39,7 @@ import { validator } from 'hono/validator';
 import { z } from 'zod';
 import { createHealthApi, type HealthDeps } from './health';
 import { createJobsApi, type JobsApiDeps } from './jobsApi';
-import { type AppSettings, createSettingsApi } from './settingsApi';
+import { type AppSettings, createSettingsApi, createSettingsReader } from './settingsApi';
 
 export type ApiDeps = {
   tasks: TaskRepository;
@@ -70,6 +75,14 @@ const screenState = {
   expectedDay: dayParam,
   allowPastDay: z.boolean().optional(),
 };
+
+/** FR-R06：棚卸しの判断。1件ずつ判断するので、1回に1件を送る */
+const reviewBody = z.strictObject({
+  ...screenState,
+  taskId: z.string().min(1),
+  expectedVersion: z.number().int().min(1),
+  decision: z.enum(REVIEW_DECISIONS),
+});
 const withVersion = { ...screenState, expectedVersion: z.number().int().positive() };
 
 const createTaskBody = z.strictObject({
@@ -143,7 +156,9 @@ type ErrorCode =
   | 'DAY_CHANGED'
   | 'INVALID_TRANSITION'
   | 'DEPTH_EXCEEDED'
-  | 'PLAN_CONFIRMED';
+  | 'PLAN_CONFIRMED'
+  | 'NOT_IN_BACKLOG'
+  | 'NOT_REVIEW_TARGET';
 
 /** エラーの応答。状態コードを型に残し、Hono RPC のクライアントが成功と失敗を区別できるようにする */
 function fail<S extends ContentfulStatusCode>(
@@ -283,6 +298,82 @@ export function createApi({
           ? null
           : { aiLevel: condition.aiLevel, userLevel: condition.userLevel },
     };
+  };
+
+  const currentSettings = createSettingsReader(settings, settingsDefaults);
+
+  /**
+   * ステータスを変える（FR-T03、FR-T04）。domain の遷移表と自動ルールでイベントにし、1つのトランザクションで保存する（ADR-0004）。
+   * 画面からの変更と、棚卸しの「中止」（FR-R06）で使う
+   */
+  const transitionTask = (
+    task: Task,
+    to: Status,
+    expectedVersion: number,
+    ctx: { at: string; day: string },
+  ) => {
+    const change = changeStatus({ taskId: task.id, from: task.status, to, ...ctx });
+    if (!change.ok) {
+      return {
+        ok: false as const,
+        kind: 'invalid_transition' as const,
+        from: change.error.from,
+        to: change.error.to,
+      };
+    }
+    const parent = task.parentId === null ? undefined : tasks.find(task.parentId);
+    const outcome = rulesOnStatusChange(
+      {
+        task: { ...task, status: to },
+        parent: parent ?? null,
+        siblings:
+          parent === undefined ? [] : tasks.listChildren(parent.id).filter((t) => t.id !== task.id),
+      },
+      ctx,
+    );
+    const result = tasks.applyChanges([
+      { taskId: task.id, expectedVersion, events: [change.value] },
+      // 自動ルールで変わるタスクは画面が操作したものではないので、version は確かめない
+      ...outcome.events.map((e) => ({ taskId: e.taskId, expectedVersion: null, events: [e] })),
+    ]);
+    if (!result.ok) return { ok: false as const, kind: 'conflict' as const, error: result.error };
+    const [updated, ...affected] = result.value;
+    return {
+      ok: true as const,
+      task: updated ?? task,
+      affected,
+      suggestions: outcome.suggestions,
+    };
+  };
+
+  /** 今日・明日・バックログへ移す（FR-T05〜T08）。画面からの移動と、棚卸しの「今週やる」（FR-R06）で使う */
+  const moveTask = (
+    task: Task,
+    target: 'today' | 'tomorrow' | 'backlog',
+    expectedVersion: number,
+    ctx: { at: string; day: string },
+  ) => {
+    const plan = planMove({
+      taskId: task.id,
+      plannedDays: tasks.listPlannedDays(task.id),
+      today: ctx.day,
+      target,
+      at: ctx.at,
+    });
+    const outcome =
+      target === 'backlog' ? rulesOnMoveToBacklog(task, ctx) : { events: [], suggestions: [] };
+    const events = [...plan.events, ...outcome.events];
+    if (events.length === 0) return { ok: true as const, task, suggestions: [] };
+    const result = tasks.applyChanges([
+      {
+        taskId: task.id,
+        expectedVersion,
+        events,
+        plan: { removeDays: plan.removeDays, addDay: plan.addDay },
+      },
+    ]);
+    if (!result.ok) return { ok: false as const, error: result.error };
+    return { ok: true as const, task: result.value[0] ?? task, suggestions: outcome.suggestions };
   };
 
   const previousFeedback = (day: string) => {
@@ -474,6 +565,85 @@ export function createApi({
       return c.json({ today, tasks: withListInfo(tasks.listBacklog(today)) });
     })
 
+    /**
+     * 棚卸しの対象（FR-R06）：最後に触れてから設定の日数が経ったバックログのタスクを、触れたのが古い順に返す。
+     * 日数はここで数え、画面では数えない
+     */
+    .get('/review/stale', (c) => {
+      const today = toBusinessDay(now(), dayOptions);
+      const { reviewAfterDays } = currentSettings();
+      const touchedDay = (t: Task) => toBusinessDay(new Date(t.lastTouchedAt), dayOptions);
+      const stale = tasks
+        .listBacklog(today)
+        .filter((t) => isReviewTarget(touchedDay(t), today, reviewAfterDays))
+        .sort((a, b) => a.lastTouchedAt.localeCompare(b.lastTouchedAt));
+      return c.json({
+        today,
+        afterDays: reviewAfterDays,
+        tasks: withListInfo(stale).map((t) => ({
+          ...t,
+          createdDay: toBusinessDay(new Date(t.createdAt), dayOptions),
+          daysSinceTouched: daysSinceTouched(touchedDay(t), today),
+          // 「一度も着手されていません」と書くため。完了を取り消して戻した場合も着手したことがある
+          hasStarted: tasks
+            .listEvents(t.id)
+            .some((e) => e.type === 'status_changed' && e.to === 'doing'),
+        })),
+      });
+    })
+
+    /** 棚卸しの判断を反映する（FR-R06、#135 の決定）。状態の変更は、画面の操作と同じ関数を通す */
+    .post('/review/decisions', jsonBody(reviewBody), (c) => {
+      const input = c.req.valid('json');
+      const dayError = checkDay(c, input);
+      if (dayError) return dayError;
+      const task = tasks.find(input.taskId);
+      if (task === undefined) {
+        return fail(c, 404, 'NOT_FOUND', 'タスクが見つかりません', { taskId: input.taskId });
+      }
+      if (!tasks.listBacklog(input.expectedDay).some((t) => t.id === task.id)) {
+        return fail(c, 409, 'NOT_IN_BACKLOG', 'バックログにないタスクは棚卸しできません', {
+          taskId: task.id,
+        });
+      }
+      // 対象は、今の設定の日数が経ったタスクだけ（GET /review/stale に出ないタスクは判断させない）
+      const touchedDay = toBusinessDay(new Date(task.lastTouchedAt), dayOptions);
+      if (!isReviewTarget(touchedDay, input.expectedDay, currentSettings().reviewAfterDays)) {
+        return fail(c, 409, 'NOT_REVIEW_TARGET', '棚卸しの対象ではないタスクです', {
+          taskId: task.id,
+        });
+      }
+      const ctx = { at: now().toISOString(), day: input.expectedDay };
+      const action = planReviewDecision(input.decision);
+      if (action.kind === 'touch') {
+        const result = tasks.applyChanges([
+          {
+            taskId: task.id,
+            expectedVersion: input.expectedVersion,
+            events: [],
+            touchedAt: ctx.at,
+          },
+        ]);
+        if (!result.ok) return conflict(c, result.error);
+        return c.json({ task: result.value[0] ?? task });
+      }
+      if (action.kind === 'move') {
+        const result = moveTask(task, action.to, input.expectedVersion, ctx);
+        if (!result.ok) return conflict(c, result.error);
+        return c.json({ task: result.task });
+      }
+      const result = transitionTask(task, action.to, input.expectedVersion, ctx);
+      if (!result.ok) {
+        return result.kind === 'invalid_transition'
+          ? fail(c, 422, 'INVALID_TRANSITION', 'このステータスには変えられません', {
+              from: result.from,
+              to: result.to,
+            })
+          : conflict(c, result.error);
+      }
+      return c.json({ task: result.task });
+    })
+
     .get('/tasks/:id/events', (c) => {
       const taskId = c.req.param('id');
       if (tasks.find(taskId) === undefined) {
@@ -570,34 +740,20 @@ export function createApi({
       if (task === undefined)
         return fail(c, 404, 'NOT_FOUND', 'タスクが見つかりません', { taskId });
       const ctx = { at: now().toISOString(), day: input.expectedDay };
-      const change = changeStatus({ taskId, from: task.status, to: input.to, ...ctx });
-      if (!change.ok) {
-        return fail(c, 422, 'INVALID_TRANSITION', 'このステータスには変えられません', {
-          from: change.error.from,
-          to: change.error.to,
-        });
+      const result = transitionTask(task, input.to, input.expectedVersion, ctx);
+      if (!result.ok) {
+        return result.kind === 'invalid_transition'
+          ? fail(c, 422, 'INVALID_TRANSITION', 'このステータスには変えられません', {
+              from: result.from,
+              to: result.to,
+            })
+          : conflict(c, result.error);
       }
-
-      const parent = task.parentId === null ? undefined : tasks.find(task.parentId);
-      const outcome = rulesOnStatusChange(
-        {
-          task: { ...task, status: input.to },
-          parent: parent ?? null,
-          siblings:
-            parent === undefined
-              ? []
-              : tasks.listChildren(parent.id).filter((t) => t.id !== taskId),
-        },
-        ctx,
-      );
-      const result = tasks.applyChanges([
-        { taskId, expectedVersion: input.expectedVersion, events: [change.value] },
-        // 自動ルールで変わるタスクは画面が操作したものではないので、version は確かめない
-        ...outcome.events.map((e) => ({ taskId: e.taskId, expectedVersion: null, events: [e] })),
-      ]);
-      if (!result.ok) return conflict(c, result.error);
-      const [updated, ...affected] = result.value;
-      return c.json({ task: updated, affected, suggestions: outcome.suggestions });
+      return c.json({
+        task: result.task,
+        affected: result.affected,
+        suggestions: result.suggestions,
+      });
     })
 
     .post('/tasks/:id/move', jsonBody(moveBody), (c) => {
@@ -610,28 +766,9 @@ export function createApi({
       if (task === undefined)
         return fail(c, 404, 'NOT_FOUND', 'タスクが見つかりません', { taskId });
       const ctx = { at: now().toISOString(), day: input.expectedDay };
-      const plan = planMove({
-        taskId,
-        plannedDays: tasks.listPlannedDays(taskId),
-        today: input.expectedDay,
-        target: input.to,
-        at: ctx.at,
-      });
-      const outcome =
-        input.to === 'backlog' ? rulesOnMoveToBacklog(task, ctx) : { events: [], suggestions: [] };
-      const events = [...plan.events, ...outcome.events];
-      if (events.length === 0) return c.json({ task, suggestions: [] });
-
-      const result = tasks.applyChanges([
-        {
-          taskId,
-          expectedVersion: input.expectedVersion,
-          events,
-          plan: { removeDays: plan.removeDays, addDay: plan.addDay },
-        },
-      ]);
+      const result = moveTask(task, input.to, input.expectedVersion, ctx);
       if (!result.ok) return conflict(c, result.error);
-      return c.json({ task: result.value[0], suggestions: outcome.suggestions });
+      return c.json({ task: result.task, suggestions: result.suggestions });
     });
   return taskRoutes
     .route('/', createJobsApi(jobs))
