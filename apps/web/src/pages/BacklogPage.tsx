@@ -1,5 +1,6 @@
-import { daysBetween, nextOnAdvance, type Status } from '@mymind/domain';
-import { useState } from 'react';
+import { daysBetween, nextOnAdvance, type ReviewDecision, type Status } from '@mymind/domain';
+import { type ReactNode, useState } from 'react';
+import { type StaleTask, useReviewDecision, useStaleTasks } from '../api/review';
 import {
   type ListTask,
   useBacklog,
@@ -11,16 +12,29 @@ import {
 import { AddTaskInput } from '../components/AddTaskInput';
 import { Button } from '../components/Button';
 import { PageLayout } from '../components/PageLayout';
+import { NO_REVIEWS, type ReviewCounts, StocktakePanel } from '../components/StocktakePanel';
 import { TaskDetail } from '../components/TaskDetail';
 import { TaskRow } from '../components/TaskRow';
 import { dayOf } from '../day';
 import { useDayGuard } from '../dayGuard';
+import { useKeyBindings } from '../keyboard';
 import { type ListRow, useTaskListKeys } from '../useTaskListKeys';
 
 /** 最後に触れてからの日数（「3日前」）。日数は domain で数える */
 function touchedAgo(task: ListTask, today: string): string {
   const days = daysBetween(dayOf(task.lastTouchedAt), today);
   return days <= 0 ? '今日' : `${days}日前`;
+}
+
+/** 行の右端。棚卸しの対象なら、最後に触れてからの日数のチップと「棚卸しの対象」（Figma「PC/バックログ」） */
+function rowAside(task: ListTask, today: string, stale: StaleTask | undefined): ReactNode {
+  if (stale === undefined) return touchedAgo(task, today);
+  return (
+    <>
+      <span className="chip" data-status="todo">{`${stale.daysSinceTouched}日`}</span>
+      棚卸しの対象
+    </>
+  );
 }
 
 /** 親ごとにまとめる。親のないタスクは「その他」にまとめて最後に置く（Figma「PC/バックログ」） */
@@ -56,6 +70,11 @@ export function BacklogPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const edit = useEditTask();
+  const staleTasks = useStaleTasks();
+  const review = useReviewDecision();
+  // この画面を開いてから判断した件数（棚卸しの進み具合とまとめ）
+  const [reviewed, setReviewed] = useState<ReviewCounts>(NO_REVIEWS);
+  const [reviewError, setReviewError] = useState<string | null>(null);
 
   const today = backlog.data?.today ?? screenDay;
   const tasks = backlog.data?.tasks ?? [];
@@ -79,18 +98,56 @@ export function BacklogPage() {
     edit: (task, change) => edit.mutateAsync({ task, ...screen, ...change }),
     notify: setNotice,
   });
-  const detail =
-    selected === undefined ? undefined : (
-      <TaskDetail
-        task={selected}
-        today={today}
-        place="backlog"
-        onTransition={(to) => changeStatus(selected, to)}
-        onMove={(to) => moveTask(selected, to)}
-        childTasks={tasks.filter((t) => t.parentId === selected.id)}
-        onAddChild={(title) => create.mutate({ title, parentId: selected.id, ...screen })}
-      />
+  const stale = staleTasks.data?.tasks ?? [];
+  const staleById = new Map(stale.map((t) => [t.id, t]));
+  // タスクを選んでいなければ、詳細ペインに棚卸しを出す（対象がなく、まだ何も判断していなければ出さない）
+  const showStocktake =
+    selected === undefined &&
+    (stale.length > 0 || reviewed.this_week + reviewed.keep + reviewed.drop > 0);
+  const decide = (task: StaleTask, decision: ReviewDecision) => {
+    if (review.isPending) return;
+    setReviewError(null);
+    review.mutate(
+      { task, decision, ...screen },
+      {
+        onSuccess: () => setReviewed((r) => ({ ...r, [decision]: r[decision] + 1 })),
+        onError: (e) => setReviewError(`判断を反映できませんでした（${e.message}）`),
+      },
     );
+  };
+  const decideCurrent = (decision: ReviewDecision) => {
+    const current = stale[0];
+    if (!showStocktake || current === undefined) return false;
+    decide(current, decision);
+    return true;
+  };
+  // 5.3 棚卸しの判断（1：今週やる、2：残す、3：中止）
+  useKeyBindings({
+    'decide.first': () => decideCurrent('this_week'),
+    'decide.second': () => decideCurrent('keep'),
+    'decide.third': () => decideCurrent('drop'),
+  });
+
+  const detail = showStocktake ? (
+    <StocktakePanel
+      tasks={stale}
+      afterDays={staleTasks.data?.afterDays ?? 0}
+      reviewed={reviewed}
+      onDecide={decide}
+      busy={review.isPending}
+      error={reviewError}
+    />
+  ) : selected === undefined ? undefined : (
+    <TaskDetail
+      task={selected}
+      today={today}
+      place="backlog"
+      onTransition={(to) => changeStatus(selected, to)}
+      onMove={(to) => moveTask(selected, to)}
+      childTasks={tasks.filter((t) => t.parentId === selected.id)}
+      onAddChild={(title) => create.mutate({ title, parentId: selected.id, ...screen })}
+    />
+  );
 
   return (
     <PageLayout detail={detail}>
@@ -133,7 +190,7 @@ export function BacklogPage() {
                     const to = nextOnAdvance(task.status);
                     if (to !== null) changeStatus(task, to);
                   }}
-                  aside={touchedAgo(task, today)}
+                  aside={rowAside(task, today, staleById.get(task.id))}
                   editing={task.id === editingId}
                   onEditEnd={(title) => {
                     setEditingId(null);

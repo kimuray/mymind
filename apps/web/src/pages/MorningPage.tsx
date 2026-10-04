@@ -124,9 +124,9 @@ export function MorningPage() {
   useKeyBindings({
     'list.next': () => moveSelection(1),
     'list.prev': () => moveSelection(-1),
-    'morning.today': () => decideSelected('today'),
-    'morning.backlog': () => decideSelected('backlog'),
-    'morning.done': () => decideSelected('done'),
+    'decide.first': () => decideSelected('today'),
+    'decide.second': () => decideSelected('backlog'),
+    'decide.third': () => decideSelected('done'),
     'list.dayKey': () => {
       if (selected?.kind !== 'backlog') return false;
       toggleAddition(selected.task.id);

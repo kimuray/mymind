@@ -86,11 +86,15 @@ function invalidateFor(qc: QueryClient, message: RealtimeMessage) {
     qc.invalidateQueries({ queryKey: ['month'] });
   } else if (message.type === 'settings.changed') {
     qc.invalidateQueries({ queryKey: ['settings'] });
+    // 棚卸しの日数（FR-R06）で対象が変わる
+    qc.invalidateQueries({ queryKey: ['review'] });
   } else if (message.type === 'tasks.changed') {
     qc.invalidateQueries({ queryKey: ['day'] });
     qc.invalidateQueries({ queryKey: ['backlog'] });
     qc.invalidateQueries({ queryKey: ['carryover'] });
     qc.invalidateQueries({ queryKey: ['events'] });
+    // 棚卸しの対象（FR-R06）
+    qc.invalidateQueries({ queryKey: ['review'] });
     // カレンダーの完了件数（FR-R04）
     qc.invalidateQueries({ queryKey: ['month'] });
   } else {
