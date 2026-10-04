@@ -247,7 +247,7 @@ export function createApi({
   health,
   settings,
   settingsDefaults = {},
-  settingsRuntime = { fakeAgent: false },
+  settingsRuntime = { fakeAgent: false, defaultBackupDir: '' },
   logs,
 }: ApiDeps) {
   /**

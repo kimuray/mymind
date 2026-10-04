@@ -38,6 +38,7 @@ const agentName = (name: string) => AGENT_NAMES[name] ?? name;
 const BACKUP_KINDS: Record<string, string> = {
   'pre-migration': 'マイグレーションの前のスナップショット',
   'before-restore': '復元の前に残した DB',
+  daily: '毎日のバックアップ',
 };
 
 const JOB_KINDS: Record<string, string> = { daily_feedback: '日次FB', monthly_summary: '月次総括' };
@@ -71,9 +72,16 @@ function rowsOf(h: Health): Row[] {
       value: h.backup === null ? 'まだありません' : formatDateTime(h.backup.at),
       note:
         h.backup === null
-          ? '毎日のバックアップは、スケジューラができてから取ります'
-          : (BACKUP_KINDS[h.backup.kind] ?? h.backup.kind),
-      chip: h.backup === null ? null : { status: 'done', text: '成功' },
+          ? '毎日 3:30 に取ります'
+          : h.backup.result === 'failed'
+            ? `${BACKUP_KINDS[h.backup.kind] ?? h.backup.kind}に失敗しました（${h.backup.error ?? ''}）`
+            : (BACKUP_KINDS[h.backup.kind] ?? h.backup.kind),
+      chip:
+        h.backup === null
+          ? null
+          : h.backup.result === 'failed'
+            ? { status: 'waiting', text: '失敗' }
+            : { status: 'done', text: '成功' },
     },
     {
       key: 'database',
@@ -313,6 +321,110 @@ function McpNotice() {
   );
 }
 
+/** 毎日のバックアップを残す世代数として保存できる入力か（1〜365） */
+export const isBackupGenerations = (input: string): boolean => {
+  if (input.trim() === '') return false;
+  const n = Number(input);
+  return Number.isInteger(n) && n >= 1 && n <= 365;
+};
+
+/** 保存先の入力を、保存する値にする。空ならデータディレクトリの中（null）、絶対パスでなければ保存しない（undefined） */
+export const toBackupDir = (input: string): string | null | undefined => {
+  const trimmed = input.trim();
+  if (trimmed === '') return null;
+  return trimmed.startsWith('/') ? trimmed : undefined;
+};
+
+/** 毎日のバックアップの保存先と世代数（NFR-04）。保存先は入力を終えたとき（フォーカスを外す、Enter）に保存する */
+function BackupSettings() {
+  const settings = useSettings();
+  const update = useUpdateSettings();
+  const [dirDraft, setDirDraft] = useState<string | null>(null);
+  const [generationsDraft, setGenerationsDraft] = useState<string | null>(null);
+  const dir = dirDraft ?? settings.data?.settings.backupDir ?? '';
+  const generations = generationsDraft ?? String(settings.data?.settings.backupGenerations ?? '');
+  const isDirValid = toBackupDir(dir) !== undefined;
+  const isGenerationsValid = isBackupGenerations(generations);
+  const saveDir = () => {
+    if (dirDraft === null) return;
+    const value = toBackupDir(dirDraft);
+    if (value === undefined) return;
+    update.mutate({ backupDir: value }, { onSuccess: () => setDirDraft(null) });
+  };
+  return (
+    <section className="task-list settings-status glass-2" aria-label="バックアップ">
+      <div className="settings-status-head">
+        <h2>バックアップ</h2>
+      </div>
+      <label className="settings-toggle">
+        <span className="settings-row-value">
+          <span className="settings-row-main">保存先</span>
+          <span className="settings-row-note">
+            毎日 3:30 に DB のスナップショットを書き出すフォルダです（/
+            から始まるパス）。空にすると、データディレクトリの中（
+            {settings.data?.runtime.defaultBackupDir ?? 'backups'}）に書き出します
+          </span>
+        </span>
+        <input
+          type="text"
+          className="settings-path"
+          value={dir}
+          placeholder={settings.data?.runtime.defaultBackupDir ?? ''}
+          disabled={settings.data === undefined}
+          aria-invalid={!isDirValid}
+          onChange={(e) => setDirDraft(e.target.value)}
+          onBlur={saveDir}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') saveDir();
+          }}
+        />
+      </label>
+      {!isDirValid && (
+        <p className="settings-note" role="alert">
+          保存先は / から始まるパスで入力してください
+        </p>
+      )}
+      <label className="settings-toggle">
+        <span className="settings-row-value">
+          <span className="settings-row-main">残す世代数</span>
+          <span className="settings-row-note">
+            これより古い毎日のバックアップは、古いものから消します（1〜365。マイグレーションの前のバックアップは数えません）
+          </span>
+        </span>
+        <input
+          type="number"
+          className="settings-number"
+          min={1}
+          max={365}
+          value={generations}
+          disabled={settings.data === undefined}
+          aria-invalid={!isGenerationsValid}
+          onChange={(e) => {
+            const next = e.target.value;
+            setGenerationsDraft(next);
+            if (isBackupGenerations(next)) {
+              update.mutate(
+                { backupGenerations: Number(next) },
+                { onSuccess: () => setGenerationsDraft(null) },
+              );
+            }
+          }}
+        />
+        <span>世代</span>
+      </label>
+      {!isGenerationsValid && (
+        <p className="settings-note" role="alert">
+          1〜365 の整数で入力してください
+        </p>
+      )}
+      <p className="settings-note">
+        保存先には、外付けのディスクやクラウドの同期フォルダも選べます。使用中の
+        DB（mymind.db）そのものを同期フォルダに置くことは、書き込みの途中で同期されて壊れることがあるので勧めません。既にあるフォルダの権限は変えないので、本人だけが読める場所を選んでください
+      </p>
+    </section>
+  );
+}
+
 /** 設定（Figma「PC/設定」）。アプリの状態（NFR-21）と、FB の依頼の設定（FR-A12）を表示する */
 export function SettingsPage() {
   const health = useHealth();
@@ -332,7 +444,7 @@ export function SettingsPage() {
       <div className="page">
         <header className="page-header">
           <h1 className="text-display">設定</h1>
-          <p className="text-small">アプリの状態、FB の依頼、棚卸し、MCP</p>
+          <p className="text-small">アプリの状態、FB の依頼、棚卸し、バックアップ、MCP</p>
         </header>
         <section className="task-list settings-status glass-2" aria-label="状態">
           <div className="settings-status-head">
@@ -379,6 +491,7 @@ export function SettingsPage() {
         </p>
         <FeedbackSettings />
         <ReviewSettings />
+        <BackupSettings />
         <McpNotice />
       </div>
     </PageLayout>

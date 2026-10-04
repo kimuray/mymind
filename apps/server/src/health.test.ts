@@ -5,7 +5,7 @@ import type { AgentStatus } from '@mymind/agent';
 import type { Job } from '@mymind/db';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { createApp } from './app';
-import { createHealthApi, findLatestBackup, type HealthDeps } from './health';
+import { createHealthApi, findLatestBackup, type HealthDeps, latestBackupOf } from './health';
 
 const PORT = 4820;
 let dir: string;
@@ -21,7 +21,8 @@ function request(overrides: Partial<HealthDeps> = {}) {
   const deps: HealthDeps = {
     checkDatabase: () => ({ ok: true }),
     databaseFiles: [],
-    backupsDir: join(dir, 'backups'),
+    backupsDirs: () => [join(dir, 'backups')],
+    dailyBackup: () => null,
     jobs: { latestFailure: () => undefined },
     agentStatus: async () => fakeAgent,
     ...overrides,
@@ -115,10 +116,51 @@ describe('NFR-21 最後のバックアップ', () => {
       kind: 'before-restore',
       at: '2026-09-25T07:53:24.000Z',
       result: 'succeeded',
+      error: null,
     });
   });
 
   it('バックアップがまだなければ null', () => {
     expect(findLatestBackup(join(dir, 'backups'))).toBeNull();
+  });
+
+  it('NFR-04 データディレクトリと、設定した保存先のうち、いちばん新しいものを返す', () => {
+    const inData = join(dir, 'backups');
+    const outside = join(dir, 'outside');
+    mkdirSync(inData);
+    mkdirSync(outside);
+    writeFileSync(join(inData, 'pre-migration-20260920T010000Z.db'), '');
+    writeFileSync(join(outside, 'daily-20261004T183000Z.db'), '');
+    expect(
+      latestBackupOf({ backupsDirs: () => [inData, outside], dailyBackup: () => null }),
+    ).toMatchObject({ kind: 'daily', at: '2026-10-04T18:30:00.000Z', result: 'succeeded' });
+  });
+
+  it('NFR-23 毎日のバックアップの失敗が、残っているファイルより新しければ失敗を返す', () => {
+    const backups = join(dir, 'backups');
+    mkdirSync(backups);
+    writeFileSync(join(backups, 'daily-20261003T183000Z.db'), '');
+    const failed = {
+      at: '2026-10-04T18:30:00.000Z',
+      result: 'failed' as const,
+      error: '整合性の検査に通りませんでした',
+    };
+    expect(latestBackupOf({ backupsDirs: () => [backups], dailyBackup: () => failed })).toEqual({
+      file: null,
+      kind: 'daily',
+      at: '2026-10-04T18:30:00.000Z',
+      result: 'failed',
+      error: '整合性の検査に通りませんでした',
+    });
+  });
+
+  it('NFR-23 失敗のあとに成功したバックアップがあれば、成功を返す', () => {
+    const backups = join(dir, 'backups');
+    mkdirSync(backups);
+    writeFileSync(join(backups, 'daily-20261005T183000Z.db'), '');
+    const failed = { at: '2026-10-04T18:30:00.000Z', result: 'failed' as const, error: 'x' };
+    expect(
+      latestBackupOf({ backupsDirs: () => [backups], dailyBackup: () => failed }),
+    ).toMatchObject({ result: 'succeeded', at: '2026-10-05T18:30:00.000Z' });
   });
 });

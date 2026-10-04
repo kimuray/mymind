@@ -59,7 +59,8 @@ beforeEach(() => {
     health: {
       checkDatabase: () => ({ ok: true }),
       databaseFiles: [],
-      backupsDir: '/nonexistent',
+      backupsDirs: () => ['/nonexistent'],
+      dailyBackup: () => null,
       jobs,
       agentStatus: async () => ({ name: 'fake', usable: true, executable: null, message: null }),
     },

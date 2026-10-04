@@ -20,14 +20,22 @@ import { createAgentLog } from './agentLog';
 import { type AgentRunners, initialAgentChoice } from './agents';
 import { createApi } from './api';
 import { createApp } from './app';
-import { backupsDir, databasePath, snapshotBeforeMigration } from './backups';
+import {
+  backupsDir,
+  databasePath,
+  readDailyBackupStatus,
+  snapshotBeforeMigration,
+} from './backups';
 import { type ConfigError, loadConfig } from './config';
+import { createDailyBackupJob, dailyBackupDir } from './dailyBackup';
 import { acquireLock, ensureDataDir, issueSessionToken } from './dataDir';
 import { createEventBus } from './events';
 import { createJobRunner } from './jobRunner';
 import { listen } from './listen';
 import { createLogger } from './logger';
 import { loadDailyPrompt, loadMonthlyPrompt } from './prompts';
+import { createScheduler } from './scheduler';
+import { createServerLogFile } from './serverLog';
 import { createSettingsReader } from './settingsApi';
 import { createUlidGenerator } from './ulid';
 import { createDevRedirect, createWebRoutes } from './web';
@@ -104,7 +112,19 @@ async function main(): Promise<number> {
   // 設定で既定のエージェントを選んでいなければ、MYMIND_AGENT のエージェントを使う（FR-A07）
   const settingsDefaults = { defaultAgent: initialAgentChoice(agent.name) };
   const currentSettings = createSettingsReader(settings, settingsDefaults);
-  const logger = createLogger();
+  // サーバーのログは、データディレクトリに日付ごとのファイルで残し、14日で消す（NFR-24）。
+  // 常駐すると標準エラーは見ないので、開発のとき（Vite と一緒に動かすとき）だけ標準エラーにも出す
+  const serverLog = createServerLogFile({
+    dir: join(dataDir, 'logs/server'),
+    timeZone: DAY_OPTIONS.timeZone,
+  });
+  const isDev = devPorts.length > 0;
+  const logger = createLogger({
+    write: (line) => {
+      serverLog.write(line);
+      if (isDev) process.stderr.write(`${line}\n`);
+    },
+  });
   // エージェントの入出力の全文は、データディレクトリの中にだけ残し、30 日で消す（ADR-0009）
   const agentLog = createAgentLog(join(dataDir, 'logs/agent'));
   agentLog.prune(new Date().toISOString().slice(0, 10));
@@ -125,6 +145,21 @@ async function main(): Promise<number> {
     timeoutMs: agent.timeoutMs,
   });
   jobRunner.start();
+  // 定期処理（毎日のバックアップ、通知）の土台。予定はそれぞれの機能が add で加える（NFR-19）
+  const scheduler = createScheduler({
+    now: () => new Date(),
+    timeZone: DAY_OPTIONS.timeZone,
+    logger,
+  });
+  const dailyBackup = createDailyBackupJob({
+    client: db.$client,
+    dataDir,
+    settings: currentSettings,
+    now: () => new Date(),
+    logger,
+  });
+  scheduler.add(dailyBackup);
+  scheduler.start();
   const api = createApi({
     tasks,
     now: () => new Date(),
@@ -141,7 +176,11 @@ async function main(): Promise<number> {
         }
       },
       databaseFiles: ['', '-wal', '-shm'].map((suffix) => databasePath(dataDir) + suffix),
-      backupsDir: backupsDir(dataDir),
+      backupsDirs: () => [
+        backupsDir(dataDir),
+        dailyBackupDir(dataDir, currentSettings().backupDir),
+      ],
+      dailyBackup: () => readDailyBackupStatus(dataDir),
       jobs,
       // 状態の表示は、依頼で既定に使うエージェントを確かめる
       agentStatus: () =>
@@ -149,7 +188,7 @@ async function main(): Promise<number> {
     },
     settings,
     settingsDefaults,
-    settingsRuntime: { fakeAgent: agent.name === 'fake' },
+    settingsRuntime: { fakeAgent: agent.name === 'fake', defaultBackupDir: backupsDir(dataDir) },
     logs,
   });
   // 開発時は Vite が画面を配信する。古い本番ビルドを出さないよう、画面の URL は Vite へ移す（#97）
@@ -161,6 +200,7 @@ async function main(): Promise<number> {
   const app = createApp({ ports: [port, ...devPorts], sessionToken }, api, web);
   const server = await listen(app, host, port);
   if (!server.ok) {
+    scheduler.stop();
     db.$client.close();
     lock.release();
     console.error(
@@ -170,11 +210,14 @@ async function main(): Promise<number> {
   }
 
   const shutdown = async () => {
+    scheduler.stop();
     await server.value.close();
     db.$client.close();
     lock.release();
     process.exit(0);
   };
+  // 止まっていた間に毎日のバックアップの時刻を過ぎていれば、次の 3:30 を待たずに取る（NFR-23）
+  dailyBackup.runIfStale();
   process.once('SIGINT', shutdown);
   process.once('SIGTERM', shutdown);
   // 標準出力は起動の確認に使う（console.log はロガーに置き換えるまで使わない）

@@ -180,7 +180,11 @@ export function createJobRunner(deps: JobRunnerDeps) {
     }
   };
 
-  /** 入出力の全文をローカルのログに残し、期間を過ぎたログを消す。失敗の理由はロガーにも出す（本文は出さない） */
+  /**
+   * 入出力の全文をローカルのログに残し、期間を過ぎたログを消す。失敗したことはロガーにも出す。
+   * 失敗の理由はエージェントの標準エラーや出力を含みうるので、ロガー（ファイルに14日残る、NFR-24）には出さない。
+   * 理由はジョブ（画面の表示）と、エージェントの入出力のログ（30日で消す、ADR-0009）に残る
+   */
   const recordAgentLog = (
     job: Job,
     input: { text: string; annotations: AgentLogRecord['annotations']; charCount: number },
@@ -190,8 +194,9 @@ export function createJobRunner(deps: JobRunnerDeps) {
     if (finished?.status === 'failed') {
       deps.logger?.warn('FB の生成に失敗しました', {
         jobId: job.id,
+        kind: job.kind,
         period: job.period,
-        error: finished.error,
+        agent: job.agent,
       });
     }
     if (deps.agentLog === undefined || attempts.length === 0) return;
