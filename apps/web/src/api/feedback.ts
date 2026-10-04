@@ -20,8 +20,9 @@ export function useSetCondition(day: string) {
       unwrap(await api.days[':day'].condition.$put({ param: { day }, json: { userLevel } })),
     onSettled: () => {
       qc.invalidateQueries({ queryKey: ['day'] });
-      // カレンダーのマメの表情（FR-R04）
+      // カレンダーとタイムラインのマメの表情（FR-R04、FR-R02）
       qc.invalidateQueries({ queryKey: ['month'] });
+      qc.invalidateQueries({ queryKey: ['timeline'] });
     },
   });
 }

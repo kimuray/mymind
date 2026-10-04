@@ -95,6 +95,8 @@ function invalidateFor(qc: QueryClient, message: RealtimeMessage) {
     qc.invalidateQueries({ queryKey: ['events'] });
     // 棚卸しの対象（FR-R06）
     qc.invalidateQueries({ queryKey: ['review'] });
+    // タイムラインの区間（FR-R01）
+    qc.invalidateQueries({ queryKey: ['timeline'] });
     // カレンダーの完了件数（FR-R04）
     qc.invalidateQueries({ queryKey: ['month'] });
   } else {
@@ -102,8 +104,9 @@ function invalidateFor(qc: QueryClient, message: RealtimeMessage) {
     qc.invalidateQueries({ queryKey: ['feedbacks'] });
     // その日の応答に、最新のジョブと FB と調子が入っている（GET /api/days/:day）
     qc.invalidateQueries({ queryKey: ['day'] });
-    // カレンダーの調子と FB の有無（FR-R04）
+    // カレンダーの調子と FB の有無（FR-R04）、タイムラインの調子のレーン（FR-R02）
     qc.invalidateQueries({ queryKey: ['month'] });
+    qc.invalidateQueries({ queryKey: ['timeline'] });
   }
 }
 

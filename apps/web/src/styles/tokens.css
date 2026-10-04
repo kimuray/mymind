@@ -117,6 +117,16 @@
   --calendar-cell-border: 1px solid rgba(255, 255, 255, 0.75);
   --calendar-cell-selected-bg: rgba(255, 255, 255, 0.72);
 
+  /* 4.8 タイムラインの横棒と列（2.2 の状態の表現） */
+  --timeline-paused-fill: #eadfc6;
+  --timeline-waiting-fill: rgba(154, 79, 50, 0.5);
+  --timeline-today-head: rgba(47, 75, 124, 0.14);
+  --timeline-today-col: rgba(47, 75, 124, 0.07);
+  --timeline-weekend-head: rgba(28, 27, 25, 0.04);
+  --timeline-weekend-col: rgba(28, 27, 25, 0.03);
+  --timeline-stripe: rgba(255, 255, 255, 0.14);
+  --timeline-lane: rgba(255, 255, 255, 0.26);
+
   /* 4.9 ダイアログ */
   --overlay: rgba(28, 27, 25, 0.18);
 

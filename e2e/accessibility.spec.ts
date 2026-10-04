@@ -81,6 +81,7 @@ test.describe('NFR-06 コントラスト', () => {
     ['マメの表情', '/dev/mame'],
     ['設定', '/settings'],
     ['カレンダー', `/calendar/${currentMonth()}`],
+    ['タイムライン', '/timeline'],
   ] as const) {
     test(`${name}の画面に、WCAG 2 AA のコントラストの違反がない`, async ({ page }) => {
       // ガラスの面とにじみの背景では、axe が文字の背景色を決められず判定できない（incomplete）ので、
