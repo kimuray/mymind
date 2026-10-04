@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { useState } from 'react';
 import type { ListTask } from '../api/tasks';
 import { StatusBadge } from './StatusBadge';
@@ -14,7 +15,7 @@ type TaskRowProps = {
   /** 親が同じ一覧にないとき、親の名前をラベルとして出す */
   showParent?: boolean;
   /** 行の右端に出す補足（バックログの「3日前」など） */
-  aside?: string;
+  aside?: ReactNode;
   /** タイトルを編集中か（E キー） */
   editing?: boolean;
   onEditEnd?: (title: string | null) => void;

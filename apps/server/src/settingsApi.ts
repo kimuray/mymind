@@ -1,4 +1,5 @@
 import type { SettingsRepository } from '@mymind/db';
+import { DEFAULT_REVIEW_AFTER_DAYS } from '@mymind/domain';
 import { Hono } from 'hono';
 import { validator } from 'hono/validator';
 import { z } from 'zod';
@@ -10,6 +11,11 @@ const appSettingsSchema = z.object({
   confirmBeforeRequest: z.boolean(),
   /** FB を依頼するときに、はじめに選ばれているエージェント（FR-A07） */
   defaultAgent: agentChoiceSchema,
+  /**
+   * 最後に触れてから何日経ったバックログのタスクを、棚卸しの対象にするか（FR-R06）。
+   * 0 ならバックログのすべてが対象になる（溜まったバックログをまとめて見直すときや、画面の確認に使う）
+   */
+  reviewAfterDays: z.number().int().min(0).max(365),
 });
 
 export type AppSettings = z.infer<typeof appSettingsSchema>;
@@ -18,6 +24,7 @@ export type AppSettings = z.infer<typeof appSettingsSchema>;
 export const DEFAULT_SETTINGS: AppSettings = {
   confirmBeforeRequest: false,
   defaultAgent: 'claude',
+  reviewAfterDays: DEFAULT_REVIEW_AFTER_DAYS,
 };
 
 const patchBody = appSettingsSchema
@@ -45,6 +52,7 @@ function readSettings(stored: Record<string, string>, defaults: AppSettings): Ap
   return {
     confirmBeforeRequest: read('confirmBeforeRequest'),
     defaultAgent: read('defaultAgent'),
+    reviewAfterDays: read('reviewAfterDays'),
   };
 }
 

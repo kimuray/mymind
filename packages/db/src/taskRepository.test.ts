@@ -136,6 +136,20 @@ describe('FR-R01 タイムラインに描くタスク', () => {
   });
 });
 
+describe('FR-R06 棚卸しの「残す」', () => {
+  it('イベントを残さずに、最後に触れた日時と version だけを進める', () => {
+    const created = createTask();
+    const result = repo.applyChanges([
+      { taskId: 't1', expectedVersion: created.version, events: [], touchedAt: at(30) },
+    ]);
+    expect(result).toMatchObject({
+      ok: true,
+      value: [{ status: 'todo', lastTouchedAt: at(30), version: created.version + 1 }],
+    });
+    expect(repo.listEvents('t1')).toHaveLength(1);
+  });
+});
+
 describe('ADR-0004 tasks.status とイベントの整合', () => {
   it('ステータスの変更で、tasks.status・version・最終操作時刻をイベントに合わせて更新する', () => {
     createTask();

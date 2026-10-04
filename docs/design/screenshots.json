@@ -1,5 +1,5 @@
 {
-  "$comment": "pnpm screenshots が撮る画像と、比べる Figma のフレームの対応（docs/design/README.md）。画面や状態を足すときは、ここに1件足す。file は .data/screenshots/ の中の名前、path は開く URL、select は詳細ペインを開くためにクリックするタスクの名前（scripts/screenshots.mjs の見本のデータ）",
+  "$comment": "pnpm screenshots が撮る画像と、比べる Figma のフレームの対応（docs/design/README.md）。画面や状態を足すときは、ここに1件足す。file は .data/screenshots/ の中の名前、path は開く URL、select は詳細ペインを開くためにクリックするタスクの名前（scripts/screenshots.mjs の見本のデータ）、settings は撮る前に変える設定（撮ったら戻す）",
   "screens": [
     { "file": "today.png", "path": "/", "frame": "PC/今日", "state": "何も選んでいない" },
     {
@@ -19,6 +19,13 @@
     { "file": "morning.png", "path": "/morning", "frame": "PC/朝の計画", "state": "初期" },
     { "file": "reflection.png", "path": "/reflection", "frame": "PC/振り返り", "state": "初期" },
     { "file": "backlog.png", "path": "/backlog", "frame": "PC/バックログ", "state": "初期" },
+    {
+      "file": "backlog-stocktake.png",
+      "path": "/backlog",
+      "frame": "PC/バックログ",
+      "state": "棚卸し（日数を0にして、バックログのすべてを対象にした状態、FR-R06）",
+      "settings": { "reviewAfterDays": 0 }
+    },
     { "file": "timeline.png", "path": "/timeline", "frame": "PC/タイムライン", "state": "初期" },
     { "file": "calendar.png", "path": "/calendar/{ym}", "frame": "PC/カレンダー", "state": "今月" },
     {
