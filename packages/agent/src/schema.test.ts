@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { parseDailyFeedback } from './schema';
+import { parseDailyFeedback, parseMonthlySummary } from './schema';
 
 const fixture = (name: string): string =>
   readFileSync(fileURLToPath(new URL(`../fixtures/${name}`, import.meta.url)), 'utf8');
@@ -38,5 +38,36 @@ describe('FR-A02 日次FBの出力検証', () => {
 
   it('壊れたJSONは拒否する', () => {
     expect(parseDailyFeedback('{"condition": {').ok).toBe(false);
+  });
+});
+
+describe('FR-A06 月次総括の出力検証', () => {
+  it('正しい形式の出力を受け付ける', () => {
+    const result = parseMonthlySummary(fixture('monthly-valid.json'));
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.learnings).toHaveLength(2);
+  });
+
+  it('コードブロックで囲まれた出力から JSON を取り出し、傾向が空でも受け付ける', () => {
+    const result = parseMonthlySummary(fixture('monthly-fenced.txt'));
+    expect(result.ok).toBe(true);
+    if (result.ok) expect(result.value.trends).toEqual([]);
+  });
+
+  it('定義にない項目を含む出力は拒否する（FR-A10：数値は AI に出させない）', () => {
+    expect(parseMonthlySummary(fixture('monthly-extra-field.json')).ok).toBe(false);
+  });
+
+  it('学びが空か、提案が多すぎる出力は拒否する', () => {
+    const result = parseMonthlySummary(fixture('monthly-empty-learnings.json'));
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toContain('learnings');
+      expect(result.error).toContain('proposals');
+    }
+  });
+
+  it('日次 FB の形の出力は、月次総括として拒否する', () => {
+    expect(parseMonthlySummary(fixture('daily-valid.json')).ok).toBe(false);
   });
 });

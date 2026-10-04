@@ -18,6 +18,16 @@ export const FAKE_OUTPUT = {
   next_action: '週報は朝いちばんの15分で終わらせる',
 };
 
+/** 月次総括の決まった出力（FR-A06） */
+export const FAKE_MONTHLY_OUTPUT = {
+  learnings: ['午前に細かい作業をまとめると、午後の設計の時間を守りやすい'],
+  trends: ['週の後半に待ちが増え、着手中のタスクが止まりやすい'],
+  self_gap: '手で直した日は、AI の判定より1段低くつけることが多かった',
+  proposals: ['待ちになったタスクは、その日のうちに催促する日を決めておく'],
+};
+
+const FAKE_OUTPUTS = { daily_feedback: FAKE_OUTPUT, monthly_summary: FAKE_MONTHLY_OUTPUT };
+
 export type FakeAgentRunner = AgentRunner & {
   /** 受け取った入力（テストで、入力の組み立てを確かめるため） */
   readonly inputs: string[];
@@ -32,7 +42,7 @@ export function createFakeAgentRunner(
   return {
     name: 'fake',
     inputs,
-    run(input, { signal }) {
+    run(input, { signal, kind }) {
       inputs.push(input);
       const attempt = inputs.length;
       return new Promise<AgentRunResult>((resolve) => {
@@ -51,7 +61,7 @@ export function createFakeAgentRunner(
                 resolve({
                   ok: true,
                   output: valid
-                    ? `\`\`\`json\n${JSON.stringify(FAKE_OUTPUT, null, 2)}\n\`\`\``
+                    ? `\`\`\`json\n${JSON.stringify(FAKE_OUTPUTS[kind], null, 2)}\n\`\`\``
                     : '今日もお疲れさまでした。（JSON ではない出力）',
                 });
               }, delayMs);

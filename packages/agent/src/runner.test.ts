@@ -6,7 +6,7 @@ import { parseDailyFeedback } from './schema';
 const run = (
   runner: ReturnType<typeof createFakeAgentRunner>,
   signal = new AbortController().signal,
-) => runner.run('入力', { signal });
+) => runner.run('入力', { signal, kind: 'daily_feedback' });
 
 describe('ADR-0003 偽のアダプタ', () => {
   it('成功のモードでは、検証を通る JSON をコードブロックで返す', async () => {
@@ -49,7 +49,10 @@ describe('ADR-0003 偽のアダプタ', () => {
 describe('FR-A08 タイムアウト', () => {
   it('時間が過ぎたら中断し、タイムアウトだったと分かる', async () => {
     const t = withTimeout(new AbortController().signal, 10);
-    const result = await createFakeAgentRunner({ mode: 'hang' }).run('入力', { signal: t.signal });
+    const result = await createFakeAgentRunner({ mode: 'hang' }).run('入力', {
+      signal: t.signal,
+      kind: 'daily_feedback',
+    });
     t.dispose();
     expect(result.ok).toBe(false);
     expect(t.timedOut()).toBe(true);
