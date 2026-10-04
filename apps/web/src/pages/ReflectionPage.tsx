@@ -281,6 +281,7 @@ function ReflectionEditor({
             label="エージェント"
             // 下端のボタンと1行に収めるため、見出しは出さない（選択肢がエージェントの名前そのもの）
             showLabel={false}
+            fakeAgent={settings.data?.runtime.fakeAgent === true ? 'chip' : undefined}
             value={agent ?? 'claude'}
             onChange={setChosenAgent}
             disabled={busy || agent === undefined}

@@ -6,6 +6,9 @@ export const AGENT_OPTIONS: { value: AgentChoice; label: string }[] = [
   { value: 'codex', label: 'Codex' },
 ];
 
+/** 偽のアダプタで動いているときに、選択の横に添える文 */
+export const FAKE_AGENT_NOTE = '開発用の偽のアダプタを使っているため、この選択は使われません';
+
 const isAgentChoice = (value: string): value is AgentChoice =>
   AGENT_OPTIONS.some((o) => o.value === value);
 
@@ -17,6 +20,7 @@ export function AgentSelect({
   onChange,
   disabled = false,
   showLabel = true,
+  fakeAgent,
 }: {
   id: string;
   label: string;
@@ -25,6 +29,11 @@ export function AgentSelect({
   disabled?: boolean;
   /** 周りに同じ見出しがあるときは false にし、名前を aria-label だけで付ける */
   showLabel?: boolean;
+  /**
+   * MYMIND_AGENT=fake で動いているときに、選択が使われないことを添える（FR-A07、issue 144）。
+   * full は文で、chip は狭い場所向けに「偽のアダプタ」のチップで出す（文は読み上げとツールチップで伝える）
+   */
+  fakeAgent?: 'full' | 'chip' | undefined;
 }) {
   return (
     <span className="agent-select">
@@ -35,6 +44,7 @@ export function AgentSelect({
       )}
       <select
         id={id}
+        {...(fakeAgent === undefined ? {} : { 'aria-describedby': `${id}-fake` })}
         {...(showLabel ? {} : { 'aria-label': label })}
         value={value}
         disabled={disabled}
@@ -48,6 +58,19 @@ export function AgentSelect({
           </option>
         ))}
       </select>
+      {fakeAgent === 'full' && (
+        <span id={`${id}-fake`} className="agent-select-note">
+          {FAKE_AGENT_NOTE}
+        </span>
+      )}
+      {fakeAgent === 'chip' && (
+        <span className="chip" data-status="paused" title={FAKE_AGENT_NOTE}>
+          偽のアダプタ
+          <span id={`${id}-fake`} className="visually-hidden">
+            {FAKE_AGENT_NOTE}
+          </span>
+        </span>
+      )}
     </span>
   );
 }

@@ -891,7 +891,9 @@
 
 .reflection-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-3);
 }
 
@@ -1629,6 +1631,97 @@
   font-size: 14px;
   color: var(--ink-1);
   text-align: right;
+}
+
+.agent-select-note {
+  font-size: 12px;
+  color: var(--status-paused-text);
+  white-space: normal;
+}
+
+/* 設定の行では、注記を選択の下に置き、説明の欄を狭めない */
+.settings-toggle .agent-select {
+  flex-direction: column;
+  align-items: flex-start;
+  flex-shrink: 0;
+  max-width: 240px;
+  gap: var(--space-1);
+}
+
+/* コマンドパレットとショートカットの一覧（DESIGN.md 4.16、FR-U02、FR-U03） */
+.palette {
+  width: min(560px, 100%);
+  gap: var(--space-3);
+  align-self: flex-start;
+  margin-top: 12vh;
+}
+
+.palette-input {
+  min-height: 48px;
+  padding: 0 var(--space-4);
+  border: var(--button-secondary-border);
+  border-radius: var(--radius-xl);
+  background: var(--button-secondary-bg);
+  font: inherit;
+  font-size: 15px;
+  color: var(--ink-1);
+}
+
+.palette-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.palette-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border: 1.5px solid transparent;
+  border-radius: var(--radius-l);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.palette-option[aria-selected="true"] {
+  background: var(--row-selected-bg);
+  border: var(--row-selected-border);
+}
+
+.palette-keys,
+.shortcut-list dd {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.shortcut-help {
+  width: min(560px, 100%);
+}
+
+.shortcut-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  max-height: 60vh;
+  margin: 0;
+  overflow-y: auto;
+}
+
+.shortcut-list div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: 14px;
+}
+
+.shortcut-list dd {
+  margin: 0;
 }
 
 /* タイムライン（DESIGN.md 4.8、Figma「PC/タイムライン」、FR-R01〜R03） */
