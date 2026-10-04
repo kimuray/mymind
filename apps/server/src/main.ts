@@ -21,8 +21,14 @@ import { createAgentLog } from './agentLog';
 import { type AgentRunners, initialAgentChoice } from './agents';
 import { createApi } from './api';
 import { createApp } from './app';
-import { backupsDir, databasePath, snapshotBeforeMigration } from './backups';
+import {
+  backupsDir,
+  databasePath,
+  readDailyBackupStatus,
+  snapshotBeforeMigration,
+} from './backups';
 import { type ConfigError, loadConfig } from './config';
+import { createDailyBackupJob, dailyBackupDir } from './dailyBackup';
 import { acquireLock, ensureDataDir, issueSessionToken } from './dataDir';
 import { createEventBus } from './events';
 import { createJobRunner } from './jobRunner';
@@ -134,6 +140,14 @@ async function main(): Promise<number> {
     timeZone: DAY_OPTIONS.timeZone,
     logger,
   });
+  const dailyBackup = createDailyBackupJob({
+    client: db.$client,
+    dataDir,
+    settings: currentSettings,
+    now: () => new Date(),
+    logger,
+  });
+  scheduler.add(dailyBackup);
   // 朝・夜・棚卸しの通知（FR-N01〜N03）。時刻は初期値で、設定で変えられるようにするのは FR-N04
   for (const job of createNotificationJobs({
     tasks,
@@ -165,7 +179,11 @@ async function main(): Promise<number> {
         }
       },
       databaseFiles: ['', '-wal', '-shm'].map((suffix) => databasePath(dataDir) + suffix),
-      backupsDir: backupsDir(dataDir),
+      backupsDirs: () => [
+        backupsDir(dataDir),
+        dailyBackupDir(dataDir, currentSettings().backupDir),
+      ],
+      dailyBackup: () => readDailyBackupStatus(dataDir),
       jobs,
       // 状態の表示は、依頼で既定に使うエージェントを確かめる
       agentStatus: () =>
@@ -173,7 +191,7 @@ async function main(): Promise<number> {
     },
     settings,
     settingsDefaults,
-    settingsRuntime: { fakeAgent: agent.name === 'fake' },
+    settingsRuntime: { fakeAgent: agent.name === 'fake', defaultBackupDir: backupsDir(dataDir) },
     logs,
   });
   // 開発時は Vite が画面を配信する。古い本番ビルドを出さないよう、画面の URL は Vite へ移す（#97）
@@ -201,6 +219,8 @@ async function main(): Promise<number> {
     lock.release();
     process.exit(0);
   };
+  // 止まっていた間に毎日のバックアップの時刻を過ぎていれば、次の 3:30 を待たずに取る（NFR-23）
+  dailyBackup.runIfStale();
   process.once('SIGINT', shutdown);
   process.once('SIGTERM', shutdown);
   // 標準出力は起動の確認に使う（console.log はロガーに置き換えるまで使わない）
