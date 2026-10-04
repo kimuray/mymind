@@ -35,6 +35,7 @@ import { listen } from './listen';
 import { createLogger } from './logger';
 import { loadDailyPrompt, loadMonthlyPrompt } from './prompts';
 import { createScheduler } from './scheduler';
+import { createServerLogFile } from './serverLog';
 import { createSettingsReader } from './settingsApi';
 import { createUlidGenerator } from './ulid';
 import { createDevRedirect, createWebRoutes } from './web';
@@ -111,7 +112,19 @@ async function main(): Promise<number> {
   // 設定で既定のエージェントを選んでいなければ、MYMIND_AGENT のエージェントを使う（FR-A07）
   const settingsDefaults = { defaultAgent: initialAgentChoice(agent.name) };
   const currentSettings = createSettingsReader(settings, settingsDefaults);
-  const logger = createLogger();
+  // サーバーのログは、データディレクトリに日付ごとのファイルで残し、14日で消す（NFR-24）。
+  // 常駐すると標準エラーは見ないので、開発のとき（Vite と一緒に動かすとき）だけ標準エラーにも出す
+  const serverLog = createServerLogFile({
+    dir: join(dataDir, 'logs/server'),
+    timeZone: DAY_OPTIONS.timeZone,
+  });
+  const isDev = devPorts.length > 0;
+  const logger = createLogger({
+    write: (line) => {
+      serverLog.write(line);
+      if (isDev) process.stderr.write(`${line}\n`);
+    },
+  });
   // エージェントの入出力の全文は、データディレクトリの中にだけ残し、30 日で消す（ADR-0009）
   const agentLog = createAgentLog(join(dataDir, 'logs/agent'));
   agentLog.prune(new Date().toISOString().slice(0, 10));
