@@ -41,6 +41,8 @@ export type KeyAction =
   | 'decide.second'
   | 'decide.third'
   | 'reflection.togglePreview'
+  | 'palette.open'
+  | 'help.open'
   | 'escape';
 
 /**
@@ -57,6 +59,8 @@ const nav = (target: NavigationTarget, label: string): KeyBinding => ({
 
 export const KEY_BINDINGS: readonly KeyBinding[] = [
   // 5.1 どの画面でも使えるキー
+  { action: 'palette.open', keys: ['Meta+k'], label: 'コマンドパレット' },
+  { action: 'help.open', keys: ['?'], label: 'ショートカットの一覧' },
   { action: 'task.new', keys: ['n'], label: 'タスクを追加（入力欄へ移動）' },
   nav('today', '今日'),
   nav('morning', '朝の計画'),
@@ -131,3 +135,46 @@ export const LIST_HINTS: readonly string[] = [
   'T 明日へ / B バックログへ',
   '⌘K コマンド',
 ];
+
+/** キーの表示（DESIGN.md 5章の表記）。Meta は ⌘、矢印は ↑↓、連続は「G → T」 */
+const KEY_SYMBOLS: Readonly<Record<string, string>> = {
+  Meta: '⌘',
+  Shift: '⇧',
+  Enter: '↵',
+  ArrowUp: '↑',
+  ArrowDown: '↓',
+  Escape: 'Esc',
+  ' ': 'Space',
+};
+
+export function formatKeys(keys: readonly string[]): string {
+  return keys
+    .map((key) =>
+      key
+        .split('+')
+        .map((part) => KEY_SYMBOLS[part] ?? (part.length === 1 ? part.toUpperCase() : part))
+        .join(''),
+    )
+    .join(' → ');
+}
+
+/** 操作ごとにまとめた割り当て（J と ↓ のように、1つの操作に複数のキーがあるもの） */
+export type KeyCommand = { action: KeyAction; label: string; keys: string[] };
+
+/**
+ * コマンドパレットとショートカットの一覧に出す操作（ui.md：どちらもこの定義から作る）。
+ * actions に含まれる（今の画面で使える）操作だけを、定義の順に並べる
+ */
+export function commandsFor(actions: ReadonlySet<KeyAction>): KeyCommand[] {
+  const byAction = new Map<KeyAction, KeyCommand>();
+  for (const b of KEY_BINDINGS) {
+    if (!actions.has(b.action)) continue;
+    const command = byAction.get(b.action);
+    if (command === undefined) {
+      byAction.set(b.action, { action: b.action, label: b.label, keys: [formatKeys(b.keys)] });
+    } else {
+      command.keys.push(formatKeys(b.keys));
+    }
+  }
+  return [...byAction.values()];
+}

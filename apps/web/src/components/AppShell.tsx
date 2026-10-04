@@ -1,10 +1,20 @@
 import { toBusinessDay } from '@mymind/domain';
 import { Link, Outlet, useNavigate } from '@tanstack/react-router';
-import { useKeyBindings } from '../keyboard';
-import { NAVIGATION_KEYS, type NavigationTarget, SIDEBAR_HINTS } from '../keymap';
+import { useRef, useState } from 'react';
+import { availableActions, runAction, useKeyBindings } from '../keyboard';
+import {
+  commandsFor,
+  type KeyAction,
+  type KeyCommand,
+  NAVIGATION_KEYS,
+  type NavigationTarget,
+  SIDEBAR_HINTS,
+} from '../keymap';
 import { useRealtimeSync } from '../realtime';
+import { CommandPalette } from './CommandPalette';
 import { Kbd } from './Kbd';
 import { Mame } from './Mame';
+import { ShortcutHelp } from './ShortcutHelp';
 
 // 業務日の切り替え（FR-D01）。設定を読む API ができるまでは初期値を使う
 const DAY_OPTIONS = { timeZone: 'Asia/Tokyo', dayStartHour: 5 };
@@ -93,6 +103,9 @@ function NavGroup({ title, items }: { title: string; items: NavItem[] }) {
   );
 }
 
+/** コマンドパレットに出さない操作 */
+const PALETTE_EXCLUDED: readonly KeyAction[] = ['palette.open', 'list.next', 'list.prev', 'escape'];
+
 /** 3ペインの枠（DESIGN.md 3章）。メインと詳細ペインは、各画面が PageLayout で置く */
 export function AppShell() {
   const navigate = useNavigate();
@@ -102,8 +115,35 @@ export function AppShell() {
     to();
     return true;
   };
+  // コマンドパレット（FR-U02）とショートカットの一覧（FR-U03）。開いたときの、今の画面で使える操作から作る
+  const [overlay, setOverlay] = useState<{
+    kind: 'palette' | 'help';
+    commands: KeyCommand[];
+  } | null>(null);
+  // 閉じたら、開く前にフォーカスがあった場所へ戻す（操作を実行したときは、操作が決めた場所に任せる）
+  const returnFocus = useRef<HTMLElement | null>(null);
+  const open = (kind: 'palette' | 'help') => {
+    returnFocus.current =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const actions = availableActions();
+    // パレットには、開く操作そのものと、選択の移動や解除のような、その場で押すキーは出さない
+    if (kind === 'palette') for (const a of PALETTE_EXCLUDED) actions.delete(a);
+    setOverlay({ kind, commands: commandsFor(actions) });
+    return true;
+  };
+  const close = () => {
+    setOverlay(null);
+    returnFocus.current?.focus();
+  };
+  const run = (action: KeyAction) => {
+    setOverlay(null);
+    runAction(action);
+  };
+
   // どの画面でも使えるキー（DESIGN.md 5.1）
   useKeyBindings({
+    'palette.open': () => open('palette'),
+    'help.open': () => open('help'),
     'nav.today': () => go(() => navigate({ to: '/' })),
     'nav.morning': () => go(() => navigate({ to: '/morning' })),
     'nav.reflection': () =>
@@ -157,6 +197,10 @@ export function AppShell() {
         </ul>
       </nav>
       <Outlet />
+      {overlay?.kind === 'palette' && (
+        <CommandPalette commands={overlay.commands} onRun={run} onClose={close} />
+      )}
+      {overlay?.kind === 'help' && <ShortcutHelp commands={overlay.commands} onClose={close} />}
     </div>
   );
 }
