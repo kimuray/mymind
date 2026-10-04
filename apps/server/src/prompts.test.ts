@@ -23,7 +23,7 @@ describe('FR-A11 日次 FB のプロンプト', () => {
   });
 
   it('バージョンを読み、状態を日本語で書くよう指示している', () => {
-    expect(prompt.version).toBe('0.4.0');
+    expect(prompt.version).toBe('1.0.0');
     for (const word of ['未着手', '着手中', '中断', '待ち', '完了', '中止']) {
       expect(prompt.text).toContain(word);
     }
@@ -91,7 +91,7 @@ describe('FR-A11 評価用のサンプル', () => {
     expect(result).toMatchObject({
       sample: 'good-day',
       agent: 'fake',
-      promptVersion: '0.4.0',
+      promptVersion: '1.0.0',
       durationMs: 1500,
       valid: true,
       error: null,
