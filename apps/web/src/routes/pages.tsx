@@ -1,21 +1,6 @@
 import { Mame, MOOD_LABELS, MOODS } from '../components/Mame';
 import { PageLayout } from '../components/PageLayout';
 
-// まだ中身を作っていない画面。それぞれの issue で作る。ここでは見出しだけを置く
-
-function Page({ title, note }: { title: string; note?: string }) {
-  return (
-    <PageLayout>
-      <section className="page">
-        <h1 className="text-display">{title}</h1>
-        {note !== undefined && <p className="empty-note">{note}</p>}
-      </section>
-    </PageLayout>
-  );
-}
-
-export const TimelinePage = () => <Page title="タイムライン" />;
-
 const SIZES = [28, 44, 76, 96] as const;
 
 /** マメの7つの表情を並べた確認用のページ（#37 の完了条件） */

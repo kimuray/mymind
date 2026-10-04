@@ -64,6 +64,8 @@ const reloadTasks = (qc: QueryClient) =>
     qc.invalidateQueries({ queryKey: ['carryover'] }),
     // 棚卸しの対象（api/review.ts、FR-R06）。触れると対象から外れる
     qc.invalidateQueries({ queryKey: ['review'] }),
+    // タイムラインの区間（api/timeline.ts、FR-R01）
+    qc.invalidateQueries({ queryKey: ['timeline'] }),
     qc.invalidateQueries({ queryKey: ['events'] }),
   ]);
 
