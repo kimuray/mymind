@@ -9,6 +9,7 @@ import {
 import {
   createDailyLogRepository,
   createJobRepository,
+  createNotificationRepository,
   createSettingsRepository,
   createTaskRepository,
   MIGRATIONS_FOLDER,
@@ -27,6 +28,7 @@ import { createEventBus } from './events';
 import { createJobRunner } from './jobRunner';
 import { listen } from './listen';
 import { createLogger } from './logger';
+import { createLogOnlyNotificationAdapter, createNotificationJobs } from './notifications';
 import { loadDailyPrompt, loadMonthlyPrompt } from './prompts';
 import { createScheduler } from './scheduler';
 import { createSettingsReader } from './settingsApi';
@@ -132,6 +134,20 @@ async function main(): Promise<number> {
     timeZone: DAY_OPTIONS.timeZone,
     logger,
   });
+  // 朝・夜・棚卸しの通知（FR-N01〜N03）。時刻は初期値で、設定で変えられるようにするのは FR-N04
+  for (const job of createNotificationJobs({
+    tasks,
+    logs,
+    jobs,
+    sent: createNotificationRepository({ db }),
+    adapter: createLogOnlyNotificationAdapter(logger),
+    reviewAfterDays: () => currentSettings().reviewAfterDays,
+    dayOptions: DAY_OPTIONS,
+    now: () => new Date(),
+    logger,
+  })) {
+    scheduler.add(job);
+  }
   scheduler.start();
   const api = createApi({
     tasks,
