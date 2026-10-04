@@ -25,13 +25,13 @@ import {
   STATUSES,
   statusSinceDay,
   summarizeDay,
-  type TaskEvent,
   toBusinessDay,
 } from '@mymind/domain';
 import { type Context, Hono } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import { validator } from 'hono/validator';
 import { z } from 'zod';
+import { createDayRecordReader, hasReflection } from './dayRecords';
 import { createHealthApi, type HealthDeps } from './health';
 import { createJobsApi, type JobsApiDeps } from './jobsApi';
 import { type AppSettings, createSettingsApi } from './settingsApi';
@@ -233,28 +233,13 @@ export function createApi({
   };
 
   /**
-   * その日の完了件数。振り返りの冒頭の「完了」（FR-D07）と同じ定義で数える。
-   * 着手中や待ちのタスクは月の多くの日で候補になるので、イベントは1回の応答の中で使い回す（NFR-18）
-   */
-  const completedCount = (day: string, eventsOf: (taskId: string) => TaskEvent[]) =>
-    summarizeDay(
-      day,
-      tasks.listSummaryCandidates(day).map((t) => ({
-        taskId: t.id,
-        title: t.title,
-        events: eventsOf(t.id),
-      })),
-    ).completed.length;
-
-  /**
    * カレンダーの1日分（FR-R04、FR-A09）。件数や有無はここで決め、画面では数えない。
    * 空白日は、計画も振り返りの記録もない日（architecture.md 4.5）。まだ来ていない日は中身を返さない
    */
   const monthDay = (
     day: string,
     today: string,
-    planDays: ReadonlySet<string>,
-    eventsOf: (taskId: string) => TaskEvent[],
+    records: ReturnType<typeof createDayRecordReader>,
   ) => {
     if (day > today) {
       return {
@@ -272,10 +257,9 @@ export function createApi({
     return {
       day,
       isFuture: false,
-      isBlank: !planDays.has(day) && log === undefined,
-      completedCount: completedCount(day, eventsOf),
-      hasReflection:
-        log !== undefined && (log.thoughtsMd.trim() !== '' || log.learningMd.trim() !== ''),
+      isBlank: records.isBlank(day, log),
+      completedCount: records.completedCount(day),
+      hasReflection: hasReflection(log),
       hasFeedback: jobs.jobs.listFeedbacks('daily', day).length > 0,
       // FB を依頼していない日は調子を空にする（FR-A09）。手で付けた調子だけがある日もある
       condition:
@@ -350,20 +334,12 @@ export function createApi({
       const ym = monthParam.safeParse(c.req.param('ym'));
       if (!ym.success) return fail(c, 400, 'INVALID_REQUEST', '月の形式が正しくありません');
       const today = toBusinessDay(now(), dayOptions);
-      const planDays = new Set(tasks.listPlanDays());
-      const cache = new Map<string, TaskEvent[]>();
-      const eventsOf = (taskId: string) => {
-        const cached = cache.get(taskId);
-        if (cached !== undefined) return cached;
-        const events = tasks.listEvents(taskId);
-        cache.set(taskId, events);
-        return events;
-      };
+      const records = createDayRecordReader({ tasks, logs });
       // まだ来ていない月も返す（カレンダーで先の月へ移れるように）。日ごとに isFuture で示す
       return c.json({
         ym: ym.data,
         today,
-        days: daysOfMonth(ym.data).map((day) => monthDay(day, today, planDays, eventsOf)),
+        days: daysOfMonth(ym.data).map((day) => monthDay(day, today, records)),
       });
     })
 

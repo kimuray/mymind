@@ -3,7 +3,7 @@ import { fileURLToPath } from 'node:url';
 import { buildDailyFeedbackInput, createFakeAgentRunner } from '@mymind/agent';
 import { describe, expect, it } from 'vitest';
 import { evaluateSample, loadSamples } from './evalPrompt';
-import { loadDailyPrompt } from './prompts';
+import { loadDailyPrompt, loadMonthlyPrompt } from './prompts';
 
 const SAMPLES = fileURLToPath(new URL('../../../prompts/eval/samples', import.meta.url));
 const policy = readFileSync(
@@ -26,6 +26,25 @@ describe('FR-A11 日次 FB のプロンプト', () => {
     expect(prompt.version).toBe('1.0.0');
     for (const word of ['未着手', '着手中', '中断', '待ち', '完了', '中止']) {
       expect(prompt.text).toContain(word);
+    }
+  });
+});
+
+describe('FR-A06 FR-A11 月次総括のプロンプト', () => {
+  const prompt = loadMonthlyPrompt();
+
+  it('方針の本文を差し込み、入力の置き場所を1つだけ持つ', () => {
+    expect(prompt.text).toContain('必要なときは厳しく言う');
+    expect(prompt.text).not.toContain('{{coaching_policy}}');
+    expect(prompt.text.match(/\{\{input_json\}\}/g)).toHaveLength(1);
+  });
+
+  it('下書きのバージョンを読み、途中経過と数値の扱いを指示している', () => {
+    expect(prompt.version).toBe('0.1.0');
+    expect(prompt.text).toContain('途中経過');
+    expect(prompt.text).toContain('`stats` の値だけを使い');
+    for (const key of ['learnings', 'trends', 'self_gap', 'proposals']) {
+      expect(prompt.text).toContain(key);
     }
   });
 });

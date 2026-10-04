@@ -1,13 +1,23 @@
 import {
   type AgentInput,
   buildDailyFeedbackInput,
+  buildMonthlySummaryInput,
   type DailyFeedbackData,
   type DailyPayload,
   dailyFeedbackSchema,
+  type MonthlyPayload,
+  type MonthlySummaryData,
   RECENT_DAYS,
 } from '@mymind/agent';
 import type { DailyLogRepository, JobRepository, TaskRepository } from '@mymind/db';
-import { dayOrdinalSince, type JobKind, previousDays, statusSinceDay } from '@mymind/domain';
+import {
+  dayOrdinalSince,
+  daysOfMonth,
+  type JobKind,
+  previousDays,
+  statusSinceDay,
+} from '@mymind/domain';
+import { createDayRecordReader, hasReflection } from './dayRecords';
 
 export type AgentInputDeps = {
   tasks: TaskRepository;
@@ -15,17 +25,29 @@ export type AgentInputDeps = {
   logs: DailyLogRepository;
   /** 日次 FB のプロンプト（prompts/daily-feedback.md） */
   promptText: string;
+  /** 月次総括のプロンプト（prompts/monthly-summary.md） */
+  monthlyPromptText: string;
+  /** 今の業務日（月の途中かどうかと、まだ来ていない月を判断する） */
+  today: () => string;
 };
 
 export type BuildInputResult =
-  | { ok: true; input: AgentInput<DailyPayload> }
-  | { ok: false; reason: 'unsupported_kind'; message: string };
+  | { ok: true; kind: 'daily_feedback'; input: AgentInput<DailyPayload> }
+  | { ok: true; kind: 'monthly_summary'; input: AgentInput<MonthlyPayload> }
+  | { ok: false; reason: 'invalid_period'; message: string };
 
 /**
  * エージェントに渡す入力を DB から組み立てる（architecture.md 12.5）。
  * 送信内容のプレビュー（FR-A12）と実際の依頼の両方がこの関数を使うので、表示する内容と送る内容は一致する
  */
-export function createAgentInputBuilder({ tasks, jobs, logs, promptText }: AgentInputDeps) {
+export function createAgentInputBuilder({
+  tasks,
+  jobs,
+  logs,
+  promptText,
+  monthlyPromptText,
+  today,
+}: AgentInputDeps) {
   /** その日の計画と直近の日から、日次 FB の元のデータを集める。件数と日数はここで数える（FR-A10） */
   const dailyData = (day: string): DailyFeedbackData => {
     const plan = tasks.listPlan(day);
@@ -80,12 +102,71 @@ export function createAgentInputBuilder({ tasks, jobs, logs, promptText }: Agent
     };
   };
 
+  /**
+   * 月次総括の元のデータ（FR-A06、architecture.md 12.5）。月の初日から、月の途中なら今日まで、過ぎた月なら月末まで。
+   * 日数と件数はここで数え、AI には数えさせない（FR-A10）
+   */
+  const monthlyData = (month: string, until: string): MonthlySummaryData => {
+    const records = createDayRecordReader({ tasks, logs });
+    const days = daysOfMonth(month).filter((day) => day <= until);
+    const through = days.at(-1) ?? `${month}-01`;
+    const rows = days.map((day) => {
+      const log = logs.find(day);
+      const condition = jobs.findCondition(day);
+      const content = dailyFeedbackSchema.safeParse(jobs.listFeedbacks('daily', day)[0]?.content);
+      return {
+        day,
+        isBlank: records.isBlank(day, log),
+        condition:
+          condition === undefined ? null : { ai: condition.aiLevel, user: condition.userLevel },
+        feedback: content.success
+          ? {
+              good: content.data.good,
+              insight: content.data.insight,
+              nextAction: content.data.next_action,
+            }
+          : null,
+        reflection: hasReflection(log)
+          ? { thoughtsMd: log.thoughtsMd, learningMd: log.learningMd }
+          : null,
+        completed: records.completedCount(day),
+      };
+    });
+    return {
+      month,
+      isPartial: through < (daysOfMonth(month).at(-1) ?? through),
+      through,
+      stats: {
+        recordedDays: rows.filter((r) => !r.isBlank).length,
+        blankDays: rows.filter((r) => r.isBlank).length,
+        feedbackDays: rows.filter((r) => r.feedback !== null).length,
+        correctedDays: rows.filter(
+          (r) =>
+            r.condition !== null &&
+            r.condition.user !== null &&
+            r.condition.user !== r.condition.ai,
+        ).length,
+        completed: rows.reduce((sum, r) => sum + r.completed, 0),
+      },
+      days: rows.map(({ completed: _, ...row }) => row),
+    };
+  };
+
   return {
     build(kind: JobKind, period: string): BuildInputResult {
-      if (kind !== 'daily_feedback') {
-        return { ok: false, reason: 'unsupported_kind', message: '月次総括はまだ依頼できません' };
+      const now = today();
+      if (kind === 'monthly_summary') {
+        // まだ始まっていない月の総括は作れない。月の途中なら、今日までの途中経過にする
+        if (`${period}-01` > now) {
+          return { ok: false, reason: 'invalid_period', message: 'まだ来ていない月です' };
+        }
+        return {
+          ok: true,
+          kind,
+          input: buildMonthlySummaryInput(monthlyPromptText, monthlyData(period, now)),
+        };
       }
-      return { ok: true, input: buildDailyFeedbackInput(promptText, dailyData(period)) };
+      return { ok: true, kind, input: buildDailyFeedbackInput(promptText, dailyData(period)) };
     },
   };
 }

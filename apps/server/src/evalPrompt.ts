@@ -85,6 +85,7 @@ export async function evaluateSample(input: {
   const started = now();
   const result = await runner.run(agentInput.text, {
     signal: AbortSignal.timeout(input.timeoutMs),
+    kind: 'daily_feedback',
   });
   const base = {
     sample: sample.name,
