@@ -109,6 +109,7 @@ export function createAgentInputBuilder({
   const monthlyData = (month: string, until: string): MonthlySummaryData => {
     const records = createDayRecordReader({ tasks, logs });
     const days = daysOfMonth(month).filter((day) => day <= until);
+    const completed = records.completedCounts(days);
     const through = days.at(-1) ?? `${month}-01`;
     const rows = days.map((day) => {
       const log = logs.find(day);
@@ -129,7 +130,7 @@ export function createAgentInputBuilder({
         reflection: hasReflection(log)
           ? { thoughtsMd: log.thoughtsMd, learningMd: log.learningMd }
           : null,
-        completed: records.completedCount(day),
+        completed: completed.get(day) ?? 0,
       };
     });
     return {
@@ -140,9 +141,11 @@ export function createAgentInputBuilder({
         recordedDays: rows.filter((r) => !r.isBlank).length,
         blankDays: rows.filter((r) => r.isBlank).length,
         feedbackDays: rows.filter((r) => r.feedback !== null).length,
+        // AI の判定を手で直した日。FB のない日に手で付けただけの調子は、直したことにしない
         correctedDays: rows.filter(
           (r) =>
             r.condition !== null &&
+            r.condition.ai !== null &&
             r.condition.user !== null &&
             r.condition.user !== r.condition.ai,
         ).length,

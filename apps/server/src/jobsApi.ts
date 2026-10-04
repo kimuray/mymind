@@ -6,11 +6,11 @@ import { z } from 'zod';
 import { agentChoiceSchema } from './agents';
 import type { EventBus, NumberedEvent } from './events';
 import type { JobRunner } from './jobRunner';
+import { monthParam } from './params';
 
 export type JobsApiDeps = { runner: JobRunner; jobs: JobRepository; events: EventBus };
 
 const dayParam = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD の形式で指定してください');
-const monthParam = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'YYYY-MM の形式で指定してください');
 
 /** 依頼の対象。日次 FB は業務日、月次総括は月（FR-A06）で指定する */
 const inputTargets = [

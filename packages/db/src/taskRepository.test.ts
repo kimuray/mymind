@@ -70,6 +70,26 @@ describe('FR-T04 タスクの作成と履歴', () => {
   });
 });
 
+describe('FR-R04 NFR-18 複数のタスクの履歴をまとめて読む', () => {
+  it('タスクごとに、1件ずつ読んだときと同じ順で返し、履歴のない ID には空を返す', () => {
+    createTask('t1');
+    createTask('t2');
+    repo.applyStatusChange(statusChange('todo', 'doing', 1), 1);
+    const events = repo.listEventsOfTasks(['t1', 't2', 'missing']);
+    expect(events.get('t1')).toEqual(repo.listEvents('t1'));
+    expect(events.get('t2')).toEqual(repo.listEvents('t2'));
+    expect(events.get('missing')).toEqual([]);
+  });
+
+  it('1回の問い合わせに入れる数を超えるタスクも、すべて読む', () => {
+    const ids = Array.from({ length: 501 }, (_, i) => `t${i}`);
+    for (const id of ids) createTask(id);
+    const events = repo.listEventsOfTasks(ids);
+    expect(events.size).toBe(501);
+    expect(events.get('t500')).toHaveLength(1);
+  });
+});
+
 describe('ADR-0004 tasks.status とイベントの整合', () => {
   it('ステータスの変更で、tasks.status・version・最終操作時刻をイベントに合わせて更新する', () => {
     createTask();

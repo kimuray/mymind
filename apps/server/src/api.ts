@@ -16,7 +16,6 @@ import {
   carryoverCandidates,
   changeStatus,
   daysOfMonth,
-  MIN_YEAR,
   nextDay,
   planMorning,
   planMove,
@@ -31,9 +30,10 @@ import { type Context, Hono } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import { validator } from 'hono/validator';
 import { z } from 'zod';
-import { createDayRecordReader, hasReflection } from './dayRecords';
+import { createDayRecordReader, type DayRecordReader, hasReflection } from './dayRecords';
 import { createHealthApi, type HealthDeps } from './health';
 import { createJobsApi, type JobsApiDeps } from './jobsApi';
+import { monthParam } from './params';
 import { type AppSettings, createSettingsApi } from './settingsApi';
 
 export type ApiDeps = {
@@ -57,12 +57,6 @@ export type ApiDeps = {
 };
 
 const dayParam = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD の形式で指定してください');
-
-/** カレンダーの月（FR-R04） */
-const monthParam = z
-  .string()
-  .regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'YYYY-MM の形式で指定してください')
-  .refine((ym) => Number(ym.slice(0, 4)) >= MIN_YEAR, `${MIN_YEAR}年より前の月は扱いません`);
 
 /** 更新系の API に共通する、画面が想定している状態（NFR-13、NFR-14） */
 const screenState = {
@@ -239,7 +233,8 @@ export function createApi({
   const monthDay = (
     day: string,
     today: string,
-    records: ReturnType<typeof createDayRecordReader>,
+    records: DayRecordReader,
+    completed: ReadonlyMap<string, number>,
   ) => {
     if (day > today) {
       return {
@@ -258,7 +253,7 @@ export function createApi({
       day,
       isFuture: false,
       isBlank: records.isBlank(day, log),
-      completedCount: records.completedCount(day),
+      completedCount: completed.get(day) ?? 0,
       hasReflection: hasReflection(log),
       hasFeedback: jobs.jobs.listFeedbacks('daily', day).length > 0,
       // FB を依頼していない日は調子を空にする（FR-A09）。手で付けた調子だけがある日もある
@@ -335,11 +330,13 @@ export function createApi({
       if (!ym.success) return fail(c, 400, 'INVALID_REQUEST', '月の形式が正しくありません');
       const today = toBusinessDay(now(), dayOptions);
       const records = createDayRecordReader({ tasks, logs });
+      const days = daysOfMonth(ym.data);
+      const completed = records.completedCounts(days.filter((day) => day <= today));
       // まだ来ていない月も返す（カレンダーで先の月へ移れるように）。日ごとに isFuture で示す
       return c.json({
         ym: ym.data,
         today,
-        days: daysOfMonth(ym.data).map((day) => monthDay(day, today, records)),
+        days: days.map((day) => monthDay(day, today, records, completed)),
       });
     })
 

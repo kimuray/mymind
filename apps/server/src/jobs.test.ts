@@ -849,12 +849,39 @@ describe('FR-A06 月次総括のジョブ', () => {
     ['まだ来ていない月', { kind: 'monthly_summary', period: '2026-10' }],
     ['月次総括に業務日を指定', { kind: 'monthly_summary', period: '2026-09-23' }],
     ['日次 FB に月を指定', { kind: 'daily_feedback', period: '2026-09' }],
+    ['1970年より前の月', { kind: 'monthly_summary', period: '1969-12' }],
+    ['0年の月', { kind: 'monthly_summary', period: '0000-01' }],
   ])('%s は 400 でジョブを作らない', async (_, body) => {
     const { app } = setup();
     expect((await post(app, '/jobs', body)).status).toBe(400);
     expect(jobs.findActive('monthly_summary', '2026-10')).toBeUndefined();
     expect(jobs.findActive('monthly_summary', '2026-09-23')).toBeUndefined();
     expect(jobs.findActive('daily_feedback', '2026-09')).toBeUndefined();
+  });
+
+  it('1970年より前の月の送信内容は 400 にする', async () => {
+    const { app } = setup();
+    const res = await post(app, '/agent-input/preview', {
+      kind: 'monthly_summary',
+      period: '1969-12',
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('調子を手で直した日は、AI の判定と違う値を付けた日だけを数える', async () => {
+    const { app, runner } = setup();
+    // 9月20日：FB をもらい、AI の判定と違う値に直した。9月21日：FB なしで手で付けただけ
+    runner.enqueue('daily_feedback', '2026-09-20');
+    await runner.idle();
+    jobs.setUserLevel('2026-09-20', FAKE_OUTPUT.condition.level - 1, now.toISOString());
+    jobs.setUserLevel('2026-09-21', 2, now.toISOString());
+    const res = await post(app, '/agent-input/preview', {
+      kind: 'monthly_summary',
+      period: '2026-09',
+    });
+    expect(await res.json()).toMatchObject({
+      payload: { stats: { corrected_days: 1, feedback_days: 1 } },
+    });
   });
 
   it('送信内容のプレビューは種類を付けて返し、月次の送る内容を確かめられる', async () => {
