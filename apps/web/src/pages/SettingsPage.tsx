@@ -220,6 +220,7 @@ function FeedbackSettings() {
           id="settings-default-agent"
           label="既定のエージェント"
           showLabel={false}
+          fakeAgent={settings.data?.runtime.fakeAgent === true ? 'full' : undefined}
           value={defaultAgent}
           disabled={settings.data === undefined}
           onChange={(value) => {
