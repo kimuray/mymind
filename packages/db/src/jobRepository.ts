@@ -190,6 +190,18 @@ export function createJobRepository({ db, codec }: { db: Database; codec: Sensit
         .map(toFeedback);
     },
 
+    /** その期間の最新の FB か総括だけを読む（履歴をすべて復号しないため、NFR-18）。なければ undefined */
+    latestFeedback(scope: 'daily' | 'monthly', period: string): Feedback | undefined {
+      const row = db
+        .select()
+        .from(feedbacks)
+        .where(and(eq(feedbacks.scope, scope), eq(feedbacks.period, period)))
+        .orderBy(desc(feedbacks.id))
+        .limit(1)
+        .get();
+      return row === undefined ? undefined : toFeedback(row);
+    },
+
     /** その期間の最新のジョブ（生成中・失敗の表示に使う）。なければ undefined */
     latestJob(kind: JobKind, period: string): Job | undefined {
       return db

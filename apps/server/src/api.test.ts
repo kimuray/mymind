@@ -1065,3 +1065,26 @@ describe('FR-R06 棚卸しの API', () => {
     expect((await decide(task, 'later')).status).toBe(400);
   });
 });
+
+describe('FR-A06 FR-R05 月の API の総括', () => {
+  it('総括がなければ空で、依頼すると生成中のジョブを返し、終わると最新の総括を返す', async () => {
+    const before = (await (await get('/months/2026-09')).json()) as {
+      summary: unknown;
+      summaryJob: unknown;
+    };
+    expect(before).toMatchObject({ summary: null, summaryJob: null });
+
+    expect(
+      (await send('POST', '/jobs', { kind: 'monthly_summary', period: '2026-09' })).status,
+    ).toBe(202);
+    expect(await (await get('/months/2026-09')).json()).toMatchObject({
+      summaryJob: { kind: 'monthly_summary', period: '2026-09' },
+    });
+
+    await jobRunner.idle();
+    expect(await (await get('/months/2026-09')).json()).toMatchObject({
+      summary: { period: '2026-09', isPartial: true, content: { learnings: expect.any(Array) } },
+      summaryJob: { status: 'succeeded' },
+    });
+  });
+});
