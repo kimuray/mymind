@@ -7,6 +7,7 @@ import {
   useRequestPreviewedFeedback,
 } from '../api/agentInput';
 import { ApiError } from '../api/client';
+import type { AgentChoice } from '../api/settings';
 import { formatShortDay } from '../day';
 import { Button } from './Button';
 
@@ -233,9 +234,12 @@ export function AgentInputPreviewView({
  */
 export function AgentInputPreview({
   period,
+  agent,
   onRequested,
 }: {
   period: string;
+  /** 依頼に使うエージェント（FR-A07）。省くとサーバーが設定の既定のエージェントを使う */
+  agent?: AgentChoice | undefined;
   onRequested?: (jobId: string) => void;
 }) {
   const preview = useAgentInputPreview(period);
@@ -266,9 +270,12 @@ export function AgentInputPreview({
         kind="confirm"
         disabled={request.isPending || preview.isFetching || request.isSuccess}
         onClick={() =>
-          request.mutate(data.payloadHash, {
-            onSuccess: ({ job }) => onRequested?.(job.id),
-          })
+          request.mutate(
+            { payloadHash: data.payloadHash, ...(agent && { agent }) },
+            {
+              onSuccess: ({ job }) => onRequested?.(job.id),
+            },
+          )
         }
       >
         この内容でFBをもらう

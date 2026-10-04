@@ -217,11 +217,11 @@ CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 | タイムライン | `GET /api/timeline?from=&to=` | 区間と内訳を計算済みで返す |
 | 月 | `GET /api/months/:ym` | 日ごとの調子、完了件数、総括 |
 | 送信内容の確認 | `POST /api/agent-input/preview` | 実際に送る入力、加工の注記、文字数、ハッシュを返す（FR-A12） |
-| FBの依頼 | `POST /api/jobs` | `202` でジョブIDを返す。プレビューを経た場合は `payloadHash` を渡し、不一致なら 409 |
+| FBの依頼 | `POST /api/jobs` | `202` でジョブIDを返す。プレビューを経た場合は `payloadHash` を渡し、不一致なら 409。`agent`（`claude` / `codex`）で使うエージェントを指定でき、省略すると設定の既定のエージェントを使う（FR-A07） |
 | 通知の購読 | `GET /api/events` | Server-Sent Events。ジョブの進捗と、画面以外からの変更を配信（ADR-0008） |
 | キャンセル | `POST /api/jobs/:id/cancel` | |
 | FBの取得 | `GET /api/feedbacks?scope=&period=` | 履歴を新しい順に返す |
-| 設定 | `GET /api/settings`、`PATCH /api/settings` | |
+| 設定 | `GET /api/settings`、`PATCH /api/settings` | 依頼の前に毎回確認する（`confirmBeforeRequest`、FR-A12）、既定のエージェント（`defaultAgent`、FR-A07） |
 | 状態 | `GET /api/health` | `status`（`ok` / `degraded`）、DB（問い合わせの可否とファイルの合計サイズ）、エージェント（使えるか、実行ファイルの有無とバージョン、理由）、最後のバックアップ、直近の FB 生成の失敗。DB に問い合わせられなければ 503（NFR-21） |
 
 ## 7. エージェント連携
@@ -270,11 +270,11 @@ CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 - 作業ディレクトリは、ジョブごとに作る空の一時ディレクトリにする
 - タイムアウト（初期値120秒）を設け、キャンセル時とタイムアウト時はプロセスを終了させる
 - 環境変数から `ANTHROPIC_API_KEY` と `OPENAI_API_KEY` を外し、ログインしたアカウント（プランの利用枠）で動かす
-- 使うモデルは `MYMIND_AGENT_MODEL` で指定できる。省略すると各 CLI の設定に従う
+- 使うモデルは `MYMIND_AGENT_MODEL` で指定できる。モデルの名前は CLI ごとに違うので、`MYMIND_AGENT` で選んだエージェントにだけ渡す。省略すると各 CLI の設定に従う
 - タイムアウトは `MYMIND_AGENT_TIMEOUT_SEC`（10〜600秒、初期値120秒）で変えられる。spike では1回の生成に15〜22秒かかった
 - 失敗は種類（コマンドが見つからない、未ログイン、利用上限、モデルが使えない、時間切れ、返答の形式違反）に分け、対処を添えた文にする。未ログインと利用上限の実際の出力は確かめられていないので、CLI の出力の言葉で推定し、種類の分からない失敗で終了コードが 0 以外なら未ログインとして扱う（#23）
 
-テストとE2Eのために、決まったJSONを返す偽のアダプタも用意します。使うアダプタは環境変数 `MYMIND_AGENT`（`claude` / `codex` / `fake`）で選びます。偽のアダプタの振る舞いは `MYMIND_FAKE_AGENT_MODE`（`success` / `invalid` / `invalid-once` / `hang`）と、答えるまでの時間 `MYMIND_FAKE_AGENT_DELAY_MS`（初期値 800）で切り替えます。同じ期間の FB のジョブがまだ終わっていないあいだは、新しく依頼しても同じジョブを返します。
+テストとE2Eのために、決まったJSONを返す偽のアダプタも用意します。使うエージェントは、依頼ごとに画面で選び（FR-A07）、ジョブに記録した名前で実行のときにアダプタを選びます。選ばなければ設定の既定のエージェントを使い、設定がなければ環境変数 `MYMIND_AGENT`（`claude` / `codex` / `fake`）のエージェントを使います。`MYMIND_AGENT=fake` のときは、画面の選択に関係なく偽のアダプタを使います（テストと開発で実物を呼ばないため）。偽のアダプタの振る舞いは `MYMIND_FAKE_AGENT_MODE`（`success` / `invalid` / `invalid-once` / `hang`）と、答えるまでの時間 `MYMIND_FAKE_AGENT_DELAY_MS`（初期値 800）で切り替えます。同じ期間の FB のジョブがまだ終わっていないあいだは、新しく依頼しても同じジョブを返します。
 
 ### 7.5 プロンプト
 

@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { api, unwrap } from './client';
+import type { AgentChoice } from './settings';
 import { queryKeys } from './tasks';
 
 export type ReflectionDraft = { thoughtsMd: string; learningMd: string };
@@ -14,12 +15,19 @@ export function useSaveReflection(day: string) {
   });
 }
 
-/** 送信内容を確かめずに FB を依頼する（設定の「依頼の前に毎回確認する」が無効のとき） */
+/**
+ * 送信内容を確かめずに FB を依頼する（設定の「依頼の前に毎回確認する」が無効のとき）。
+ * エージェントを省くと、サーバーが設定の既定のエージェントを使う（FR-A07）
+ */
 export function useRequestFeedback(day: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async () =>
-      unwrap(await api.jobs.$post({ json: { kind: 'daily_feedback', period: day } })),
+    mutationFn: async (agent?: AgentChoice) =>
+      unwrap(
+        await api.jobs.$post({
+          json: { kind: 'daily_feedback', period: day, ...(agent && { agent }) },
+        }),
+      ),
     // 依頼したジョブを、すぐに生成中として表示する（進み具合は SSE で読み直す）
     onSettled: () => qc.invalidateQueries({ queryKey: queryKeys.day(day) }),
   });

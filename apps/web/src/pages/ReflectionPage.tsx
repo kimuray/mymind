@@ -3,9 +3,10 @@ import { useEffect, useRef, useState } from 'react';
 import { ApiError } from '../api/client';
 import { useCancelJob, useSetCondition } from '../api/feedback';
 import { type ReflectionDraft, useRequestFeedback, useSaveReflection } from '../api/reflection';
-import { useSettings } from '../api/settings';
+import { type AgentChoice, useSettings } from '../api/settings';
 import { type DayResponse, useDayPlan } from '../api/tasks';
 import { AgentInputPreview } from '../components/AgentInputPreview';
+import { AgentSelect } from '../components/AgentSelect';
 import { Button } from '../components/Button';
 import { DaySummary } from '../components/DaySummary';
 import { FeedbackPanel } from '../components/FeedbackPanel';
@@ -131,6 +132,11 @@ function ReflectionEditor({
   const settings = useSettings();
   const cancel = useCancelJob(day);
   const setCondition = useSetCondition(day);
+  // 画面で選び直すまでは、設定の既定のエージェントを使う（FR-A07）
+  const [chosenAgent, setChosenAgent] = useState<AgentChoice | null>(null);
+  const defaultAgent = settings.data?.settings.defaultAgent;
+  // 設定を読み込む前は送らずに、サーバーに既定のエージェントを選ばせる
+  const agent = chosenAgent ?? defaultAgent;
   const heading = formatDayHeading(day);
   const busy = save.isPending || request.isPending;
 
@@ -166,7 +172,7 @@ function ReflectionEditor({
       return;
     }
     if (!(await saveDraft())) return;
-    request.mutate(undefined, {
+    request.mutate(agent, {
       onSuccess: () => setNotice('保存して、FBを依頼しました'),
       onError: (e) => setNotice(`保存しました。FBを依頼できませんでした（${errorText(e)}）`),
     });
@@ -215,6 +221,7 @@ function ReflectionEditor({
       <AgentInputPreview
         key={previewKey}
         period={day}
+        agent={agent}
         onRequested={() => {
           setNotice('FBを依頼しました');
           // 依頼したら送信内容を閉じ、生成の進み具合を見せる
@@ -269,6 +276,15 @@ function ReflectionEditor({
         </div>
 
         <div className="reflection-actions">
+          <AgentSelect
+            id="reflection-agent"
+            label="エージェント"
+            // 下端のボタンと1行に収めるため、見出しは出さない（選択肢がエージェントの名前そのもの）
+            showLabel={false}
+            value={agent ?? 'claude'}
+            onChange={setChosenAgent}
+            disabled={busy || agent === undefined}
+          />
           <p className="text-small reflection-notice" aria-live="polite">
             {notice}
           </p>

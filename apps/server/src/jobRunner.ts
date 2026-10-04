@@ -3,6 +3,7 @@ import type { DailyLogRepository, Job, JobRepository, TaskRepository } from '@my
 import type { JobKind } from '@mymind/domain';
 import { type BuildInputResult, createAgentInputBuilder } from './agentInput';
 import type { AgentLog, AgentLogRecord } from './agentLog';
+import type { AgentChoice, AgentRunners } from './agents';
 import type { EventBus } from './events';
 import type { Logger } from './logger';
 
@@ -10,7 +11,10 @@ export type JobRunnerDeps = {
   jobs: JobRepository;
   tasks: TaskRepository;
   logs: DailyLogRepository;
-  runner: AgentRunner;
+  /** 選べるエージェントごとのアダプタ（FR-A07） */
+  runners: AgentRunners;
+  /** 依頼でエージェントを指定しなかったときに使うもの（設定の既定のエージェント） */
+  defaultAgent: () => AgentChoice;
   events: EventBus;
   /** 日次 FB のプロンプト（prompts/daily-feedback.md）とそのバージョン */
   prompt: { text: string; version: string };
@@ -42,6 +46,9 @@ export function createJobRunner(deps: JobRunnerDeps) {
   let loop: Promise<void> | null = null;
 
   const iso = () => deps.now().toISOString();
+  /** ジョブに記録したエージェントの名前から、アダプタを選ぶ。fake のときはどれも同じ偽のアダプタになる */
+  const runnerOf = (name: string): AgentRunner | undefined =>
+    Object.values(deps.runners).find((r) => r.name === name);
   const publish = (id: string) => {
     const job = jobs.find(id);
     if (job !== undefined) events.publish({ type: 'job.updated', job });
@@ -49,6 +56,16 @@ export function createJobRunner(deps: JobRunnerDeps) {
 
   /** 1件を実行する。形式が違えば1回だけ再試行する（architecture.md 7.1） */
   const execute = async (job: Job) => {
+    const runner = runnerOf(job.agent);
+    if (runner === undefined) {
+      // 依頼のあとに MYMIND_AGENT を変えて再起動した場合など、記録したエージェントがもう使えない
+      jobs.fail(
+        job.id,
+        `エージェント（${job.agent}）を使えません。もう一度依頼してください`,
+        iso(),
+      );
+      return;
+    }
     const built = inputs.build(job.kind, job.period);
     if (!built.ok) {
       jobs.fail(job.id, built.message, iso());
@@ -63,7 +80,7 @@ export function createJobRunner(deps: JobRunnerDeps) {
       let lastError = '';
       for (let attempt = 1; attempt <= 2; attempt++) {
         const t = withTimeout(controller.signal, deps.timeoutMs);
-        const result = await deps.runner.run(input, { signal: t.signal });
+        const result = await runner.run(input, { signal: t.signal });
         t.dispose();
         attempts.push(result.ok ? { output: result.output } : { error: result.error.message });
         if (!result.ok) {
@@ -90,7 +107,7 @@ export function createJobRunner(deps: JobRunnerDeps) {
               scope: 'daily',
               period: job.period,
               content: fb,
-              agent: deps.runner.name,
+              agent: runner.name,
               promptVersion: deps.prompt.version,
               isPartial: false,
             },
@@ -132,7 +149,7 @@ export function createJobRunner(deps: JobRunnerDeps) {
         jobId: job.id,
         kind: job.kind,
         period: job.period,
-        agent: deps.runner.name,
+        agent: job.agent,
         promptVersion: deps.prompt.version,
         input: input.text,
         annotations: input.annotations,
@@ -173,15 +190,22 @@ export function createJobRunner(deps: JobRunnerDeps) {
       kick();
     },
 
-    /** FB を依頼する。同じ期間のジョブがまだ終わっていなければ、新しく作らずにそれを返す */
-    enqueue(kind: JobKind, period: string): { job: Job; created: boolean } {
+    /**
+     * FB を依頼する。同じ期間のジョブがまだ終わっていなければ、新しく作らずにそれを返す。
+     * エージェントを省略すると、設定の既定のエージェントを使う（FR-A07）
+     */
+    enqueue(
+      kind: JobKind,
+      period: string,
+      agent: AgentChoice = deps.defaultAgent(),
+    ): { job: Job; created: boolean } {
       const active = jobs.findActive(kind, period);
       if (active !== undefined) return { job: active, created: false };
       const job = jobs.create({
         id: deps.newId(),
         kind,
         period,
-        agent: deps.runner.name,
+        agent: deps.runners[agent].name,
         createdAt: iso(),
       });
       publish(job.id);

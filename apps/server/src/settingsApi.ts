@@ -2,16 +2,23 @@ import type { SettingsRepository } from '@mymind/db';
 import { Hono } from 'hono';
 import { validator } from 'hono/validator';
 import { z } from 'zod';
+import { agentChoiceSchema } from './agents';
 
 /** 画面から変えられる設定（architecture.md 6章の GET / PATCH /api/settings）。項目を足すときはここに加える */
 const appSettingsSchema = z.object({
   /** 依頼の前に毎回、送信内容のプレビューを経由する（FR-A12） */
   confirmBeforeRequest: z.boolean(),
+  /** FB を依頼するときに、はじめに選ばれているエージェント（FR-A07） */
+  defaultAgent: agentChoiceSchema,
 });
 
 export type AppSettings = z.infer<typeof appSettingsSchema>;
 
-export const DEFAULT_SETTINGS: AppSettings = { confirmBeforeRequest: false };
+/** 保存されていない項目の値。既定のエージェントは起動の設定（MYMIND_AGENT）で変わるので、作るときに上書きする */
+export const DEFAULT_SETTINGS: AppSettings = {
+  confirmBeforeRequest: false,
+  defaultAgent: 'claude',
+};
 
 const patchBody = appSettingsSchema
   .partial()
@@ -21,27 +28,43 @@ const patchBody = appSettingsSchema
 const fields = appSettingsSchema.shape;
 
 /** 保存されている値（JSON の文字列）を読む。読めない値や形の違う値は、初期値に戻して扱う */
-function readSettings(stored: Record<string, string>): AppSettings {
+function readSettings(stored: Record<string, string>, defaults: AppSettings): AppSettings {
   const read = <K extends keyof AppSettings>(key: K): AppSettings[K] => {
     const raw = stored[key];
-    if (raw === undefined) return DEFAULT_SETTINGS[key];
+    if (raw === undefined) return defaults[key];
     let value: unknown;
     try {
       value = JSON.parse(raw);
     } catch {
       // 手で書き換えられたなどで JSON として読めない値は、保存されていないのと同じに扱う
-      return DEFAULT_SETTINGS[key];
+      return defaults[key];
     }
     const parsed = fields[key].safeParse(value);
-    return parsed.success ? (parsed.data as AppSettings[K]) : DEFAULT_SETTINGS[key];
+    return parsed.success ? (parsed.data as AppSettings[K]) : defaults[key];
   };
-  return { confirmBeforeRequest: read('confirmBeforeRequest') };
+  return {
+    confirmBeforeRequest: read('confirmBeforeRequest'),
+    defaultAgent: read('defaultAgent'),
+  };
+}
+
+/** 今の設定を読む関数を作る。FB の依頼など、API の外からも同じ読み方で設定を使う */
+export function createSettingsReader(
+  settings: SettingsRepository,
+  defaults: Partial<AppSettings> = {},
+): () => AppSettings {
+  const merged = { ...DEFAULT_SETTINGS, ...defaults };
+  return () => readSettings(settings.getAll(), merged);
 }
 
 /** 設定の API。値は settings テーブルに JSON の文字列で保存する */
-export function createSettingsApi(settings: SettingsRepository) {
+export function createSettingsApi(
+  settings: SettingsRepository,
+  defaults: Partial<AppSettings> = {},
+) {
+  const current = createSettingsReader(settings, defaults);
   return new Hono()
-    .get('/settings', (c) => c.json({ settings: readSettings(settings.getAll()) }, 200))
+    .get('/settings', (c) => c.json({ settings: current() }, 200))
     .patch(
       '/settings',
       validator('json', (value, c) => {
@@ -66,7 +89,7 @@ export function createSettingsApi(settings: SettingsRepository) {
         settings.setMany(
           Object.fromEntries(Object.entries(patch).map(([k, v]) => [k, JSON.stringify(v)])),
         );
-        return c.json({ settings: readSettings(settings.getAll()) }, 200);
+        return c.json({ settings: current() }, 200);
       },
     );
 }

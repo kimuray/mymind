@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, unwrap } from './client';
+import type { AgentChoice } from './settings';
 
 /** 送信内容のプレビュー（FR-A12、POST /api/agent-input/preview） */
 const fetchPreview = async (period: string) =>
@@ -29,8 +30,12 @@ export function useAgentInputPreview(period: string) {
 export function useRequestPreviewedFeedback(period: string) {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (payloadHash: string) =>
-      unwrap(await api.jobs.$post({ json: { kind: 'daily_feedback', period, payloadHash } })),
+    mutationFn: async ({ payloadHash, agent }: { payloadHash: string; agent?: AgentChoice }) =>
+      unwrap(
+        await api.jobs.$post({
+          json: { kind: 'daily_feedback', period, payloadHash, ...(agent && { agent }) },
+        }),
+      ),
     onError: () => qc.invalidateQueries({ queryKey: previewKey(period) }),
     // 依頼したジョブを、その日の FB の欄にすぐ生成中として出す
     onSuccess: () => qc.invalidateQueries({ queryKey: ['day', period] }),

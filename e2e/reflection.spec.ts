@@ -353,3 +353,48 @@ test.describe('FR-A08 FB の順番待ちと失敗の表示（#23）', () => {
     });
   }
 });
+
+test.describe('FR-A07 使うエージェントの選択', () => {
+  /** 画面の中から既定のエージェントを戻す（すべてのテストが1つの DB を共有するため） */
+  const resetDefaultAgent = (page: Page) =>
+    page.evaluate(async () => {
+      const token =
+        document.querySelector('meta[name="mymind-token"]')?.getAttribute('content') ?? '';
+      await fetch('/api/settings', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'X-Mymind-Token': token },
+        body: JSON.stringify({ defaultAgent: 'claude' }),
+      });
+    });
+
+  /** 次の FB の依頼で送るエージェントを捕まえる */
+  const nextRequestedAgent = (page: Page) =>
+    page
+      .waitForRequest((r) => r.method() === 'POST' && new URL(r.url()).pathname === '/api/jobs')
+      .then((r) => (r.postDataJSON() as { agent?: string }).agent);
+
+  test('設定で選んだ既定のエージェントが振り返りで選ばれ、依頼ごとに切り替えられる', async ({
+    page,
+  }) => {
+    await page.goto('/settings');
+    try {
+      await page.getByRole('combobox', { name: '既定のエージェント' }).selectOption('codex');
+      await expect(page.getByRole('combobox', { name: '既定のエージェント' })).toHaveValue('codex');
+
+      await page.goto('/reflection/2026-09-11');
+      const select = page.getByRole('combobox', { name: 'エージェント' });
+      await expect(select).toHaveValue('codex');
+      const first = nextRequestedAgent(page);
+      await page.getByRole('button', { name: /^保存してFBをもらう/ }).click();
+      expect(await first).toBe('codex');
+
+      await page.goto('/reflection/2026-09-12');
+      await page.getByRole('combobox', { name: 'エージェント' }).selectOption('claude');
+      const second = nextRequestedAgent(page);
+      await page.getByRole('button', { name: /^保存してFBをもらう/ }).click();
+      expect(await second).toBe('claude');
+    } finally {
+      await resetDefaultAgent(page);
+    }
+  });
+});

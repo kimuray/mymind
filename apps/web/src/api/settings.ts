@@ -1,10 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { notifySettingsChanged } from '../realtime';
 import { api, unwrap } from './client';
 
 /** 画面から変えられる設定（GET / PATCH /api/settings） */
 const fetchSettings = async () => unwrap(await api.settings.$get());
 
 export type AppSettings = Awaited<ReturnType<typeof fetchSettings>>['settings'];
+
+/** FB を書くエージェント（FR-A07） */
+export type AgentChoice = AppSettings['defaultAgent'];
 
 const settingsKey = ['settings'] as const;
 
@@ -18,7 +22,10 @@ export function useUpdateSettings() {
   return useMutation({
     mutationFn: async (patch: Partial<AppSettings>) =>
       unwrap(await api.settings.$patch({ json: patch })),
-    onSuccess: (data) => qc.setQueryData(settingsKey, data),
+    onSuccess: (data) => {
+      qc.setQueryData(settingsKey, data);
+      notifySettingsChanged();
+    },
     onSettled: () => qc.invalidateQueries({ queryKey: settingsKey }),
   });
 }
