@@ -15,6 +15,7 @@ import {
   carryoverBaseDay,
   carryoverCandidates,
   changeStatus,
+  daysBetween,
   daysOfMonth,
   daysSinceTouched,
   isReviewTarget,
@@ -29,6 +30,8 @@ import {
   type Status,
   statusSinceDay,
   summarizeDay,
+  timelineBreakdown,
+  timelineSegments,
   toBusinessDay,
 } from '@mymind/domain';
 import { type Context, Hono } from 'hono';
@@ -38,7 +41,7 @@ import { z } from 'zod';
 import { createDayRecordReader, type DayRecordReader, hasReflection } from './dayRecords';
 import { createHealthApi, type HealthDeps } from './health';
 import { createJobsApi, type JobsApiDeps } from './jobsApi';
-import { monthParam } from './params';
+import { calendarDayParam, monthParam } from './params';
 import {
   type AppSettings,
   createSettingsApi,
@@ -69,6 +72,26 @@ export type ApiDeps = {
 };
 
 const dayParam = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD の形式で指定してください');
+
+/** タイムラインの表示期間の上限（FR-R01：1週間か2週間） */
+const TIMELINE_MAX_DAYS = 14;
+
+const timelineQuery = z
+  .strictObject({ from: calendarDayParam, to: calendarDayParam })
+  .refine((q) => q.from <= q.to, { message: 'from は to より前の日にしてください' })
+  .refine((q) => daysBetween(q.from, q.to) < TIMELINE_MAX_DAYS, {
+    message: `期間は${TIMELINE_MAX_DAYS}日までにしてください`,
+  });
+
+/** from から to までの業務日を順に並べる */
+const periodDays = (from: string, to: string) => {
+  const days = [from];
+  for (let day = from; day < to; ) {
+    day = nextDay(day);
+    days.push(day);
+  }
+  return days;
+};
 
 /** 更新系の API に共通する、画面が想定している状態（NFR-13、NFR-14） */
 const screenState = {
@@ -436,6 +459,61 @@ export function createApi({
         ym: ym.data,
         today,
         days: days.map((day) => monthDay(day, today, records, completed)),
+      });
+    })
+
+    .get('/timeline', (c) => {
+      const query = timelineQuery.safeParse(c.req.query());
+      if (!query.success) {
+        return fail(
+          c,
+          400,
+          'INVALID_REQUEST',
+          query.error.issues[0]?.message ?? '期間が正しくありません',
+        );
+      }
+      const { from, to } = query.data;
+      const today = toBusinessDay(now(), dayOptions);
+      // まだ来ていない日は描かない。期間がまるごと先なら、タスクは返さない
+      const drawTo = to < today ? to : today;
+      const list = from <= drawTo ? tasks.listTimelineTasks(from, drawTo) : [];
+      const events = tasks.listEventsOfTasks(list.map((t) => t.id));
+      const parentIds = [
+        ...new Set(list.flatMap((t) => (t.parentId === null ? [] : [t.parentId]))),
+      ];
+      const parents = new Map(tasks.findMany(parentIds).map((p) => [p.id, p.title]));
+      const rows = list.map((t) => {
+        const history = events.get(t.id) ?? [];
+        return {
+          id: t.id,
+          title: t.title,
+          status: t.status,
+          parentTitle: t.parentId === null ? null : (parents.get(t.parentId) ?? null),
+          segments: timelineSegments(history, { from, to: drawTo }),
+          // 内訳は表示期間ではなく、着手してから今日までで数える（FR-R03）
+          breakdown: timelineBreakdown(history, today),
+        };
+      });
+      return c.json({
+        from,
+        to,
+        today,
+        // 調子のレーン（FR-R02）。FB を依頼していない日は空（FR-A09）
+        days: periodDays(from, to).map((day) => {
+          const condition = day <= today ? jobs.jobs.findCondition(day) : undefined;
+          return {
+            day,
+            isFuture: day > today,
+            condition:
+              condition === undefined
+                ? null
+                : { aiLevel: condition.aiLevel, userLevel: condition.userLevel },
+          };
+        }),
+        // 期間の中で先に描き始めるタスクを上に置く
+        tasks: rows
+          .filter((r) => r.segments.length > 0)
+          .sort((a, b) => (a.segments[0]?.from ?? '').localeCompare(b.segments[0]?.from ?? '')),
       });
     })
 
