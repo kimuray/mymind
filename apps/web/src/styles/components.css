@@ -1410,7 +1410,6 @@
   border: var(--glass-border);
   border-radius: var(--radius-xl);
   box-shadow: var(--glass-shadow);
-  backdrop-filter: var(--glass-2-blur);
 }
 
 .calendar-weekday {

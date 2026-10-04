@@ -8,6 +8,8 @@ import { useEffect } from 'react';
 export type RealtimeMessage =
   /** タスク・計画・履歴が変わった（別のタブでの操作） */
   | { type: 'tasks.changed' }
+  /** 振り返りが変わった（別のタブでの操作。カレンダーの記録の有無が変わる） */
+  | { type: 'records.changed' }
   /** 設定が変わった（別のタブでの操作。既定のエージェントなど、依頼に使う値が変わる） */
   | { type: 'settings.changed' }
   /** エージェントのジョブの状態が変わった（サーバーから） */
@@ -72,8 +74,17 @@ export function notifySettingsChanged() {
   tabChannel().publish({ type: 'settings.changed' });
 }
 
+/** このタブで振り返りを保存したことを、他のタブに知らせる（NFR-13、FR-R04） */
+export function notifyRecordsChanged() {
+  if (typeof BroadcastChannel === 'undefined') return;
+  tabChannel().publish({ type: 'records.changed' });
+}
+
 function invalidateFor(qc: QueryClient, message: RealtimeMessage) {
-  if (message.type === 'settings.changed') {
+  if (message.type === 'records.changed') {
+    qc.invalidateQueries({ queryKey: ['day'] });
+    qc.invalidateQueries({ queryKey: ['month'] });
+  } else if (message.type === 'settings.changed') {
     qc.invalidateQueries({ queryKey: ['settings'] });
   } else if (message.type === 'tasks.changed') {
     qc.invalidateQueries({ queryKey: ['day'] });

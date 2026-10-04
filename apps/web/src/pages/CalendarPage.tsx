@@ -1,8 +1,12 @@
 import { Link } from '@tanstack/react-router';
+import { useState } from 'react';
 import { type MonthDay, useMonth } from '../api/calendar';
 import { useCancelJob, useSetCondition } from '../api/feedback';
 import { useRequestFeedback } from '../api/reflection';
+import { type AgentChoice, useSettings } from '../api/settings';
 import { useDayPlan } from '../api/tasks';
+import { AgentInputPreview } from '../components/AgentInputPreview';
+import { AgentSelect } from '../components/AgentSelect';
 import { formatSummary } from '../components/DaySummary';
 import { effectiveLevel, FeedbackPanel, moodOfLevel } from '../components/FeedbackPanel';
 import { Mame, MOOD_LABELS } from '../components/Mame';
@@ -99,7 +103,22 @@ function DayRecord({ d }: { d: MonthDay }) {
   const request = useRequestFeedback(d.day);
   const cancel = useCancelJob(d.day);
   const setCondition = useSetCondition(d.day);
+  const settings = useSettings();
+  // 選び直すまでは設定の既定のエージェント（FR-A07）。読み込む前は送らず、サーバーに既定を選ばせる
+  const [chosenAgent, setChosenAgent] = useState<AgentChoice | null>(null);
+  const agent = chosenAgent ?? settings.data?.settings.defaultAgent;
+  // 送信内容のプレビュー（FR-A12）。開き直すたびに作り直す
+  const [previewKey, setPreviewKey] = useState<number | null>(null);
   const title = formatDayTitle(d.day);
+
+  /** 「依頼の前に毎回確認する」が有効なら、依頼の前に必ず送信内容を見せる（FR-A12） */
+  const requestFeedback = () => {
+    if (settings.data?.settings.confirmBeforeRequest ?? false) {
+      setPreviewKey((k) => (k ?? 0) + 1);
+      return;
+    }
+    request.mutate(agent);
+  };
 
   if (d.isFuture) {
     return <p className="empty-note">{`${title}はまだ来ていない日です`}</p>;
@@ -148,16 +167,33 @@ function DayRecord({ d }: { d: MonthDay }) {
               </section>
             </>
           )}
-          <FeedbackPanel
-            heading="この日のフィードバック"
-            dayLabel={formatDayHeading(d.day).date}
-            feedback={feedback}
-            condition={condition}
-            job={job}
-            onRequest={() => request.mutate(undefined)}
-            onCancel={(jobId) => cancel.mutate(jobId)}
-            onChangeCondition={(level) => setCondition.mutate(level)}
-            busy={request.isPending || cancel.isPending}
+          {previewKey === null ? (
+            <FeedbackPanel
+              heading="この日のフィードバック"
+              dayLabel={formatDayHeading(d.day).date}
+              feedback={feedback}
+              condition={condition}
+              job={job}
+              onRequest={requestFeedback}
+              onCancel={(jobId) => cancel.mutate(jobId)}
+              onChangeCondition={(level) => setCondition.mutate(level)}
+              busy={request.isPending || cancel.isPending}
+            />
+          ) : (
+            <AgentInputPreview
+              key={previewKey}
+              period={d.day}
+              agent={agent}
+              // 依頼したら送信内容を閉じ、生成の進み具合を見せる
+              onRequested={() => setPreviewKey(null)}
+            />
+          )}
+          <AgentSelect
+            id="calendar-agent"
+            label="エージェント"
+            value={agent ?? 'claude'}
+            onChange={setChosenAgent}
+            disabled={request.isPending || agent === undefined}
           />
         </>
       )}

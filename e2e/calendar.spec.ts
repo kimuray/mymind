@@ -12,6 +12,20 @@ const monthBefore = (n: number) => {
   return new Date(Date.UTC(y ?? 1970, (m ?? 1) - 1 - n, 1)).toISOString().slice(0, 7);
 };
 
+/** 画面の中から設定を変える（状態を変える API にはトークンが要る） */
+function patchSettings(page: Page, patch: Record<string, unknown>) {
+  return page.evaluate(async (patch) => {
+    const token =
+      document.querySelector('meta[name="mymind-token"]')?.getAttribute('content') ?? '';
+    const res = await fetch('/api/settings', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'X-Mymind-Token': token },
+      body: JSON.stringify(patch),
+    });
+    return res.status;
+  }, patch);
+}
+
 /** 画面の中から振り返りを保存する（状態を変える API にはトークンが要る） */
 function saveReflection(page: Page, day: string, thoughtsMd: string) {
   return page.evaluate(
@@ -80,5 +94,51 @@ test.describe('FR-R04 FR-A05 FR-A09 カレンダー', () => {
     await expect(page).toHaveURL(new RegExp(`/calendar/${monthBefore(1)}$`));
     await page.getByRole('link', { name: '前の月' }).click();
     await expect(page).toHaveURL(new RegExp(`/calendar/${ym}$`));
+  });
+
+  test('「依頼の前に毎回確認する」が有効なら送信内容を見せ、選んだエージェントで依頼する', async ({
+    page,
+  }) => {
+    const day = `${ym}-09`;
+    await page.goto('/');
+    expect(await saveReflection(page, day, '確認してから依頼する振り返り')).toBe(200);
+    expect(await patchSettings(page, { confirmBeforeRequest: true })).toBe(200);
+    try {
+      await page.goto(`/calendar/${ym}/${day}`);
+      const detail = page.getByRole('complementary', { name: '詳細' });
+      await detail.getByRole('combobox', { name: 'エージェント' }).selectOption('codex');
+      await detail.getByRole('button', { name: 'FBをもらう' }).click();
+      await expect(detail.getByRole('heading', { name: '送信内容' })).toBeVisible();
+      await expect(detail).toContainText('確認してから依頼する振り返り');
+      const requested = page
+        .waitForRequest((r) => r.method() === 'POST' && new URL(r.url()).pathname === '/api/jobs')
+        .then((r) => r.postDataJSON() as { agent?: string; payloadHash?: string });
+      await detail.getByRole('button', { name: 'この内容でFBをもらう' }).click();
+      expect(await requested).toMatchObject({ agent: 'codex', payloadHash: expect.any(String) });
+    } finally {
+      await patchSettings(page, { confirmBeforeRequest: false });
+    }
+  });
+
+  test('別のタブで振り返りを保存すると、開いているカレンダーに反映される', async ({ context }) => {
+    const day = `${ym}-10`;
+    const calendar = await context.newPage();
+    const subscribed = calendar.waitForRequest((r) => r.url().endsWith('/api/events'));
+    await calendar.goto(`/calendar/${ym}`);
+    await subscribed;
+    await expect(
+      calendar.getByRole('link', { name: new RegExp(`月${dayNumber(day)}日（.） 記録なし`) }),
+    ).toBeVisible();
+
+    const reflection = await context.newPage();
+    await reflection.goto(`/reflection/${day}`);
+    await reflection.getByRole('textbox', { name: '思考の整理' }).click();
+    await reflection.keyboard.type('別のタブで書いた振り返り');
+    await reflection.keyboard.press('ControlOrMeta+s');
+    await expect(reflection.locator('.reflection-notice')).toHaveText('保存しました');
+
+    await expect(
+      calendar.getByRole('link', { name: new RegExp(`月${dayNumber(day)}日（.） FBなし`) }),
+    ).toBeVisible();
   });
 });
