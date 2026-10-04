@@ -15,9 +15,6 @@ function Page({ title, note }: { title: string; note?: string }) {
 }
 
 export const TimelinePage = () => <Page title="タイムライン" />;
-export function CalendarPage({ ym, day }: { ym: string; day: string | undefined }) {
-  return <Page title="カレンダー" note={day ?? ym} />;
-}
 
 const SIZES = [28, 44, 76, 96] as const;
 

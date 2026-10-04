@@ -44,11 +44,13 @@ test.describe('FR-R06 棚卸し', () => {
       await expect(panel).toContainText('0日以上触れていないタスクを1件ずつ判断');
 
       // ほかのテストが残したタスクは「残す」で後ろへ回す（0日の設定では、残しても対象のまま後ろに並ぶ）
+      // 同じ名前のタスクがほかのテストにあっても進んだと分かるよう、進み具合の表示が変わるのを待つ
       const card = panel.locator('.stocktake-card h3');
+      const progress = panel.locator('.stocktake-progress p');
       for (let i = 0; i < 100 && (await card.textContent()) !== thisWeek; i++) {
-        const before = await card.textContent();
+        const before = await progress.textContent();
         await page.keyboard.press('2');
-        await expect(card).not.toHaveText(before ?? '');
+        await expect(progress).not.toHaveText(before ?? '');
       }
       await expect(card).toHaveText(thisWeek);
       await expect(panel).toContainText('一度も着手されていません');

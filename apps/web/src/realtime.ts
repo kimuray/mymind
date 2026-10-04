@@ -8,6 +8,8 @@ import { useEffect } from 'react';
 export type RealtimeMessage =
   /** タスク・計画・履歴が変わった（別のタブでの操作） */
   | { type: 'tasks.changed' }
+  /** 振り返りが変わった（別のタブでの操作。カレンダーの記録の有無が変わる） */
+  | { type: 'records.changed' }
   /** 設定が変わった（別のタブでの操作。既定のエージェントなど、依頼に使う値が変わる） */
   | { type: 'settings.changed' }
   /** エージェントのジョブの状態が変わった（サーバーから） */
@@ -72,8 +74,17 @@ export function notifySettingsChanged() {
   tabChannel().publish({ type: 'settings.changed' });
 }
 
+/** このタブで振り返りを保存したことを、他のタブに知らせる（NFR-13、FR-R04） */
+export function notifyRecordsChanged() {
+  if (typeof BroadcastChannel === 'undefined') return;
+  tabChannel().publish({ type: 'records.changed' });
+}
+
 function invalidateFor(qc: QueryClient, message: RealtimeMessage) {
-  if (message.type === 'settings.changed') {
+  if (message.type === 'records.changed') {
+    qc.invalidateQueries({ queryKey: ['day'] });
+    qc.invalidateQueries({ queryKey: ['month'] });
+  } else if (message.type === 'settings.changed') {
     qc.invalidateQueries({ queryKey: ['settings'] });
     // 棚卸しの日数（FR-R06）で対象が変わる
     qc.invalidateQueries({ queryKey: ['review'] });
@@ -84,11 +95,15 @@ function invalidateFor(qc: QueryClient, message: RealtimeMessage) {
     qc.invalidateQueries({ queryKey: ['events'] });
     // 棚卸しの対象（FR-R06）
     qc.invalidateQueries({ queryKey: ['review'] });
+    // カレンダーの完了件数（FR-R04）
+    qc.invalidateQueries({ queryKey: ['month'] });
   } else {
     qc.invalidateQueries({ queryKey: ['jobs', message.jobId] });
     qc.invalidateQueries({ queryKey: ['feedbacks'] });
     // その日の応答に、最新のジョブと FB と調子が入っている（GET /api/days/:day）
     qc.invalidateQueries({ queryKey: ['day'] });
+    // カレンダーの調子と FB の有無（FR-R04）
+    qc.invalidateQueries({ queryKey: ['month'] });
   }
 }
 
