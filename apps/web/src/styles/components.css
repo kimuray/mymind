@@ -1375,3 +1375,133 @@
   font-weight: 600;
   color: var(--ink-1);
 }
+
+/* カレンダー（DESIGN.md 4.14、Figma「PC/カレンダー」） */
+.calendar-header {
+  align-items: center;
+}
+
+.calendar-months {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.calendar-month-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-m);
+  color: var(--ink-2);
+  font-size: 18px;
+  text-decoration: none;
+}
+
+.calendar-month-link:hover {
+  background: var(--button-secondary-bg);
+}
+
+.calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: var(--glass-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--glass-shadow);
+}
+
+.calendar-weekday {
+  font-size: 12px;
+  color: var(--ink-4);
+  text-align: center;
+}
+
+.calendar-cell,
+.calendar-cell-empty {
+  min-height: 100px;
+}
+
+.calendar-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--space-2) 6px;
+  border: var(--calendar-cell-border);
+  border-radius: var(--radius-l);
+  background: var(--calendar-cell-bg);
+  color: var(--ink-2);
+  text-decoration: none;
+}
+
+.calendar-cell[data-future="true"] {
+  background: var(--calendar-cell-future-bg);
+}
+
+.calendar-cell[data-selected="true"] {
+  border: 2px solid var(--accent);
+  background: var(--calendar-cell-selected-bg);
+}
+
+.calendar-date {
+  align-self: flex-start;
+  font-size: 12px;
+}
+
+.calendar-cell[data-today="true"] .calendar-date {
+  color: var(--accent-strong);
+  font-weight: 500;
+}
+
+.calendar-note {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.calendar-legend {
+  display: flex;
+  gap: 18px;
+  padding-left: var(--space-2);
+}
+
+.calendar-record {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.calendar-record-title {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.calendar-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.calendar-summary li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.calendar-summary .chip {
+  flex-shrink: 0;
+}
+
+.calendar-reflection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
