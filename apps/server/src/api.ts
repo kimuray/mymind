@@ -1,4 +1,4 @@
-import { dailyFeedbackSchema } from '@mymind/agent';
+import { dailyFeedbackSchema, monthlySummarySchema } from '@mymind/agent';
 import type {
   DailyLogRepository,
   Feedback,
@@ -141,6 +141,21 @@ function toDailyFeedback(f: Feedback | undefined) {
     period: f.period,
     agent: f.agent,
     promptVersion: f.promptVersion,
+    createdAt: f.createdAt,
+    content: content.success ? content.data : null,
+  };
+}
+
+/** 画面に返す月次総括（FR-A06、FR-R05）。日次 FB と同じく、中身はスキーマで検証し直す。読めない中身は null */
+function toMonthlySummary(f: Feedback | undefined) {
+  if (f === undefined) return null;
+  const content = monthlySummarySchema.safeParse(f.content);
+  return {
+    id: f.id,
+    period: f.period,
+    agent: f.agent,
+    promptVersion: f.promptVersion,
+    isPartial: f.isPartial,
     createdAt: f.createdAt,
     content: content.success ? content.data : null,
   };
@@ -435,6 +450,9 @@ export function createApi({
       return c.json({
         ym: ym.data,
         today,
+        // 最新の総括（FR-R05）と、生成中・失敗を出すための最新のジョブ（FR-A06、FR-A08）
+        summary: toMonthlySummary(jobs.jobs.listFeedbacks('monthly', ym.data)[0]),
+        summaryJob: jobs.jobs.latestJob('monthly_summary', ym.data) ?? null,
         days: days.map((day) => monthDay(day, today, records, completed)),
       });
     })

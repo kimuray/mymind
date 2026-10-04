@@ -56,7 +56,7 @@ export function renderedPaths(payload: Preview['payload']): Set<string> {
 const isAttached = (a: InputAnnotation, rendered: Set<string>) =>
   a.kind !== 'omitted' && rendered.has(a.path);
 
-function AnnotationNote({ annotation }: { annotation: InputAnnotation }) {
+export function AnnotationNote({ annotation }: { annotation: InputAnnotation }) {
   return (
     <p className="input-annotation">
       <span className="input-annotation-kind">
@@ -242,8 +242,8 @@ export function AgentInputPreview({
   agent?: AgentChoice | undefined;
   onRequested?: (jobId: string) => void;
 }) {
-  const preview = useAgentInputPreview(period);
-  const request = useRequestPreviewedFeedback(period);
+  const preview = useAgentInputPreview('daily_feedback', period);
+  const request = useRequestPreviewedFeedback('daily_feedback', period);
   const isStale = request.error instanceof ApiError && request.error.code === 'PREVIEW_STALE';
 
   if (preview.isPending) return <p className="text-small">送信内容を組み立てています…</p>;
