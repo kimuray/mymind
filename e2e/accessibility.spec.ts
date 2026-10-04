@@ -32,6 +32,12 @@ async function addTask(page: Page, title: string) {
   await expect(page.getByRole('button', { name: new RegExp(`^${title}：`) })).toBeVisible();
 }
 
+/** 今の業務日（Asia/Tokyo、5時で切り替え）の月 */
+const currentMonth = () =>
+  new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Tokyo' })
+    .format(new Date(Date.now() - 5 * 60 * 60 * 1000))
+    .slice(0, 7);
+
 test.describe('NFR-22 透明度・動きの設定への対応', () => {
   test('透明度を下げる設定では、ガラスの面を不透明にし、背景のにじみを消す', async ({ page }) => {
     emulation = await emulatePreferences(page);
@@ -40,6 +46,14 @@ test.describe('NFR-22 透明度・動きの設定への対応', () => {
     await expect(sidebar).toHaveCSS('backdrop-filter', 'none');
     await expect(sidebar).toHaveCSS('background-color', 'rgb(251, 249, 245)');
     await expect(page.locator('body')).toHaveCSS('background-image', 'none');
+  });
+
+  test('透明度を下げる設定では、カレンダーの表の面も不透明にする', async ({ page }) => {
+    emulation = await emulatePreferences(page);
+    await page.goto(`/calendar/${currentMonth()}`);
+    const grid = page.locator('.calendar-grid');
+    await expect(grid).toHaveCSS('backdrop-filter', 'none');
+    await expect(grid).toHaveCSS('background-color', 'rgb(251, 249, 245)');
   });
 
   test('視差効果を減らす設定では、マメの考え中の泡を動かさない', async ({ page }) => {
@@ -66,6 +80,7 @@ test.describe('NFR-06 コントラスト', () => {
     ['振り返り', '/reflection'],
     ['マメの表情', '/dev/mame'],
     ['設定', '/settings'],
+    ['カレンダー', `/calendar/${currentMonth()}`],
   ] as const) {
     test(`${name}の画面に、WCAG 2 AA のコントラストの違反がない`, async ({ page }) => {
       // ガラスの面とにじみの背景では、axe が文字の背景色を決められず判定できない（incomplete）ので、
