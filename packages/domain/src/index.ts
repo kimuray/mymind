@@ -6,6 +6,7 @@ export * from './morningPlan';
 export * from './plans';
 export * from './review';
 export * from './rules';
+export * from './schedule';
 export * from './status';
 export * from './taskDays';
 export * from './taskEvents';

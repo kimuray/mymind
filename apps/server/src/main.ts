@@ -28,6 +28,7 @@ import { createJobRunner } from './jobRunner';
 import { listen } from './listen';
 import { createLogger } from './logger';
 import { loadDailyPrompt, loadMonthlyPrompt } from './prompts';
+import { createScheduler } from './scheduler';
 import { createSettingsReader } from './settingsApi';
 import { createUlidGenerator } from './ulid';
 import { createDevRedirect, createWebRoutes } from './web';
@@ -125,6 +126,13 @@ async function main(): Promise<number> {
     timeoutMs: agent.timeoutMs,
   });
   jobRunner.start();
+  // 定期処理（毎日のバックアップ、通知）の土台。予定はそれぞれの機能が add で加える（NFR-19）
+  const scheduler = createScheduler({
+    now: () => new Date(),
+    timeZone: DAY_OPTIONS.timeZone,
+    logger,
+  });
+  scheduler.start();
   const api = createApi({
     tasks,
     now: () => new Date(),
@@ -161,6 +169,7 @@ async function main(): Promise<number> {
   const app = createApp({ ports: [port, ...devPorts], sessionToken }, api, web);
   const server = await listen(app, host, port);
   if (!server.ok) {
+    scheduler.stop();
     db.$client.close();
     lock.release();
     console.error(
@@ -170,6 +179,7 @@ async function main(): Promise<number> {
   }
 
   const shutdown = async () => {
+    scheduler.stop();
     await server.value.close();
     db.$client.close();
     lock.release();
