@@ -235,7 +235,7 @@ CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 5. `feedbacks` と `conditions.ai_level / ai_reason` を保存し、ジョブを `succeeded` にする
 6. 進捗は `GET /api/events`（SSE）で画面に通知する
 
-エージェントには決まった入力を渡してJSONを返してもらうだけで、ツールを使った自律的な操作はさせません（ADR-0003）。対話的に相談したいときは、ターミナルのClaude Code / CodexからMCPサーバー経由でデータを参照します。
+エージェントには決まった入力を渡してJSONを返してもらうだけで、ツールを使った自律的な操作はさせません（ADR-0003）。対話的に相談したいときは、ターミナルのClaude Code / CodexからMCPサーバー経由でデータを参照します。MCPサーバーは公式SDKで作り、読み取りの道具（その日、バックログ、タイムライン、月、タスク名の検索）だけを、動いているサーバーのAPI経由で出します（ADR-0014、FR-M01〜M03）。
 
 ### 7.2 入力
 
