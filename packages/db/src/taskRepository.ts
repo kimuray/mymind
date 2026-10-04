@@ -3,6 +3,7 @@ import {
   and,
   asc,
   between,
+  desc,
   eq,
   gte,
   inArray,
@@ -11,10 +12,17 @@ import {
   notExists,
   notInArray,
   or,
+  sql,
 } from 'drizzle-orm';
 import type { Database } from './client';
 import { dayPlans, taskEvents, tasks } from './schema';
 import type { SensitiveCodec } from './sensitiveCodec';
+
+/** タスク名の検索で返す最大の件数（FR-M02） */
+export const SEARCH_LIMIT = 50;
+
+/** LIKE の特別な文字（%、_、\）を、文字そのものとして探すための形にする */
+const escapeLike = (text: string) => text.replace(/[\\%_]/g, (c) => `\\${c}`);
 
 /** ステータスが変わるイベントの種類 */
 const STATUS_EVENT_TYPES = ['status_changed', 'completion_undone'] as const;
@@ -433,6 +441,21 @@ export function createTaskRepository({ db, codec, newEventId }: TaskRepositoryDe
         .from(tasks)
         .where(inArray(tasks.id, ids))
         .orderBy(asc(tasks.sortOrder))
+        .all()
+        .map(toTask);
+    },
+
+    /**
+     * タスク名の部分一致で探す（FR-M02 の search_tasks）。新しく作った順に、最大 SEARCH_LIMIT 件。
+     * 振り返りやメモの本文は探さない（全文検索は対象外、requirements.md 6章）
+     */
+    searchByTitle(query: string): Task[] {
+      return db
+        .select()
+        .from(tasks)
+        .where(sql`${tasks.title} LIKE ${`%${escapeLike(query)}%`} ESCAPE '\\'`)
+        .orderBy(desc(tasks.createdAt))
+        .limit(SEARCH_LIMIT)
         .all()
         .map(toTask);
     },

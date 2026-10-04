@@ -1088,3 +1088,23 @@ describe('FR-A06 FR-R05 月の API の総括', () => {
     });
   });
 });
+
+describe('FR-M02 タスク名の検索の API', () => {
+  it('名前の部分一致で、状態や日数を添えて返す', async () => {
+    await addTask({ title: '企画書ドラフトを書く' });
+    await addTask({ title: '週報' });
+    const res = await get(`/tasks/search?q=${encodeURIComponent('企画')}`);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({
+      tasks: [{ title: '企画書ドラフトを書く', status: 'todo', statusSince: TODAY }],
+    });
+  });
+
+  it.each([
+    ['語がない', '/tasks/search'],
+    ['空白だけ', `/tasks/search?q=${encodeURIComponent('  ')}`],
+    ['101文字', `/tasks/search?q=${'あ'.repeat(101)}`],
+  ])('%s は 400', async (_, path) => {
+    expect((await get(path)).status).toBe(400);
+  });
+});

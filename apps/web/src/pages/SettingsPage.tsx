@@ -294,6 +294,25 @@ function ReviewSettings() {
   );
 }
 
+/**
+ * MCP で参照したときに送られるデータの知らせ（NFR-05、FR-M01）。MCP の登録は画面からはしないので、文だけを置く
+ */
+function McpNotice() {
+  return (
+    <section className="task-list settings-status glass-2" aria-label="MCP">
+      <div className="settings-status-head">
+        <h2>MCP（ターミナルからの参照）</h2>
+      </div>
+      <p className="settings-note">
+        ターミナルの Claude Code や Codex に MCP
+        サーバーを登録すると、記録を読み取りだけで参照できます（登録の手順は
+        packages/mcp/README.md）。道具で読んだ振り返り、タスク、FB は、そのエージェントを通じて AI
+        の提供元に送られます。FB の依頼と違い、送る量の上限や送信内容の確認はありません。
+      </p>
+    </section>
+  );
+}
+
 /** 設定（Figma「PC/設定」）。アプリの状態（NFR-21）と、FB の依頼の設定（FR-A12）を表示する */
 export function SettingsPage() {
   const health = useHealth();
@@ -313,7 +332,7 @@ export function SettingsPage() {
       <div className="page">
         <header className="page-header">
           <h1 className="text-display">設定</h1>
-          <p className="text-small">アプリの状態、FB の依頼、棚卸し</p>
+          <p className="text-small">アプリの状態、FB の依頼、棚卸し、MCP</p>
         </header>
         <section className="task-list settings-status glass-2" aria-label="状態">
           <div className="settings-status-head">
@@ -360,6 +379,7 @@ export function SettingsPage() {
         </p>
         <FeedbackSettings />
         <ReviewSettings />
+        <McpNotice />
       </div>
     </PageLayout>
   );
