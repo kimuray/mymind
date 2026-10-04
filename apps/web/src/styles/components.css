@@ -1724,6 +1724,77 @@
   margin: 0;
 }
 
+/* カレンダーの詳細ペインの切り替えと、月次総括（DESIGN.md 4.14、FR-A06、FR-R05） */
+.calendar-detail {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.calendar-tabs {
+  display: flex;
+}
+
+.calendar-tabs .segmented-item {
+  flex: 1;
+}
+
+.monthly-summary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.monthly-summary-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.monthly-summary-head h2 {
+  margin: 0;
+}
+
+.input-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.input-stats div {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-size: 13px;
+}
+
+.input-stats dd {
+  margin: 0;
+  font-weight: 500;
+}
+
+.input-days {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.input-days li {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.input-day {
+  flex-shrink: 0;
+  width: 40px;
+  color: var(--ink-3);
+}
+
 /* タイムライン（DESIGN.md 4.8、Figma「PC/タイムライン」、FR-R01〜R03） */
 .timeline-header {
   align-items: center;

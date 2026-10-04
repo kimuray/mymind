@@ -88,6 +88,17 @@ describe('FR-A02 FB と調子の保存', () => {
     expect(jobs.listFeedbacks('daily', DAY).map((f) => f.id)).toEqual(['f-j2', 'f-j1']);
   });
 
+  it('最新の1件だけを読み、なければ undefined を返す（FR-R05 の総括の表示）', () => {
+    expect(jobs.latestFeedback('daily', DAY)).toBeUndefined();
+    for (const id of ['j1', 'j2']) {
+      createJob(id);
+      jobs.claimNext(at(1));
+      jobs.succeed(success(id));
+    }
+    expect(jobs.latestFeedback('daily', DAY)?.id).toBe('f-j2');
+    expect(jobs.latestFeedback('monthly', DAY)).toBeUndefined();
+  });
+
   it('手動で修正した調子は、AI の判定を更新しても残す（FR-A03）', () => {
     db.insert(conditions)
       .values({ day: DAY, userLevel: 1, updatedAt: at(0) })

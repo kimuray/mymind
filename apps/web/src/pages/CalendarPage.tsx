@@ -1,6 +1,12 @@
 import { Link } from '@tanstack/react-router';
 import { useState } from 'react';
-import { type MonthDay, useMonth } from '../api/calendar';
+import {
+  type MonthDay,
+  type MonthResponse,
+  useCancelMonthlySummary,
+  useMonth,
+  useRequestMonthlySummary,
+} from '../api/calendar';
 import { useCancelJob, useSetCondition } from '../api/feedback';
 import { useRequestFeedback } from '../api/reflection';
 import { type AgentChoice, useSettings } from '../api/settings';
@@ -11,6 +17,8 @@ import { formatSummary } from '../components/DaySummary';
 import { effectiveLevel, FeedbackPanel, moodOfLevel } from '../components/FeedbackPanel';
 import { Mame, MOOD_LABELS } from '../components/Mame';
 import { MarkdownPreview } from '../components/MarkdownPreview';
+import { MonthlyInputPreview } from '../components/MonthlyInputPreview';
+import { MonthlySummaryPanel, summaryTitle } from '../components/MonthlySummaryPanel';
 import { PageLayout } from '../components/PageLayout';
 import { formatDayHeading } from '../day';
 
@@ -202,6 +210,104 @@ function DayRecord({ d }: { d: MonthDay }) {
   );
 }
 
+/** その月の総括（FR-A06、FR-R05）。依頼の前の確認（FR-A12）とエージェントの選択（FR-A07）も、日次 FB と同じに扱う */
+function MonthSummarySection({ ym, data }: { ym: string; data: MonthResponse }) {
+  const request = useRequestMonthlySummary(ym);
+  const cancel = useCancelMonthlySummary(ym);
+  const settings = useSettings();
+  const [chosenAgent, setChosenAgent] = useState<AgentChoice | null>(null);
+  const agent = chosenAgent ?? settings.data?.settings.defaultAgent;
+  const [previewKey, setPreviewKey] = useState<number | null>(null);
+  // まだ始まっていない月の総括は作れない
+  const isFuture = ym > data.today.slice(0, 7);
+
+  const requestSummary = () => {
+    if (settings.data?.settings.confirmBeforeRequest ?? false) {
+      setPreviewKey((k) => (k ?? 0) + 1);
+      return;
+    }
+    request.mutate(agent);
+  };
+
+  return (
+    <div className="calendar-record">
+      {previewKey === null ? (
+        <MonthlySummaryPanel
+          ym={ym}
+          summary={data.summary}
+          job={data.summaryJob}
+          {...(isFuture ? {} : { onRequest: requestSummary })}
+          onCancel={(jobId) => cancel.mutate(jobId)}
+          busy={request.isPending || cancel.isPending}
+        />
+      ) : (
+        <MonthlyInputPreview
+          key={previewKey}
+          ym={ym}
+          agent={agent}
+          // 依頼したら送信内容を閉じ、生成の進み具合を見せる
+          onRequested={() => setPreviewKey(null)}
+        />
+      )}
+      {isFuture ? (
+        <p className="text-small">まだ始まっていない月です</p>
+      ) : (
+        <AgentSelect
+          id="calendar-summary-agent"
+          label="エージェント"
+          fakeAgent={settings.data?.runtime.fakeAgent === true ? 'chip' : undefined}
+          value={agent ?? 'claude'}
+          onChange={setChosenAgent}
+          disabled={request.isPending || agent === undefined}
+        />
+      )}
+    </div>
+  );
+}
+
+/** 詳細ペイン。「この日」と「◯月の総括」を切り替える（Figma「PC/カレンダー」の詳細ペイン） */
+function CalendarDetail({
+  ym,
+  data,
+  selected,
+}: {
+  ym: string;
+  data: MonthResponse;
+  selected: MonthDay | undefined;
+}) {
+  // 日付を選んでいれば「この日」、選んでいなければ総括から見せる（日付を選び直すと作り直す）
+  const [tab, setTab] = useState<'day' | 'summary'>(selected === undefined ? 'summary' : 'day');
+  return (
+    <div className="calendar-detail">
+      <fieldset className="segmented calendar-tabs" aria-label="詳細の表示">
+        <button
+          type="button"
+          className="segmented-item"
+          aria-pressed={tab === 'day'}
+          onClick={() => setTab('day')}
+        >
+          この日
+        </button>
+        <button
+          type="button"
+          className="segmented-item"
+          aria-pressed={tab === 'summary'}
+          onClick={() => setTab('summary')}
+        >
+          {summaryTitle(ym)}
+        </button>
+      </fieldset>
+      {tab === 'summary' ? (
+        <MonthSummarySection ym={ym} data={data} />
+      ) : selected === undefined ? (
+        <p className="empty-note">日付を選ぶと、その日の記録が表示されます</p>
+      ) : (
+        <DayRecord d={selected} />
+      )}
+    </div>
+  );
+}
+
 /** カレンダー（Figma「PC/カレンダー」、/calendar/:ym/:day?、FR-R04、FR-A05、FR-A09） */
 export function CalendarPage({ ym, day }: { ym: string; day: string | undefined }) {
   const month = useMonth(ym);
@@ -210,8 +316,12 @@ export function CalendarPage({ ym, day }: { ym: string; day: string | undefined 
 
   return (
     <PageLayout
-      detail={selected === undefined ? undefined : <DayRecord key={selected.day} d={selected} />}
-      emptyNote="日付を選ぶと、その日の記録が表示されます"
+      detail={
+        data === undefined ? undefined : (
+          <CalendarDetail key={`${ym}-${day ?? ''}`} ym={ym} data={data} selected={selected} />
+        )
+      }
+      emptyNote="月の記録を読み込んでいます"
     >
       <div className="page calendar">
         <header className="page-header calendar-header">
