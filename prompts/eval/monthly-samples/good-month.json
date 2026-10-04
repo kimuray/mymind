@@ -1,0 +1,402 @@
+{
+  "title": "好調な月：朝の一手が定着し、待ちも早めに動かしている",
+  "data": {
+    "month": "2026-08",
+    "isPartial": false,
+    "through": "2026-08-31",
+    "stats": {
+      "recordedDays": 24,
+      "blankDays": 7,
+      "feedbackDays": 24,
+      "correctedDays": 0,
+      "completed": 42
+    },
+    "days": [
+      {
+        "day": "2026-08-01",
+        "isBlank": false,
+        "condition": {
+          "ai": 4,
+          "user": null
+        },
+        "feedback": {
+          "good": ["朝いちばんに週報を15分で終わらせ、午前を設計に使えた"],
+          "insight": ["朝の小さな片付けが、午前の集中を守っている"],
+          "nextAction": "明日も朝の15分で週報を書く"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-08-02",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-08-03",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["朝いちばんに週報を15分で終わらせ、午前を設計に使えた"],
+          "insight": ["待ちは、催促の日を決めると早く動く"],
+          "nextAction": "明日も朝の15分で週報を書く"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-08-04",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["レビュー待ちのタスクに、その日のうちに催促を入れた"],
+          "insight": ["朝の小さな片付けが、午前の集中を守っている"],
+          "nextAction": "待ちのタスクに、催促する日を書いておく"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-08-05",
+        "isBlank": false,
+        "condition": {
+          "ai": 4,
+          "user": null
+        },
+        "feedback": {
+          "good": ["朝いちばんに週報を15分で終わらせ、午前を設計に使えた"],
+          "insight": ["待ちは、催促の日を決めると早く動く"],
+          "nextAction": "明日も朝の15分で週報を書く"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-08-06",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["レビュー待ちのタスクに、その日のうちに催促を入れた"],
+          "insight": ["待ちは、催促の日を決めると早く動く"],
+          "nextAction": "待ちのタスクに、催促する日を書いておく"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-08-07",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["朝いちばんに週報を15分で終わらせ、午前を設計に使えた"],
+          "insight": ["朝の小さな片付けが、午前の集中を守っている"],
+          "nextAction": "明日も朝の15分で週報を書く"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-08-08",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-08-09",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-08-10",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["レビュー待ちのタスクに、その日のうちに催促を入れた"],
+          "insight": ["朝の小さな片付けが、午前の集中を守っている"],
+          "nextAction": "待ちのタスクに、催促する日を書いておく"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-08-11",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["朝いちばんに週報を15分で終わらせ、午前を設計に使えた"],
+          "insight": ["待ちは、催促の日を決めると早く動く"],
+          "nextAction": "明日も朝の15分で週報を書く"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-08-12",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["レビュー待ちのタスクに、その日のうちに催促を入れた"],
+          "insight": ["待ちは、催促の日を決めると早く動く"],
+          "nextAction": "待ちのタスクに、催促する日を書いておく"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-08-13",
+        "isBlank": false,
+        "condition": {
+          "ai": 4,
+          "user": null
+        },
+        "feedback": {
+          "good": ["朝いちばんに週報を15分で終わらせ、午前を設計に使えた"],
+          "insight": ["朝の小さな片付けが、午前の集中を守っている"],
+          "nextAction": "明日も朝の15分で週報を書く"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-08-14",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["レビュー待ちのタスクに、その日のうちに催促を入れた"],
+          "insight": ["待ちは、催促の日を決めると早く動く"],
+          "nextAction": "待ちのタスクに、催促する日を書いておく"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-08-15",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-08-16",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["レビュー待ちのタスクに、その日のうちに催促を入れた"],
+          "insight": ["朝の小さな片付けが、午前の集中を守っている"],
+          "nextAction": "待ちのタスクに、催促する日を書いておく"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-08-17",
+        "isBlank": false,
+        "condition": {
+          "ai": 4,
+          "user": null
+        },
+        "feedback": {
+          "good": ["朝いちばんに週報を15分で終わらせ、午前を設計に使えた"],
+          "insight": ["待ちは、催促の日を決めると早く動く"],
+          "nextAction": "明日も朝の15分で週報を書く"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-08-18",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["レビュー待ちのタスクに、その日のうちに催促を入れた"],
+          "insight": ["待ちは、催促の日を決めると早く動く"],
+          "nextAction": "待ちのタスクに、催促する日を書いておく"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-08-19",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["朝いちばんに週報を15分で終わらせ、午前を設計に使えた"],
+          "insight": ["朝の小さな片付けが、午前の集中を守っている"],
+          "nextAction": "明日も朝の15分で週報を書く"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-08-20",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["レビュー待ちのタスクに、その日のうちに催促を入れた"],
+          "insight": ["待ちは、催促の日を決めると早く動く"],
+          "nextAction": "待ちのタスクに、催促する日を書いておく"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-08-21",
+        "isBlank": false,
+        "condition": {
+          "ai": 4,
+          "user": null
+        },
+        "feedback": {
+          "good": ["朝いちばんに週報を15分で終わらせ、午前を設計に使えた"],
+          "insight": ["待ちは、催促の日を決めると早く動く"],
+          "nextAction": "明日も朝の15分で週報を書く"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-08-22",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["レビュー待ちのタスクに、その日のうちに催促を入れた"],
+          "insight": ["朝の小さな片付けが、午前の集中を守っている"],
+          "nextAction": "待ちのタスクに、催促する日を書いておく"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-08-23",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-08-24",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["レビュー待ちのタスクに、その日のうちに催促を入れた"],
+          "insight": ["待ちは、催促の日を決めると早く動く"],
+          "nextAction": "待ちのタスクに、催促する日を書いておく"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-08-25",
+        "isBlank": false,
+        "condition": {
+          "ai": 4,
+          "user": null
+        },
+        "feedback": {
+          "good": ["朝いちばんに週報を15分で終わらせ、午前を設計に使えた"],
+          "insight": ["朝の小さな片付けが、午前の集中を守っている"],
+          "nextAction": "明日も朝の15分で週報を書く"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-08-26",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["レビュー待ちのタスクに、その日のうちに催促を入れた"],
+          "insight": ["待ちは、催促の日を決めると早く動く"],
+          "nextAction": "待ちのタスクに、催促する日を書いておく"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-08-27",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["朝いちばんに週報を15分で終わらせ、午前を設計に使えた"],
+          "insight": ["待ちは、催促の日を決めると早く動く"],
+          "nextAction": "明日も朝の15分で週報を書く"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-08-28",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["レビュー待ちのタスクに、その日のうちに催促を入れた"],
+          "insight": ["朝の小さな片付けが、午前の集中を守っている"],
+          "nextAction": "待ちのタスクに、催促する日を書いておく"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-08-29",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-08-30",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-08-31",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["朝いちばんに週報を15分で終わらせ、午前を設計に使えた"],
+          "insight": ["朝の小さな片付けが、午前の集中を守っている"],
+          "nextAction": "明日も朝の15分で週報を書く"
+        },
+        "reflection": null
+      }
+    ]
+  }
+}

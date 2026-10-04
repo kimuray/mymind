@@ -1,0 +1,241 @@
+{
+  "title": "月の途中（18日まで）：前半は好調、後半に割り込みが増えている",
+  "data": {
+    "month": "2026-09",
+    "isPartial": true,
+    "through": "2026-09-18",
+    "stats": {
+      "recordedDays": 14,
+      "blankDays": 4,
+      "feedbackDays": 14,
+      "correctedDays": 1,
+      "completed": 17
+    },
+    "days": [
+      {
+        "day": "2026-09-01",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["設計のレビューを午前に終えた"],
+          "insight": ["午前の設計がはかどっている"],
+          "nextAction": "午後の最初の30分を割り込みなしの時間にする"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-09-02",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["設計のレビューを午前に終えた"],
+          "insight": ["午前の設計がはかどっている"],
+          "nextAction": "午後の最初の30分を割り込みなしの時間にする"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-09-03",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["設計のレビューを午前に終えた"],
+          "insight": ["午前の設計がはかどっている"],
+          "nextAction": "午後の最初の30分を割り込みなしの時間にする"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-09-04",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["設計のレビューを午前に終えた"],
+          "insight": ["午前の設計がはかどっている"],
+          "nextAction": "午後の最初の30分を割り込みなしの時間にする"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-09-05",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-09-06",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-09-07",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["設計のレビューを午前に終えた"],
+          "insight": ["午前の設計がはかどっている"],
+          "nextAction": "午後の最初の30分を割り込みなしの時間にする"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-09-08",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["設計のレビューを午前に終えた"],
+          "insight": ["午前の設計がはかどっている"],
+          "nextAction": "午後の最初の30分を割り込みなしの時間にする"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-09-09",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["設計のレビューを午前に終えた"],
+          "insight": ["午前の設計がはかどっている"],
+          "nextAction": "午後の最初の30分を割り込みなしの時間にする"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-09-10",
+        "isBlank": false,
+        "condition": {
+          "ai": 3,
+          "user": null
+        },
+        "feedback": {
+          "good": ["設計のレビューを午前に終えた"],
+          "insight": ["午前の設計がはかどっている"],
+          "nextAction": "午後の最初の30分を割り込みなしの時間にする"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-09-11",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": null
+        },
+        "feedback": {
+          "good": ["設計のレビューを午前に終えた"],
+          "insight": ["後半は割り込みが増え、午後の作業が止まりやすい"],
+          "nextAction": "午後の最初の30分を割り込みなしの時間にする"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-09-12",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-09-13",
+        "isBlank": true,
+        "condition": null,
+        "feedback": null,
+        "reflection": null
+      },
+      {
+        "day": "2026-09-14",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": null
+        },
+        "feedback": {
+          "good": ["設計のレビューを午前に終えた"],
+          "insight": ["後半は割り込みが増え、午後の作業が止まりやすい"],
+          "nextAction": "午後の最初の30分を割り込みなしの時間にする"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-09-15",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": 1
+        },
+        "feedback": {
+          "good": ["設計のレビューを午前に終えた"],
+          "insight": ["後半は割り込みが増え、午後の作業が止まりやすい"],
+          "nextAction": "午後の最初の30分を割り込みなしの時間にする"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-09-16",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": null
+        },
+        "feedback": {
+          "good": ["設計のレビューを午前に終えた"],
+          "insight": ["後半は割り込みが増え、午後の作業が止まりやすい"],
+          "nextAction": "午後の最初の30分を割り込みなしの時間にする"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-09-17",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": null
+        },
+        "feedback": {
+          "good": ["設計のレビューを午前に終えた"],
+          "insight": ["後半は割り込みが増え、午後の作業が止まりやすい"],
+          "nextAction": "午後の最初の30分を割り込みなしの時間にする"
+        },
+        "reflection": null
+      },
+      {
+        "day": "2026-09-18",
+        "isBlank": false,
+        "condition": {
+          "ai": 2,
+          "user": null
+        },
+        "feedback": {
+          "good": ["設計のレビューを午前に終えた"],
+          "insight": ["後半は割り込みが増え、午後の作業が止まりやすい"],
+          "nextAction": "午後の最初の30分を割り込みなしの時間にする"
+        },
+        "reflection": null
+      }
+    ]
+  }
+}
