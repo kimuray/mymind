@@ -111,6 +111,12 @@
   --code-bg: rgba(28, 27, 25, 0.06);
   --segmented-active-bg: rgba(255, 255, 255, 0.85);
 
+  /* 4.14 カレンダー */
+  --calendar-cell-bg: rgba(255, 255, 255, 0.32);
+  --calendar-cell-future-bg: rgba(255, 255, 255, 0.16);
+  --calendar-cell-border: 1px solid rgba(255, 255, 255, 0.75);
+  --calendar-cell-selected-bg: rgba(255, 255, 255, 0.72);
+
   /* 4.9 ダイアログ */
   --overlay: rgba(28, 27, 25, 0.18);
 

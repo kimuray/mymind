@@ -1,4 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { notifyRecordsChanged } from '../realtime';
 import { api, unwrap } from './client';
 import type { AgentChoice } from './settings';
 import { queryKeys } from './tasks';
@@ -11,7 +12,12 @@ export function useSaveReflection(day: string) {
   return useMutation({
     mutationFn: async (draft: ReflectionDraft) =>
       unwrap(await api.days[':day'].log.$put({ param: { day }, json: draft })),
-    onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.day(day) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.day(day) });
+      // カレンダーの振り返りの有無と空白日（FR-R04）。開いているほかのタブにも知らせる（NFR-13）
+      qc.invalidateQueries({ queryKey: ['month'] });
+      notifyRecordsChanged();
+    },
   });
 }
 
