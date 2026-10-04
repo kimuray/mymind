@@ -113,3 +113,20 @@ export function useKeyBindings(handlers: KeyHandlers) {
     };
   }, []);
 }
+
+/** 今の画面で使える操作（登録されている処理がある操作）。コマンドパレットとショートカットの一覧に使う */
+export function availableActions(): Set<KeyAction> {
+  return new Set(registry.flatMap((handlers) => Object.keys(handlers) as KeyAction[]));
+}
+
+/**
+ * 操作を、キーを押したときと同じ処理で実行する（コマンドパレットから選んだとき）。
+ * 後から登録した（今表示している画面の）処理を優先する。実行したら true
+ */
+export function runAction(action: KeyAction): boolean {
+  for (let i = registry.length - 1; i >= 0; i--) {
+    const handler = registry[i]?.[action];
+    if (handler !== undefined) return handler(new KeyboardEvent('keydown'));
+  }
+  return false;
+}
