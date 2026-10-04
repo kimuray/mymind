@@ -19,6 +19,24 @@ test.describe('FR-U02 コマンドパレット', () => {
     await expect(palette).toHaveCount(0);
   });
 
+  test('選んだタスクに、パレットから状態を進める操作を実行できる', async ({ page }) => {
+    const title = `パレットで進める-${Date.now().toString(36)}`;
+    await page.goto('/');
+    await page.getByLabel('今日のタスクを追加').fill(title);
+    await page.keyboard.press('Enter');
+    await page.getByRole('button', { name: title, exact: true }).click();
+
+    await page.keyboard.press('ControlOrMeta+k');
+    const palette = page.getByRole('dialog', { name: 'コマンドパレット' });
+    await page.keyboard.type('状態を進める');
+    await expect(palette.getByRole('option', { selected: true })).toContainText('状態を進める');
+    await page.keyboard.press('Enter');
+    await expect(palette).toHaveCount(0);
+    await expect(
+      page.getByRole('button', { name: `${title}：着手中`, exact: false }),
+    ).toBeVisible();
+  });
+
   test('↑↓ で候補を選び、Esc で何もせずに閉じる', async ({ page }) => {
     await page.goto('/backlog');
     await page.locator('body').click();
