@@ -8,3 +8,4 @@ export * from './rules';
 export * from './status';
 export * from './taskDays';
 export * from './taskEvents';
+export * from './timeline';
