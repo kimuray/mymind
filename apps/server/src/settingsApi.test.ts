@@ -23,6 +23,7 @@ describe('FR-A12 設定「依頼の前に毎回確認する」', () => {
     const res = await app.request('/settings');
     expect(await res.json()).toEqual({
       settings: { confirmBeforeRequest: false, defaultAgent: 'claude', reviewAfterDays: 30 },
+      runtime: { fakeAgent: false },
     });
   });
 
@@ -30,9 +31,11 @@ describe('FR-A12 設定「依頼の前に毎回確認する」', () => {
     const res = await patch({ confirmBeforeRequest: true });
     expect(await res.json()).toEqual({
       settings: { confirmBeforeRequest: true, defaultAgent: 'claude', reviewAfterDays: 30 },
+      runtime: { fakeAgent: false },
     });
     expect(await (await app.request('/settings')).json()).toEqual({
       settings: { confirmBeforeRequest: true, defaultAgent: 'claude', reviewAfterDays: 30 },
+      runtime: { fakeAgent: false },
     });
   });
 
@@ -49,10 +52,12 @@ describe('FR-A12 設定「依頼の前に毎回確認する」', () => {
     repo.setMany({ confirmBeforeRequest: 'not json' });
     expect(await (await app.request('/settings')).json()).toEqual({
       settings: { confirmBeforeRequest: false, defaultAgent: 'claude', reviewAfterDays: 30 },
+      runtime: { fakeAgent: false },
     });
     repo.setMany({ confirmBeforeRequest: '"true"' });
     expect(await (await app.request('/settings')).json()).toEqual({
       settings: { confirmBeforeRequest: false, defaultAgent: 'claude', reviewAfterDays: 30 },
+      runtime: { fakeAgent: false },
     });
   });
 });
@@ -111,5 +116,24 @@ describe('FR-R06 設定「棚卸しの対象にする日数」', () => {
   ])('%s は 400 で保存しない', async (_, value) => {
     expect((await patch({ reviewAfterDays: value })).status).toBe(400);
     expect(repo.getAll()).toEqual({});
+  });
+});
+
+describe('FR-A07 偽のアダプタで動いていることを知らせる', () => {
+  it('MYMIND_AGENT=fake で動いていれば、設定の応答で知らせる', async () => {
+    const fake = createSettingsApi(repo, {}, { fakeAgent: true });
+    expect(await (await fake.request('/settings')).json()).toMatchObject({
+      runtime: { fakeAgent: true },
+    });
+    const res = await fake.request('/settings', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ defaultAgent: 'codex' }),
+    });
+    expect(await res.json()).toMatchObject({ runtime: { fakeAgent: true } });
+  });
+
+  it('runtime は画面から変えられない', async () => {
+    expect((await patch({ runtime: { fakeAgent: true } })).status).toBe(400);
   });
 });

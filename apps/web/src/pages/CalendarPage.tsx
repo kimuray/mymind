@@ -191,6 +191,7 @@ function DayRecord({ d }: { d: MonthDay }) {
           <AgentSelect
             id="calendar-agent"
             label="エージェント"
+            fakeAgent={settings.data?.runtime.fakeAgent === true ? 'chip' : undefined}
             value={agent ?? 'claude'}
             onChange={setChosenAgent}
             disabled={request.isPending || agent === undefined}

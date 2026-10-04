@@ -66,13 +66,20 @@ export function createSettingsReader(
 }
 
 /** 設定の API。値は settings テーブルに JSON の文字列で保存する */
+/** 起動の設定で決まり、画面からは変えられない値（設定の画面と依頼の画面で、選択が使われるかを伝えるため） */
+export type SettingsRuntime = {
+  /** MYMIND_AGENT=fake で動いている。エージェントの選択に関係なく偽のアダプタを使う（FR-A07） */
+  fakeAgent: boolean;
+};
+
 export function createSettingsApi(
   settings: SettingsRepository,
   defaults: Partial<AppSettings> = {},
+  runtime: SettingsRuntime = { fakeAgent: false },
 ) {
   const current = createSettingsReader(settings, defaults);
   return new Hono()
-    .get('/settings', (c) => c.json({ settings: current() }, 200))
+    .get('/settings', (c) => c.json({ settings: current(), runtime }, 200))
     .patch(
       '/settings',
       validator('json', (value, c) => {
@@ -97,7 +104,7 @@ export function createSettingsApi(
         settings.setMany(
           Object.fromEntries(Object.entries(patch).map(([k, v]) => [k, JSON.stringify(v)])),
         );
-        return c.json({ settings: current() }, 200);
+        return c.json({ settings: current(), runtime }, 200);
       },
     );
 }

@@ -145,6 +145,7 @@ async function main(): Promise<number> {
     },
     settings,
     settingsDefaults,
+    settingsRuntime: { fakeAgent: agent.name === 'fake' },
     logs,
   });
   // 開発時は Vite が画面を配信する。古い本番ビルドを出さないよう、画面の URL は Vite へ移す（#97）

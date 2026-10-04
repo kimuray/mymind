@@ -891,7 +891,9 @@
 
 .reflection-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: var(--space-3);
 }
 
@@ -1629,6 +1631,21 @@
   font-size: 14px;
   color: var(--ink-1);
   text-align: right;
+}
+
+.agent-select-note {
+  font-size: 12px;
+  color: var(--status-paused-text);
+  white-space: normal;
+}
+
+/* 設定の行では、注記を選択の下に置き、説明の欄を狭めない */
+.settings-toggle .agent-select {
+  flex-direction: column;
+  align-items: flex-start;
+  flex-shrink: 0;
+  max-width: 240px;
+  gap: var(--space-1);
 }
 
 /* コマンドパレットとショートカットの一覧（DESIGN.md 4.16、FR-U02、FR-U03） */
