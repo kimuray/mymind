@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { dayOrdinalSince, daysBetween, previousDays, statusSinceDay } from './taskDays';
+import {
+  dayOrdinalSince,
+  daysBetween,
+  daysOfMonth,
+  previousDays,
+  statusSinceDay,
+} from './taskDays';
 import type { TaskEvent } from './taskEvents';
 
 const at = '2026-09-23T01:00:00.000Z';
@@ -79,5 +85,31 @@ describe('NFR-15 直近の業務日', () => {
 
   it('0 日なら空', () => {
     expect(previousDays('2026-09-25', 0)).toEqual([]);
+  });
+});
+
+describe('FR-R04 月の業務日', () => {
+  it('1日から月末までを順に返す', () => {
+    const days = daysOfMonth('2026-09');
+    expect(days).toHaveLength(30);
+    expect(days[0]).toBe('2026-09-01');
+    expect(days.at(-1)).toBe('2026-09-30');
+  });
+
+  it('年末の月と、うるう年の2月の月末を正しく数える', () => {
+    expect(daysOfMonth('2026-12').at(-1)).toBe('2026-12-31');
+    expect(daysOfMonth('2028-02')).toHaveLength(29);
+    expect(daysOfMonth('2027-02')).toHaveLength(28);
+  });
+
+  it.each(['2026-13', '2026-00', '2026-9', '2026/09', '0000-01', '0001-01', '0099-12', '1969-12'])(
+    '%s は例外にする',
+    (ym) => {
+      expect(() => daysOfMonth(ym)).toThrow(RangeError);
+    },
+  );
+
+  it('扱う最も古い年の1月から返す', () => {
+    expect(daysOfMonth('1970-01')[0]).toBe('1970-01-01');
   });
 });

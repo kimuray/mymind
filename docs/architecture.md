@@ -215,7 +215,7 @@ CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 | バックログ | `GET /api/backlog` | |
 | 棚卸し | `GET /api/review/stale`、`POST /api/review/decisions` | |
 | タイムライン | `GET /api/timeline?from=&to=` | 区間と内訳を計算済みで返す |
-| 月 | `GET /api/months/:ym` | 日ごとの調子、完了件数、総括 |
+| 月 | `GET /api/months/:ym` | 日ごとの調子（AI の判定と手動の値。FB も手動の値もなければ空）、完了件数（振り返りの「完了」と同じ定義）、振り返りと FB の有無、空白日か、まだ来ていない日か（FR-R04、FR-A09）。まだ来ていない月も返す。日付を選んだときの記録は `GET /api/days/:day` を使う。総括は月次総括の issue で加える |
 | 送信内容の確認 | `POST /api/agent-input/preview` | 実際に送る入力、加工の注記、文字数、ハッシュを返す（FR-A12） |
 | FBの依頼 | `POST /api/jobs` | `202` でジョブIDを返す。プレビューを経た場合は `payloadHash` を渡し、不一致なら 409。`agent`（`claude` / `codex`）で使うエージェントを指定でき、省略すると設定の既定のエージェントを使う（FR-A07） |
 | 通知の購読 | `GET /api/events` | Server-Sent Events。ジョブの進捗と、画面以外からの変更を配信（ADR-0008） |
