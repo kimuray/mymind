@@ -74,15 +74,16 @@ export function findCarryover(tasks: TaskRepository, day: string) {
   };
 }
 
-/** その日の記録のまとめ（FR-D07）。振り返りの画面と夜の通知（FR-N02）で同じ定義で数える */
+/**
+ * その日の記録のまとめ（FR-D07）。振り返りの画面と夜の通知（FR-N02）で同じ定義で数える。
+ * 候補のタスクの履歴は、タスクごとに問い合わせずにまとめて読む（NFR-18）
+ */
 export function summarizeDayOf(tasks: TaskRepository, day: string) {
+  const candidates = tasks.listSummaryCandidates(day);
+  const events = tasks.listEventsOfTasks(candidates.map((t) => t.id));
   return summarizeDay(
     day,
-    tasks.listSummaryCandidates(day).map((t) => ({
-      taskId: t.id,
-      title: t.title,
-      events: tasks.listEvents(t.id),
-    })),
+    candidates.map((t) => ({ taskId: t.id, title: t.title, events: events.get(t.id) ?? [] })),
   );
 }
 

@@ -307,6 +307,20 @@ describe('FR-N04 同じ種類の通知は1日1回', () => {
     expect(sent).toHaveLength(1);
   });
 
+  it('通知のアダプタが例外を投げても、送ったことにしない', async () => {
+    now = jst(SAT, '08:30');
+    const errors: string[] = [];
+    deps.logger = { ...silent, error: (message) => errors.push(message) };
+    deps.adapter = {
+      notify: async () => {
+        throw new Error('通知センターに接続できません');
+      },
+    };
+    await sendNotification(deps, 'morning', jst(SAT, '08:30'));
+    expect(deps.sent.wasSent('morning', SAT)).toBe(false);
+    expect(errors).toEqual(['通知を出せませんでした']);
+  });
+
   it('業務日の切り替え（5:00）の前と後では、別の日の通知として数える', async () => {
     now = jst(SUN, '04:59');
     await sendNotification(deps, 'morning', jst(SUN, '04:59'));

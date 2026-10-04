@@ -9,6 +9,7 @@ import {
   composeEvening,
   composeInventory,
   composeMorning,
+  type DaySummary,
   DEFAULT_NOTIFICATION_SCHEDULES,
   type LingeringTask,
   LONG_WAITING_DAYS,
@@ -47,8 +48,7 @@ export type NotificationDeps = {
 };
 
 /** 夜の通知に入れる、長引いているタスク。記録のまとめ（FR-D07）の「待ちが継続」と、前から着手中で同じ日数以上のもの */
-function lingeringOf(deps: NotificationDeps, day: string): LingeringTask[] {
-  const summary = summarizeDayOf(deps.tasks, day);
+function lingeringOf(summary: DaySummary): LingeringTask[] {
   return [
     ...summary.changes.flatMap((c) =>
       c.kind === 'waiting_continues'
@@ -76,12 +76,14 @@ export function composeNotification(
         carryoverCount: findCarryover(deps.tasks, day).candidates.length,
       });
     }
-    case 'evening':
+    case 'evening': {
+      const summary = summarizeDayOf(deps.tasks, day);
       return composeEvening({
         isReflectionSaved: hasReflection(deps.logs.find(day)),
-        completedCount: summarizeDayOf(deps.tasks, day).completed.length,
-        lingering: lingeringOf(deps, day),
+        completedCount: summary.completed.length,
+        lingering: lingeringOf(summary),
       });
+    }
     case 'inventory': {
       const afterDays = deps.reviewAfterDays();
       return composeInventory({
@@ -110,7 +112,10 @@ export async function sendNotification(
     return;
   }
   if (!deps.sent.claim(kind, day, deps.now().toISOString())) return;
-  const result = await deps.adapter.notify(notification);
+  const result = await deps.adapter.notify(notification).catch((e: unknown) => ({
+    ok: false as const,
+    message: e instanceof Error ? e.message : String(e),
+  }));
   if (result.ok) {
     deps.logger.info('通知を送りました', { kind, day });
   } else {
