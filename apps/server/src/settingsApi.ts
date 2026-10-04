@@ -1,11 +1,31 @@
 import { isAbsolute } from 'node:path';
 import type { SettingsRepository } from '@mymind/db';
-import { DEFAULT_REVIEW_AFTER_DAYS } from '@mymind/domain';
+import {
+  DEFAULT_NOTIFICATION_SCHEDULES,
+  DEFAULT_REVIEW_AFTER_DAYS,
+  type NotificationKind,
+  SCHEDULE_TIME_PATTERN,
+  type ScheduleSpec,
+} from '@mymind/domain';
 import { Hono } from 'hono';
 import { validator } from 'hono/validator';
 import { z } from 'zod';
 import { agentChoiceSchema } from './agents';
 import { DEFAULT_BACKUP_GENERATIONS } from './backups';
+
+const timeSchema = z
+  .string()
+  .regex(SCHEDULE_TIME_PATTERN, '時刻は HH:MM（00:00〜23:59）で指定してください');
+
+/** 毎日の通知の設定（FR-N04）。オン・オフと時刻 */
+const dailyNotificationSchema = z.strictObject({ enabled: z.boolean(), time: timeSchema });
+
+/** 毎週の通知の設定（FR-N04）。曜日は 0=日曜 〜 6=土曜 */
+const weeklyNotificationSchema = z.strictObject({
+  enabled: z.boolean(),
+  time: timeSchema,
+  weekday: z.number().int().min(0).max(6),
+});
 
 /** 画面から変えられる設定（architecture.md 6章の GET / PATCH /api/settings）。項目を足すときはここに加える */
 const appSettingsSchema = z.object({
@@ -28,6 +48,12 @@ const appSettingsSchema = z.object({
     .nullable(),
   /** 毎日のバックアップを残す世代数（NFR-04） */
   backupGenerations: z.number().int().min(1).max(365),
+  /** 朝の通知（FR-N01、FR-N04） */
+  morningNotification: dailyNotificationSchema,
+  /** 夜の通知（FR-N02、FR-N04） */
+  eveningNotification: dailyNotificationSchema,
+  /** 棚卸しの通知（FR-N03、FR-N04） */
+  inventoryNotification: weeklyNotificationSchema,
 });
 
 export type AppSettings = z.infer<typeof appSettingsSchema>;
@@ -39,7 +65,33 @@ export const DEFAULT_SETTINGS: AppSettings = {
   reviewAfterDays: DEFAULT_REVIEW_AFTER_DAYS,
   backupDir: null,
   backupGenerations: DEFAULT_BACKUP_GENERATIONS,
+  morningNotification: { enabled: true, ...DEFAULT_NOTIFICATION_SCHEDULES.morning },
+  eveningNotification: { enabled: true, ...DEFAULT_NOTIFICATION_SCHEDULES.evening },
+  inventoryNotification: {
+    enabled: true,
+    time: DEFAULT_NOTIFICATION_SCHEDULES.inventory.time,
+    weekday: DEFAULT_NOTIFICATION_SCHEDULES.inventory.weekday ?? 0,
+  },
 };
+
+/** 通知の種類ごとの設定の項目 */
+const NOTIFICATION_SETTING_KEYS = {
+  morning: 'morningNotification',
+  evening: 'eveningNotification',
+  inventory: 'inventoryNotification',
+} as const satisfies Record<NotificationKind, keyof AppSettings>;
+
+/** 設定から、その種類の通知の予定を決める。オフなら null（送らない、FR-N04） */
+export function notificationScheduleOf(
+  settings: AppSettings,
+  kind: NotificationKind,
+): ScheduleSpec | null {
+  const setting = settings[NOTIFICATION_SETTING_KEYS[kind]];
+  if (!setting.enabled) return null;
+  return 'weekday' in setting
+    ? { time: setting.time, weekday: setting.weekday }
+    : { time: setting.time };
+}
 
 const patchBody = appSettingsSchema
   .partial()
@@ -69,6 +121,9 @@ function readSettings(stored: Record<string, string>, defaults: AppSettings): Ap
     reviewAfterDays: read('reviewAfterDays'),
     backupDir: read('backupDir'),
     backupGenerations: read('backupGenerations'),
+    morningNotification: read('morningNotification'),
+    eveningNotification: read('eveningNotification'),
+    inventoryNotification: read('inventoryNotification'),
   };
 }
 
@@ -94,6 +149,8 @@ export function createSettingsApi(
   settings: SettingsRepository,
   defaults: Partial<AppSettings> = {},
   runtime: SettingsRuntime = { fakeAgent: false, defaultBackupDir: '' },
+  /** 保存したあとに呼ぶ（通知の時刻が変わったら、スケジューラの予定を組み直すため、FR-N04） */
+  onChange: () => void = () => {},
 ) {
   const current = createSettingsReader(settings, defaults);
   return new Hono()
@@ -122,6 +179,7 @@ export function createSettingsApi(
         settings.setMany(
           Object.fromEntries(Object.entries(patch).map(([k, v]) => [k, JSON.stringify(v)])),
         );
+        onChange();
         return c.json({ settings: current(), runtime }, 200);
       },
     );

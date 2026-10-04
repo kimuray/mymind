@@ -38,7 +38,7 @@ import { createLogOnlyNotificationAdapter, createNotificationJobs } from './noti
 import { loadDailyPrompt, loadMonthlyPrompt } from './prompts';
 import { createScheduler } from './scheduler';
 import { createServerLogFile } from './serverLog';
-import { createSettingsReader } from './settingsApi';
+import { createSettingsReader, notificationScheduleOf } from './settingsApi';
 import { createUlidGenerator } from './ulid';
 import { createDevRedirect, createWebRoutes } from './web';
 
@@ -161,7 +161,7 @@ async function main(): Promise<number> {
     logger,
   });
   scheduler.add(dailyBackup);
-  // 朝・夜・棚卸しの通知（FR-N01〜N03）。時刻は初期値で、設定で変えられるようにするのは FR-N04
+  // 朝・夜・棚卸しの通知（FR-N01〜N03）。オン・オフと時刻は設定で変えられ、変えたら組み直す（FR-N04）
   for (const job of createNotificationJobs({
     tasks,
     logs,
@@ -169,6 +169,7 @@ async function main(): Promise<number> {
     sent: createNotificationRepository({ db }),
     adapter: createLogOnlyNotificationAdapter(logger),
     reviewAfterDays: () => currentSettings().reviewAfterDays,
+    schedule: (kind) => notificationScheduleOf(currentSettings(), kind),
     dayOptions: DAY_OPTIONS,
     now: () => new Date(),
     logger,
@@ -206,6 +207,7 @@ async function main(): Promise<number> {
     settingsDefaults,
     settingsRuntime: { fakeAgent: agent.name === 'fake', defaultBackupDir: backupsDir(dataDir) },
     logs,
+    onSettingsChange: () => scheduler.reschedule(),
   });
   // 開発時は Vite が画面を配信する。古い本番ビルドを出さないよう、画面の URL は Vite へ移す（#97）
   const vitePort = devPorts[0];

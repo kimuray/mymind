@@ -3,6 +3,7 @@ import {
   formatBytes,
   formatDateTime,
   isBackupGenerations,
+  isNotificationTime,
   isReviewAfterDays,
   toBackupDir,
 } from './SettingsPage';
@@ -60,5 +61,19 @@ describe('NFR-04 バックアップの設定の入力', () => {
     ['~/backups', undefined],
   ])('保存先「%s」は %s として保存する（undefined は保存しない）', (input, expected) => {
     expect(toBackupDir(input)).toBe(expected);
+  });
+});
+
+describe('FR-N04 通知の時刻の入力', () => {
+  it.each([
+    ['08:30', true],
+    ['00:00', true],
+    ['23:59', true],
+    ['', false],
+    ['24:00', false],
+    ['8:30', false],
+    ['21:60', false],
+  ])('「%s」は保存できるか：%s', (input, expected) => {
+    expect(isNotificationTime(input)).toBe(expected);
   });
 });

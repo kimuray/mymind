@@ -14,8 +14,11 @@ export const MISSED_GRACE_MS = 2 * 60 * 60 * 1000;
 
 const DAY_MS = 86_400_000;
 
+/** 予定の時刻の形（「HH:MM」、00:00〜23:59）。設定の検証でも使う */
+export const SCHEDULE_TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/;
+
 function parseTime(time: string): { hour: number; minute: number } {
-  const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(time);
+  const match = SCHEDULE_TIME_PATTERN.exec(time);
   if (match === null) throw new RangeError(`時刻は HH:MM で指定してください: ${time}`);
   return { hour: Number(match[1]), minute: Number(match[2]) };
 }
