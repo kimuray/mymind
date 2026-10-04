@@ -213,7 +213,7 @@ CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 | 振り返り | `PUT /api/days/:day/log` | Markdownの原文（思考の整理、学び）を保存。過去の業務日にも書ける。まだ来ていない業務日は 400 |
 | 調子の修正 | `PUT /api/days/:day/condition` | `user_level` のみ更新（0〜4、null で外す）。FBのない日にも付けられる。まだ来ていない業務日は 400 |
 | バックログ | `GET /api/backlog` | |
-| 棚卸し | `GET /api/review/stale`、`POST /api/review/decisions` | |
+| 棚卸し | `GET /api/review/stale`、`POST /api/review/decisions` | 対象（最後に触れてから設定の `reviewAfterDays` 日が経ったバックログのタスク）を、触れたのが古い順に、追加した日、最後に触れてからの日数、着手したことがあるかを添えて返す。判断（`this_week` / `keep` / `drop`）は1件ずつ送り、`domain` の `planReviewDecision` で、今日へ移す・触れた日時だけを進める・中止にする、のどれかにする（FR-R06、#135） |
 | タイムライン | `GET /api/timeline?from=&to=` | 区間と内訳を計算済みで返す |
 | 月 | `GET /api/months/:ym` | 日ごとの調子（AI の判定と手動の値。FB も手動の値もなければ空）、完了件数（振り返りの「完了」と同じ定義）、振り返りと FB の有無、空白日か、まだ来ていない日か（FR-R04、FR-A09）。まだ来ていない月も返す。日付を選んだときの記録は `GET /api/days/:day` を使う。総括は月次総括の issue で加える |
 | 送信内容の確認 | `POST /api/agent-input/preview` | 実際に送る入力、加工の注記、文字数、ハッシュを返す（FR-A12） |
@@ -221,7 +221,7 @@ CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 | 通知の購読 | `GET /api/events` | Server-Sent Events。ジョブの進捗と、画面以外からの変更を配信（ADR-0008） |
 | キャンセル | `POST /api/jobs/:id/cancel` | |
 | FBの取得 | `GET /api/feedbacks?scope=&period=` | 履歴を新しい順に返す |
-| 設定 | `GET /api/settings`、`PATCH /api/settings` | 依頼の前に毎回確認する（`confirmBeforeRequest`、FR-A12）、既定のエージェント（`defaultAgent`、FR-A07） |
+| 設定 | `GET /api/settings`、`PATCH /api/settings` | 依頼の前に毎回確認する（`confirmBeforeRequest`、FR-A12）、既定のエージェント（`defaultAgent`、FR-A07）、棚卸しの対象にする日数（`reviewAfterDays`、0〜365、初期値30、FR-R06） |
 | 状態 | `GET /api/health` | `status`（`ok` / `degraded`）、DB（問い合わせの可否とファイルの合計サイズ）、エージェント（使えるか、実行ファイルの有無とバージョン、理由）、最後のバックアップ、直近の FB 生成の失敗。DB に問い合わせられなければ 503（NFR-21） |
 
 ## 7. エージェント連携

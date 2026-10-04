@@ -829,3 +829,104 @@ describe('FR-R04 FR-A09 月の API', () => {
     },
   );
 });
+
+describe('FR-R06 棚卸しの API', () => {
+  type StaleJson = {
+    today: string;
+    afterDays: number;
+    tasks: (TaskJson & {
+      createdDay: string;
+      daysSinceTouched: number;
+      hasStarted: boolean;
+    })[];
+  };
+  const stale = async () => (await (await get('/review/stale')).json()) as StaleJson;
+
+  /** day の 10:00（日本時間）に、バックログへ追加する */
+  const addBacklogOn = async (day: string, title: string) => {
+    now = new Date(`${day}T01:00:00.000Z`);
+    const task = await addTask({ title, expectedDay: day });
+    now = new Date('2026-09-23T01:00:00.000Z');
+    return task;
+  };
+  const decide = (task: TaskJson, decision: string, extra: Record<string, unknown> = {}) =>
+    send('POST', '/review/decisions', {
+      taskId: task.id,
+      expectedVersion: task.version,
+      decision,
+      expectedDay: TODAY,
+      ...extra,
+    });
+
+  it('最後に触れてから30日以上経ったバックログのタスクを、古い順に日数を添えて返す', async () => {
+    const newer = await addBacklogOn('2026-08-20', '本棚を整理する');
+    const older = await addBacklogOn('2026-08-01', 'カメラのセンサー清掃');
+    await addBacklogOn('2026-09-20', '最近のタスク');
+    const s = await stale();
+    expect(s).toMatchObject({ today: TODAY, afterDays: 30 });
+    expect(s.tasks.map((t) => t.id)).toEqual([older.id, newer.id]);
+    expect(s.tasks[0]).toMatchObject({
+      createdDay: '2026-08-01',
+      daysSinceTouched: 53,
+      hasStarted: false,
+    });
+  });
+
+  it('設定の日数を変えると、その日数で対象を選ぶ', async () => {
+    const recent = await addBacklogOn('2026-09-20', '最近のタスク');
+    expect((await send('PATCH', '/settings', { reviewAfterDays: 3 })).status).toBe(200);
+    expect((await stale()).tasks.map((t) => t.id)).toEqual([recent.id]);
+  });
+
+  it('今日の計画にあるタスクは、日数が経っていても対象にしない', async () => {
+    // 前日に「明日」の計画として足したタスク（今日の計画にある）。日数の設定を1日にして確かめる
+    now = new Date('2026-09-22T01:00:00.000Z');
+    await addTask({ title: '計画にある', planFor: 'tomorrow', expectedDay: '2026-09-22' });
+    now = new Date('2026-09-23T01:00:00.000Z');
+    expect((await send('PATCH', '/settings', { reviewAfterDays: 1 })).status).toBe(200);
+    expect((await stale()).tasks).toEqual([]);
+  });
+
+  it('今週やるは今日の計画に入れ、棚卸しの対象から外す', async () => {
+    const task = await addBacklogOn('2026-08-01', '本棚を整理する');
+    expect((await decide(task, 'this_week')).status).toBe(200);
+    expect(await planIds(TODAY)).toEqual([task.id]);
+    expect((await stale()).tasks).toEqual([]);
+  });
+
+  it('残すは状態とイベントを変えずに、最後に触れた日時を進めて対象から外す', async () => {
+    const task = await addBacklogOn('2026-08-01', '本棚を整理する');
+    const before = (await (await get(`/tasks/${task.id}/events`)).json()) as { events: unknown[] };
+    const res = await decide(task, 'keep');
+    expect(await res.json()).toMatchObject({
+      task: { status: 'todo', lastTouchedAt: now.toISOString() },
+    });
+    expect(await backlogIds()).toEqual([task.id]);
+    expect((await stale()).tasks).toEqual([]);
+    const after = (await (await get(`/tasks/${task.id}/events`)).json()) as { events: unknown[] };
+    expect(after.events).toHaveLength(before.events.length);
+  });
+
+  it('中止はタスクを中止にし、バックログから外す', async () => {
+    const task = await addBacklogOn('2026-08-01', '本棚を整理する');
+    expect(await (await decide(task, 'drop')).json()).toMatchObject({
+      task: { status: 'cancelled' },
+    });
+    expect(await backlogIds()).toEqual([]);
+  });
+
+  it('古い version からの判断は 409 にし、何も変えない', async () => {
+    const task = await addBacklogOn('2026-08-01', '本棚を整理する');
+    expect((await decide({ ...task, version: task.version + 1 }, 'drop')).status).toBe(409);
+    expect((await stale()).tasks.map((t) => t.id)).toEqual([task.id]);
+  });
+
+  it('バックログにないタスクは 409、知らない判断は 400', async () => {
+    const planned = await addTask({ planFor: 'today' });
+    expect(await (await decide(planned, 'keep')).json()).toMatchObject({
+      error: { code: 'NOT_IN_BACKLOG' },
+    });
+    const task = await addBacklogOn('2026-08-01', '本棚を整理する');
+    expect((await decide(task, 'later')).status).toBe(400);
+  });
+});

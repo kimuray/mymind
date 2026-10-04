@@ -46,13 +46,17 @@ try {
   const browser = await chromium.launch(isClaudeSandbox ? { args: ['--single-process'] } : {});
   const page = await browser.newPage({ viewport: VIEWPORT });
   const ym = businessDay().slice(0, 7);
+  const initialSettings = await settings();
   for (const screen of screens) {
+    // settings を書いた画面は、その設定にしてから撮り、撮ったら元に戻す（棚卸しの対象を出す、など）
+    if (screen.settings !== undefined) await settings(screen.settings);
     await page.goto(base + screen.path.replace('{ym}', ym), { waitUntil: 'networkidle' });
     if (screen.select !== undefined) {
       await page.locator('.task-title', { hasText: screen.select }).first().click();
       await page.waitForTimeout(300);
     }
     await page.screenshot({ path: join(outDir, screen.file) });
+    if (screen.settings !== undefined) await settings(initialSettings);
     console.log(`${screen.file}: ${screen.frame ?? '（フレームなし）'}／${screen.state}`);
   }
   await browser.close();
@@ -67,16 +71,31 @@ function businessDay() {
   );
 }
 
-/** 画面の確認に必要な最小限の見本を API で入れる（2週間分のシードデータは #26） */
-async function seed() {
-  const token = readFileSync(join(dataDir, 'session-token'), 'utf8').trim();
-  const day = businessDay();
-  const headers = {
+/** 状態を変える API に付けるヘッダー（セッショントークンと、同じオリジンからの要求であること） */
+function apiHeaders() {
+  return {
     'Content-Type': 'application/json',
-    'X-Mymind-Token': token,
+    'X-Mymind-Token': readFileSync(join(dataDir, 'session-token'), 'utf8').trim(),
     Origin: base,
     'Sec-Fetch-Site': 'same-origin',
   };
+}
+
+/** 設定を読む。patch を渡したら、その値に変えてから返す */
+async function settings(patch) {
+  const res = await fetch(`${base}/api/settings`, {
+    method: patch === undefined ? 'GET' : 'PATCH',
+    headers: apiHeaders(),
+    ...(patch === undefined ? {} : { body: JSON.stringify(patch) }),
+  });
+  if (!res.ok) throw new Error(`/api/settings: ${res.status} ${await res.text()}`);
+  return (await res.json()).settings;
+}
+
+/** 画面の確認に必要な最小限の見本を API で入れる（2週間分のシードデータは #26） */
+async function seed() {
+  const day = businessDay();
+  const headers = apiHeaders();
   const post = async (path, body) => {
     const res = await fetch(base + path, { method: 'POST', headers, body: JSON.stringify(body) });
     if (!res.ok) throw new Error(`${path}: ${res.status} ${await res.text()}`);

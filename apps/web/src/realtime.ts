@@ -80,6 +80,8 @@ function invalidateFor(qc: QueryClient, message: RealtimeMessage) {
     qc.invalidateQueries({ queryKey: ['backlog'] });
     qc.invalidateQueries({ queryKey: ['carryover'] });
     qc.invalidateQueries({ queryKey: ['events'] });
+    // 棚卸しの対象（FR-R06）
+    qc.invalidateQueries({ queryKey: ['review'] });
   } else {
     qc.invalidateQueries({ queryKey: ['jobs', message.jobId] });
     qc.invalidateQueries({ queryKey: ['feedbacks'] });

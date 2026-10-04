@@ -42,6 +42,11 @@ export type TaskChange = {
     addDay: string | null;
     position?: { day: string; value: number };
   };
+  /**
+   * イベントを残さずに、最後に触れた日時だけを進める（棚卸しの「残す」、FR-R06）。
+   * 状態は変えないので、ステータスの変更のイベントは要らない
+   */
+  touchedAt?: string;
 };
 
 export type ApplyChangesError =
@@ -165,8 +170,10 @@ export function createTaskRepository({ db, codec, newEventId }: TaskRepositoryDe
     }
 
     const lastAt =
-      change.events
-        .map((e) => e.at)
+      [
+        ...change.events.map((e) => e.at),
+        ...(change.touchedAt === undefined ? [] : [change.touchedAt]),
+      ]
         .sort()
         .at(-1) ?? current.lastTouchedAt;
     const edit = change.edit ?? {};

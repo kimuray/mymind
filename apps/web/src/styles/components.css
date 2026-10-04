@@ -1375,3 +1375,128 @@
   font-weight: 600;
   color: var(--ink-1);
 }
+
+/* 棚卸し（DESIGN.md 4.15、Figma「PC/バックログ」の詳細ペイン） */
+.stocktake {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.stocktake-head {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.stocktake-head h2 {
+  margin: 0;
+}
+
+.stocktake-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.stocktake-progress p {
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+}
+
+.stocktake-progress progress {
+  width: 100%;
+  height: 8px;
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--code-bg);
+  appearance: none;
+  overflow: hidden;
+}
+
+.stocktake-progress progress::-webkit-progress-bar {
+  background: var(--code-bg);
+}
+
+.stocktake-progress progress::-webkit-progress-value {
+  border-radius: var(--radius-full);
+  background: var(--accent);
+}
+
+.stocktake-progress progress::-moz-progress-bar {
+  border-radius: var(--radius-full);
+  background: var(--accent);
+}
+
+.stocktake-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+  padding: var(--space-5);
+  border: var(--glass-border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--glass-shadow);
+}
+
+.stocktake-card h3 {
+  margin: 0 0 var(--space-1);
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+}
+
+.stocktake-facts {
+  display: flex;
+  gap: 10px;
+  margin: 0;
+}
+
+.stocktake-facts div {
+  flex: 1;
+}
+
+.stocktake-facts dt {
+  font-size: 11px;
+  color: var(--ink-4);
+}
+
+.stocktake-facts dd {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.stocktake-actions {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.stocktake-actions .button {
+  flex: 1;
+}
+
+.stocktake .button-primary {
+  width: 100%;
+}
+
+.stocktake-drop {
+  color: var(--status-waiting-text);
+}
+
+.task-aside .chip {
+  margin-right: var(--space-2);
+}
+
+.settings-number {
+  width: 72px;
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border: var(--button-secondary-border);
+  border-radius: var(--radius-m);
+  background: var(--button-secondary-bg);
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink-1);
+  text-align: right;
+}

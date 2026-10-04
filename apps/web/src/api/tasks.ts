@@ -60,6 +60,8 @@ const reloadTasks = (qc: QueryClient) =>
     qc.invalidateQueries({ queryKey: queryKeys.backlog }),
     // 朝の計画の持ち越し候補（api/morning.ts の carryoverKey）
     qc.invalidateQueries({ queryKey: ['carryover'] }),
+    // 棚卸しの対象（api/review.ts、FR-R06）。触れると対象から外れる
+    qc.invalidateQueries({ queryKey: ['review'] }),
     qc.invalidateQueries({ queryKey: ['events'] }),
   ]);
 
