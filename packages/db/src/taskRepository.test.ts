@@ -186,6 +186,30 @@ describe('FR-M02 タスク名の検索', () => {
   });
 });
 
+describe('NFR-18 複数の親の子をまとめて読む', () => {
+  it('親ごとに、1件ずつ読んだときと同じ子を同じ順で返し、子のない親には空を返す', () => {
+    createTask('p1');
+    createTask('p2');
+    for (const [id, parent] of [
+      ['c1', 'p1'],
+      ['c2', 'p1'],
+      ['c3', 'p2'],
+    ] as const) {
+      repo.create({
+        created: { type: 'created', taskId: id, at: at(1), day: DAY },
+        parentId: parent,
+        title: id,
+        noteMd: null,
+      });
+    }
+    createTask('lonely');
+    const children = repo.listChildrenOfMany(['p1', 'p2', 'lonely']);
+    expect(children.get('p1')).toEqual(repo.listChildren('p1'));
+    expect(children.get('p2')?.map((t) => t.id)).toEqual(['c3']);
+    expect(children.get('lonely')).toEqual([]);
+  });
+});
+
 describe('ADR-0004 tasks.status とイベントの整合', () => {
   it('ステータスの変更で、tasks.status・version・最終操作時刻をイベントに合わせて更新する', () => {
     createTask();

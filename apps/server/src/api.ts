@@ -259,12 +259,16 @@ export function createApi({
   const withListInfo = <T extends Task>(list: T[]) => {
     const parentIds = [...new Set(list.flatMap((t) => (t.parentId === null ? [] : [t.parentId])))];
     const parents = new Map(tasks.findMany(parentIds).map((p) => [p.id, p.title]));
+    // 履歴と子は、行ごとに問い合わせずにまとめて読む（NFR-18）
+    const ids = list.map((t) => t.id);
+    const events = tasks.listEventsOfTasks(ids);
+    const childrenOf = tasks.listChildrenOfMany(ids);
     return list.map((t) => {
-      const children = tasks.listChildren(t.id);
+      const children = childrenOf.get(t.id) ?? [];
       return {
         ...t,
         statusSince:
-          statusSinceDay(tasks.listEvents(t.id)) ??
+          statusSinceDay(events.get(t.id) ?? []) ??
           toBusinessDay(new Date(t.createdAt), dayOptions),
         parentTitle: t.parentId === null ? null : (parents.get(t.parentId) ?? null),
         children: {

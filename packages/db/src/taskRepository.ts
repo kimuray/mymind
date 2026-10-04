@@ -365,6 +365,23 @@ export function createTaskRepository({ db, codec, newEventId }: TaskRepositoryDe
         .map(toEvent);
     },
 
+    /** 複数の親の子を、親ごとにまとめて返す（一覧の「子 1/3」を、親ごとに問い合わせずに数えるため、NFR-18） */
+    listChildrenOfMany(parentIds: readonly string[]): Map<string, Task[]> {
+      const result = new Map<string, Task[]>(parentIds.map((id) => [id, []]));
+      for (let i = 0; i < parentIds.length; i += EVENT_BATCH_SIZE) {
+        const rows = db
+          .select()
+          .from(tasks)
+          .where(inArray(tasks.parentId, parentIds.slice(i, i + EVENT_BATCH_SIZE)))
+          .orderBy(asc(tasks.sortOrder))
+          .all();
+        for (const row of rows) {
+          if (row.parentId !== null) result.get(row.parentId)?.push(toTask(row));
+        }
+      }
+      return result;
+    },
+
     /**
      * 複数のタスクの履歴を、タスクごとに記録した順でまとめて返す（月の集計で、タスクごとに問い合わせないため、NFR-18）。
      * SQLite の変数の数の上限に当たらないよう、決まった件数ずつに分けて読む
