@@ -1686,6 +1686,11 @@
   height: 52px;
 }
 
+/* 期間を切り替えて、新しい期間を読み込んでいる間 */
+.timeline-table[data-updating="true"] {
+  opacity: 0.6;
+}
+
 .timeline-date {
   display: flex;
   flex-direction: column;
@@ -1718,7 +1723,7 @@
 }
 
 .timeline-lane {
-  height: 56px;
+  height: 48px;
   background: var(--timeline-lane);
 }
 

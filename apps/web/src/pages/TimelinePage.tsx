@@ -221,7 +221,10 @@ export function TimelinePage() {
             >
               ‹
             </button>
-            <span className="timeline-range">{formatRange(from, to)}</span>
+            {/* 期間を切り替えた直後は前の期間の表を出しているので、見出しも表と同じ期間にする */}
+            <span className="timeline-range">
+              {formatRange(data?.from ?? from, data?.to ?? to)}
+            </span>
             <button
               type="button"
               className="calendar-month-link"
@@ -258,7 +261,9 @@ export function TimelinePage() {
         {data !== undefined && (
           <section
             className="timeline-table glass-2"
-            aria-label={`${formatRange(from, to)}のタイムライン`}
+            aria-label={`${formatRange(data.from, data.to)}のタイムライン`}
+            aria-busy={timeline.isPlaceholderData}
+            data-updating={timeline.isPlaceholderData}
             style={{ ['--timeline-days' as string]: data.days.length }}
           >
             <div className="timeline-row timeline-head">
