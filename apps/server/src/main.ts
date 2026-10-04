@@ -20,8 +20,14 @@ import { createAgentLog } from './agentLog';
 import { type AgentRunners, initialAgentChoice } from './agents';
 import { createApi } from './api';
 import { createApp } from './app';
-import { backupsDir, databasePath, snapshotBeforeMigration } from './backups';
+import {
+  backupsDir,
+  databasePath,
+  readDailyBackupStatus,
+  snapshotBeforeMigration,
+} from './backups';
 import { type ConfigError, loadConfig } from './config';
+import { createDailyBackupJob, dailyBackupDir } from './dailyBackup';
 import { acquireLock, ensureDataDir, issueSessionToken } from './dataDir';
 import { createEventBus } from './events';
 import { createJobRunner } from './jobRunner';
@@ -132,6 +138,15 @@ async function main(): Promise<number> {
     timeZone: DAY_OPTIONS.timeZone,
     logger,
   });
+  scheduler.add(
+    createDailyBackupJob({
+      client: db.$client,
+      dataDir,
+      settings: currentSettings,
+      now: () => new Date(),
+      logger,
+    }),
+  );
   scheduler.start();
   const api = createApi({
     tasks,
@@ -149,7 +164,11 @@ async function main(): Promise<number> {
         }
       },
       databaseFiles: ['', '-wal', '-shm'].map((suffix) => databasePath(dataDir) + suffix),
-      backupsDir: backupsDir(dataDir),
+      backupsDirs: () => [
+        backupsDir(dataDir),
+        dailyBackupDir(dataDir, currentSettings().backupDir),
+      ],
+      dailyBackup: () => readDailyBackupStatus(dataDir),
       jobs,
       // 状態の表示は、依頼で既定に使うエージェントを確かめる
       agentStatus: () =>
@@ -157,7 +176,7 @@ async function main(): Promise<number> {
     },
     settings,
     settingsDefaults,
-    settingsRuntime: { fakeAgent: agent.name === 'fake' },
+    settingsRuntime: { fakeAgent: agent.name === 'fake', defaultBackupDir: backupsDir(dataDir) },
     logs,
   });
   // 開発時は Vite が画面を配信する。古い本番ビルドを出さないよう、画面の URL は Vite へ移す（#97）

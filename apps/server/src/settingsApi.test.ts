@@ -11,6 +11,9 @@ beforeEach(() => {
   app = createSettingsApi(repo);
 });
 
+const BACKUP_DEFAULTS = { backupDir: null, backupGenerations: 14 };
+const RUNTIME = { fakeAgent: false, defaultBackupDir: '' };
+
 const patch = (body: unknown) =>
   app.request('/settings', {
     method: 'PATCH',
@@ -22,20 +25,35 @@ describe('FR-A12 設定「依頼の前に毎回確認する」', () => {
   it('保存していなければ、確認しない（false）を返す', async () => {
     const res = await app.request('/settings');
     expect(await res.json()).toEqual({
-      settings: { confirmBeforeRequest: false, defaultAgent: 'claude', reviewAfterDays: 30 },
-      runtime: { fakeAgent: false },
+      settings: {
+        confirmBeforeRequest: false,
+        defaultAgent: 'claude',
+        reviewAfterDays: 30,
+        ...BACKUP_DEFAULTS,
+      },
+      runtime: RUNTIME,
     });
   });
 
   it('PATCH で変えた値を保存し、GET で読み出せる', async () => {
     const res = await patch({ confirmBeforeRequest: true });
     expect(await res.json()).toEqual({
-      settings: { confirmBeforeRequest: true, defaultAgent: 'claude', reviewAfterDays: 30 },
-      runtime: { fakeAgent: false },
+      settings: {
+        confirmBeforeRequest: true,
+        defaultAgent: 'claude',
+        reviewAfterDays: 30,
+        ...BACKUP_DEFAULTS,
+      },
+      runtime: RUNTIME,
     });
     expect(await (await app.request('/settings')).json()).toEqual({
-      settings: { confirmBeforeRequest: true, defaultAgent: 'claude', reviewAfterDays: 30 },
-      runtime: { fakeAgent: false },
+      settings: {
+        confirmBeforeRequest: true,
+        defaultAgent: 'claude',
+        reviewAfterDays: 30,
+        ...BACKUP_DEFAULTS,
+      },
+      runtime: RUNTIME,
     });
   });
 
@@ -51,13 +69,23 @@ describe('FR-A12 設定「依頼の前に毎回確認する」', () => {
   it('保存されている値が読めなければ、初期値として扱う', async () => {
     repo.setMany({ confirmBeforeRequest: 'not json' });
     expect(await (await app.request('/settings')).json()).toEqual({
-      settings: { confirmBeforeRequest: false, defaultAgent: 'claude', reviewAfterDays: 30 },
-      runtime: { fakeAgent: false },
+      settings: {
+        confirmBeforeRequest: false,
+        defaultAgent: 'claude',
+        reviewAfterDays: 30,
+        ...BACKUP_DEFAULTS,
+      },
+      runtime: RUNTIME,
     });
     repo.setMany({ confirmBeforeRequest: '"true"' });
     expect(await (await app.request('/settings')).json()).toEqual({
-      settings: { confirmBeforeRequest: false, defaultAgent: 'claude', reviewAfterDays: 30 },
-      runtime: { fakeAgent: false },
+      settings: {
+        confirmBeforeRequest: false,
+        defaultAgent: 'claude',
+        reviewAfterDays: 30,
+        ...BACKUP_DEFAULTS,
+      },
+      runtime: RUNTIME,
     });
   });
 });
@@ -121,7 +149,7 @@ describe('FR-R06 設定「棚卸しの対象にする日数」', () => {
 
 describe('FR-A07 偽のアダプタで動いていることを知らせる', () => {
   it('MYMIND_AGENT=fake で動いていれば、設定の応答で知らせる', async () => {
-    const fake = createSettingsApi(repo, {}, { fakeAgent: true });
+    const fake = createSettingsApi(repo, {}, { ...RUNTIME, fakeAgent: true });
     expect(await (await fake.request('/settings')).json()).toMatchObject({
       runtime: { fakeAgent: true },
     });
@@ -135,5 +163,44 @@ describe('FR-A07 偽のアダプタで動いていることを知らせる', () 
 
   it('runtime は画面から変えられない', async () => {
     expect((await patch({ runtime: { fakeAgent: true } })).status).toBe(400);
+  });
+});
+
+describe('NFR-04 設定「バックアップの保存先と世代数」', () => {
+  it('保存していなければ、データディレクトリの中（null）と14世代を返す', async () => {
+    expect(await (await app.request('/settings')).json()).toMatchObject({
+      settings: BACKUP_DEFAULTS,
+    });
+  });
+
+  it('データディレクトリの外の絶対パスと世代数を保存し、null で初期の保存先に戻せる', async () => {
+    expect(
+      (await patch({ backupDir: '/Volumes/外付け/mymind', backupGenerations: 30 })).status,
+    ).toBe(200);
+    expect(await (await app.request('/settings')).json()).toMatchObject({
+      settings: { backupDir: '/Volumes/外付け/mymind', backupGenerations: 30 },
+    });
+    expect((await patch({ backupDir: null })).status).toBe(200);
+    expect(await (await app.request('/settings')).json()).toMatchObject({
+      settings: { backupDir: null },
+    });
+  });
+
+  it('保存先の前後の空白は除いて保存する', async () => {
+    await patch({ backupDir: '  /tmp/backups ' });
+    expect(await (await app.request('/settings')).json()).toMatchObject({
+      settings: { backupDir: '/tmp/backups' },
+    });
+  });
+
+  it.each([
+    ['相対パス', { backupDir: 'backups' }],
+    ['空の保存先', { backupDir: '   ' }],
+    ['0世代', { backupGenerations: 0 }],
+    ['366世代', { backupGenerations: 366 }],
+    ['小数の世代', { backupGenerations: 2.5 }],
+  ])('%s は 400 で保存しない', async (_, body) => {
+    expect((await patch(body)).status).toBe(400);
+    expect(repo.getAll()).toEqual({});
   });
 });

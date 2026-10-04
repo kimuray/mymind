@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { formatBytes, formatDateTime, isReviewAfterDays } from './SettingsPage';
+import {
+  formatBytes,
+  formatDateTime,
+  isBackupGenerations,
+  isReviewAfterDays,
+  toBackupDir,
+} from './SettingsPage';
 
 describe('NFR-21 設定画面の表示', () => {
   it('DB のサイズを読みやすい単位にする', () => {
@@ -29,5 +35,30 @@ describe('FR-R06 棚卸しの日数の入力', () => {
     ['abc', false],
   ])('「%s」は保存できるか：%s', (input, expected) => {
     expect(isReviewAfterDays(input)).toBe(expected);
+  });
+});
+
+describe('NFR-04 バックアップの設定の入力', () => {
+  it.each([
+    ['1', true],
+    ['14', true],
+    ['365', true],
+    ['0', false],
+    ['', false],
+    ['366', false],
+    ['2.5', false],
+  ])('世代数「%s」は保存できるか：%s', (input, expected) => {
+    expect(isBackupGenerations(input)).toBe(expected);
+  });
+
+  it.each([
+    ['/Volumes/外付け/mymind', '/Volumes/外付け/mymind'],
+    ['  /tmp/backups ', '/tmp/backups'],
+    ['', null],
+    ['   ', null],
+    ['backups', undefined],
+    ['~/backups', undefined],
+  ])('保存先「%s」は %s として保存する（undefined は保存しない）', (input, expected) => {
+    expect(toBackupDir(input)).toBe(expected);
   });
 });
