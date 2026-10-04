@@ -451,6 +451,45 @@ describe('NFR-16 エージェントの入出力のログ', () => {
     expect(lines.join('\n')).not.toContain('<data>');
     expect(lines.join('\n')).not.toContain('JSON ではない出力');
   });
+
+  it('NFR-24 エージェントの失敗の理由（標準エラーなど）は、ファイルに残るロガーには出さない', async () => {
+    const lines: string[] = [];
+    const failing: AgentRunner = {
+      name: 'fake',
+      run: async () => ({
+        ok: false,
+        error: { kind: 'failed', message: 'stderr: 振り返りの本文の一部' },
+      }),
+    };
+    const runner = createJobRunner({
+      jobs,
+      tasks: createTaskRepository({ db, codec: plainCodec, newEventId: newId }),
+      logs: createDailyLogRepository({ db, codec: plainCodec }),
+      runners: { claude: failing, codex: failing },
+      defaultAgent: () => 'claude',
+      events: createEventBus(),
+      prompt: { text: 'プロンプト', version: '0.1.0' },
+      monthlyPrompt: { text: '月次のプロンプト', version: '0.2.0' },
+      now: () => now,
+      today: () => DAY,
+      newId,
+      timeoutMs: 1000,
+      logger: createLogger({ write: (line) => lines.push(line) }),
+    });
+    const { job } = runner.enqueue('daily_feedback', DAY);
+    await runner.idle();
+    // 理由はジョブに残り、画面に出せる
+    expect(jobs.find(job.id)?.error).toContain('振り返りの本文の一部');
+    expect(lines.map((l) => JSON.parse(l))).toEqual([
+      expect.objectContaining({
+        message: 'FB の生成に失敗しました',
+        kind: 'daily_feedback',
+        period: DAY,
+        agent: 'fake',
+      }),
+    ]);
+    expect(lines.join('\n')).not.toContain('振り返りの本文の一部');
+  });
 });
 
 describe('NFR-15 日次 FB に送る入力', () => {
