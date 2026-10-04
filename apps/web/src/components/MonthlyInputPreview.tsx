@@ -75,9 +75,15 @@ export function MonthlyInputPreviewView({
                 <span className="text-small">記録なし</span>
               ) : (
                 <span>
-                  {conditionText(d.condition_ai, d.condition_user)}
-                  {d.next_action !== undefined && `／明日の一手：${d.next_action}`}
-                  {d.reflection_head !== undefined && `／振り返りの冒頭：${d.reflection_head}`}
+                  {[
+                    conditionText(d.condition_ai, d.condition_user),
+                    ...(d.good ?? []).map((t) => `よかったこと：${t}`),
+                    ...(d.insight ?? []).map((t) => `気づき：${t}`),
+                    ...(d.next_action === undefined ? [] : [`明日の一手：${d.next_action}`]),
+                    ...(d.reflection_head === undefined
+                      ? []
+                      : [`振り返りの冒頭：${d.reflection_head}`]),
+                  ].join('／')}
                 </span>
               )}
             </li>

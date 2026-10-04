@@ -451,7 +451,7 @@ export function createApi({
         ym: ym.data,
         today,
         // 最新の総括（FR-R05）と、生成中・失敗を出すための最新のジョブ（FR-A06、FR-A08）
-        summary: toMonthlySummary(jobs.jobs.listFeedbacks('monthly', ym.data)[0]),
+        summary: toMonthlySummary(jobs.jobs.latestFeedback('monthly', ym.data)),
         summaryJob: jobs.jobs.latestJob('monthly_summary', ym.data) ?? null,
         days: days.map((day) => monthDay(day, today, records, completed)),
       });
