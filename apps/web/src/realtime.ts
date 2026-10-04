@@ -13,7 +13,14 @@ export type RealtimeMessage =
   /** 設定が変わった（別のタブでの操作。既定のエージェントなど、依頼に使う値が変わる） */
   | { type: 'settings.changed' }
   /** エージェントのジョブの状態が変わった（サーバーから） */
-  | { type: 'job.updated'; jobId: string; status: string };
+  | { type: 'job.updated'; jobId: string; status: string }
+  /** ブラウザの通知を出してほしい（サーバーから、FR-N05） */
+  | { type: 'notification.show'; notification: ShownNotification }
+  /** 画面のバナーに出す通知が変わった（サーバーから、FR-N05） */
+  | { type: 'notifications.changed' };
+
+/** ブラウザの通知に出す中身。path はクリックしたときに開く画面 */
+export type ShownNotification = { kind: string; title: string; body: string; path: string };
 
 export type RealtimeChannel = {
   publish(message: RealtimeMessage): void;
@@ -48,8 +55,19 @@ export function createServerChannel(url = '/api/events'): RealtimeChannel {
         const data = JSON.parse(e.data) as { job: { id: string; status: string } };
         listener({ type: 'job.updated', jobId: data.job.id, status: data.job.status });
       };
+      const onShow = (e: MessageEvent<string>) => {
+        const data = JSON.parse(e.data) as { notification: ShownNotification };
+        listener({ type: 'notification.show', notification: data.notification });
+      };
+      const onChanged = () => listener({ type: 'notifications.changed' });
       source.addEventListener('job.updated', onJob);
-      return () => source.removeEventListener('job.updated', onJob);
+      source.addEventListener('notification.show', onShow);
+      source.addEventListener('notifications.changed', onChanged);
+      return () => {
+        source.removeEventListener('job.updated', onJob);
+        source.removeEventListener('notification.show', onShow);
+        source.removeEventListener('notifications.changed', onChanged);
+      };
     },
     close: () => source.close(),
   };
@@ -99,7 +117,9 @@ function invalidateFor(qc: QueryClient, message: RealtimeMessage) {
     qc.invalidateQueries({ queryKey: ['timeline'] });
     // カレンダーの完了件数（FR-R04）
     qc.invalidateQueries({ queryKey: ['month'] });
-  } else {
+  } else if (message.type === 'notifications.changed') {
+    qc.invalidateQueries({ queryKey: ['notifications'] });
+  } else if (message.type === 'job.updated') {
     qc.invalidateQueries({ queryKey: ['jobs', message.jobId] });
     qc.invalidateQueries({ queryKey: ['feedbacks'] });
     // その日の応答に、最新のジョブと FB と調子が入っている（GET /api/days/:day）
@@ -110,17 +130,38 @@ function invalidateFor(qc: QueryClient, message: RealtimeMessage) {
   }
 }
 
-/** 他のタブとサーバーからの知らせを受け取り、該当するクエリを読み直させる（NFR-13） */
-export function useRealtimeSync() {
+/**
+ * ブラウザの通知を出す（FR-N05）。クリックしたら、このタブを前に出して、その種類の画面を開く。
+ * 同じ種類の通知は tag で置き換えるので、タブを複数開いていても1つしか残らない
+ */
+export function showBrowserNotification(n: ShownNotification, open: (path: string) => void) {
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+  const notice = new Notification(n.title, { body: n.body, tag: `mymind-${n.kind}` });
+  notice.onclick = () => {
+    window.focus();
+    open(n.path);
+    notice.close();
+  };
+}
+
+/**
+ * 他のタブとサーバーからの知らせを受け取り、該当するクエリを読み直させる（NFR-13）。
+ * サーバーから通知を頼まれたら、ブラウザの通知を出す（FR-N05）
+ */
+export function useRealtimeSync(open: (path: string) => void) {
   const qc = useQueryClient();
   useEffect(() => {
     const server = createServerChannel();
     const offTabs = tabChannel().subscribe((m) => invalidateFor(qc, m));
-    const offServer = server.subscribe((m) => invalidateFor(qc, m));
+    const offServer = server.subscribe((m) =>
+      m.type === 'notification.show'
+        ? showBrowserNotification(m.notification, open)
+        : invalidateFor(qc, m),
+    );
     return () => {
       offTabs();
       offServer();
       server.close();
     };
-  }, [qc]);
+  }, [qc, open]);
 }

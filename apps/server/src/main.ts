@@ -34,7 +34,18 @@ import { createEventBus } from './events';
 import { createJobRunner } from './jobRunner';
 import { listen } from './listen';
 import { createLogger } from './logger';
-import { createLogOnlyNotificationAdapter, createNotificationJobs } from './notifications';
+import {
+  activeChannel,
+  createBannerChannel,
+  createBrowserChannel,
+  createBrowserPermissionState,
+  createMacosChannel,
+  createNotificationRouter,
+  createPendingNotifications,
+  findExecutable,
+  NOTIFIER_COMMAND,
+} from './notificationAdapters';
+import { createNotificationJobs } from './notifications';
 import { loadDailyPrompt, loadMonthlyPrompt } from './prompts';
 import { createScheduler } from './scheduler';
 import { createSettingsReader } from './settingsApi';
@@ -148,13 +159,23 @@ async function main(): Promise<number> {
     logger,
   });
   scheduler.add(dailyBackup);
+  // 通知を出す手段（FR-N05、architecture.md 9.2）。macOS の通知のコマンド、ブラウザの通知、画面のバナーの順に使う。
+  // コマンドは後から入れても再起動せずに使えるよう、通知のたびに探す
+  const pendingNotifications = createPendingNotifications(() => new Date());
+  const browserPermission = createBrowserPermissionState();
+  const notifierCommand = () => findExecutable(NOTIFIER_COMMAND, process.env['PATH']);
+  const notificationChannels = [
+    createMacosChannel({ command: notifierCommand, baseUrl: `http://127.0.0.1:${port}` }),
+    createBrowserChannel({ events, permission: browserPermission }),
+    createBannerChannel({ pending: pendingNotifications, events }),
+  ];
   // 朝・夜・棚卸しの通知（FR-N01〜N03）。時刻は初期値で、設定で変えられるようにするのは FR-N04
   for (const job of createNotificationJobs({
     tasks,
     logs,
     jobs,
     sent: createNotificationRepository({ db }),
-    adapter: createLogOnlyNotificationAdapter(logger),
+    adapter: createNotificationRouter(notificationChannels, logger),
     reviewAfterDays: () => currentSettings().reviewAfterDays,
     dayOptions: DAY_OPTIONS,
     now: () => new Date(),
@@ -188,11 +209,17 @@ async function main(): Promise<number> {
       // 状態の表示は、依頼で既定に使うエージェントを確かめる
       agentStatus: () =>
         detectAgent(agent.name === 'fake' ? 'fake' : currentSettings().defaultAgent),
+      notificationStatus: () => ({
+        channel: activeChannel(notificationChannels),
+        command: notifierCommand(),
+        browser: browserPermission.get(),
+      }),
     },
     settings,
     settingsDefaults,
     settingsRuntime: { fakeAgent: agent.name === 'fake', defaultBackupDir: backupsDir(dataDir) },
     logs,
+    notifications: { pending: pendingNotifications, permission: browserPermission },
   });
   // 開発時は Vite が画面を配信する。古い本番ビルドを出さないよう、画面の URL は Vite へ移す（#97）
   const vitePort = devPorts[0];

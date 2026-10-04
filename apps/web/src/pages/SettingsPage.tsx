@@ -1,6 +1,11 @@
 import type { Status } from '@mymind/domain';
 import { useState } from 'react';
 import { type Health, useHealth } from '../api/health';
+import {
+  type BrowserPermission,
+  browserPermission,
+  reportBrowserPermission,
+} from '../api/notifications';
 import { type AgentChoice, useSettings, useUpdateSettings } from '../api/settings';
 import { AgentSelect } from '../components/AgentSelect';
 import { Button } from '../components/Button';
@@ -43,7 +48,7 @@ const BACKUP_KINDS: Record<string, string> = {
 
 const JOB_KINDS: Record<string, string> = { daily_feedback: '日次FB', monthly_summary: '月次総括' };
 
-type RowKey = 'agent' | 'backup' | 'database' | 'failure';
+type RowKey = 'agent' | 'notification' | 'backup' | 'database' | 'failure';
 
 type Row = {
   key: RowKey;
@@ -53,6 +58,37 @@ type Row = {
   /** 状態のチップ。状態色を流用する（正常は done、要対応は waiting、過去の失敗は paused） */
   chip: { status: Status; text: string } | null;
 };
+
+const CHANNEL_NAMES: Record<string, string> = {
+  macos: 'macOS の通知',
+  browser: 'ブラウザの通知',
+  banner: '画面のバナー',
+};
+
+const PERMISSION_NAMES: Record<BrowserPermission, string> = {
+  granted: '許可されています',
+  default: 'まだ許可していません',
+  denied: '拒否されています（ブラウザのサイトの設定で変えられます）',
+  unsupported: 'このブラウザでは使えません',
+};
+
+/** 通知の行（FR-N05）。macOS の通知かブラウザの通知が使えれば正常、バナーだけなら対応が必要 */
+function notificationRow(n: NonNullable<Health['notifications']>): Row {
+  const channel = n.channel ?? 'banner';
+  return {
+    key: 'notification',
+    label: '通知',
+    value: CHANNEL_NAMES[channel] ?? channel,
+    note:
+      n.command !== null
+        ? n.command
+        : 'terminal-notifier が見つかりません。ブラウザの通知か、画面のバナーで知らせます',
+    chip:
+      channel === 'banner'
+        ? { status: 'waiting', text: 'バナーだけ' }
+        : { status: 'done', text: '使えます' },
+  };
+}
 
 function rowsOf(h: Health): Row[] {
   const failure = h.recentFailure;
@@ -66,6 +102,7 @@ function rowsOf(h: Health): Row[] {
         ? { status: 'done', text: '使えます' }
         : { status: 'waiting', text: '使えません' },
     },
+    ...(h.notifications === null ? [] : [notificationRow(h.notifications)]),
     {
       key: 'backup',
       label: '最後のバックアップ',
@@ -162,6 +199,54 @@ function AgentDetail({ agent }: { agent: Health['agent'] }) {
         の依頼」で選んだ既定のエージェントです。開発用の偽のアダプタは環境変数 MYMIND_AGENT=fake
         で使います。
       </p>
+    </div>
+  );
+}
+
+/**
+ * 通知の詳細（FR-N05、architecture.md 9.2）。使う手段と、terminal-notifier とブラウザの通知の状態。
+ * ブラウザの通知の許可は、利用者がここで押したときだけ求める
+ */
+function NotificationDetail({
+  status,
+  onChanged,
+}: {
+  status: NonNullable<Health['notifications']>;
+  onChanged: () => void;
+}) {
+  const [permission, setPermission] = useState<BrowserPermission>(browserPermission);
+  const row = notificationRow(status);
+  const request = async () => {
+    if (typeof Notification === 'undefined') return;
+    setPermission(await Notification.requestPermission());
+    await reportBrowserPermission();
+    onChanged();
+  };
+  return (
+    <div className="settings-detail">
+      <div className="settings-detail-head">
+        <h2 className="text-title">通知</h2>
+        <p className="text-small">朝・夜・棚卸しの通知を出す手段</p>
+      </div>
+      <section className="settings-card glass-2" aria-label="通知を出す手段">
+        <div className="settings-card-title">
+          <h3>{row.value}</h3>
+          <Chip chip={row.chip} />
+        </div>
+        <dl className="settings-facts">
+          <dt>terminal-notifier</dt>
+          <dd>{status.command ?? '見つかりません'}</dd>
+          <dt>ブラウザの通知</dt>
+          <dd>{PERMISSION_NAMES[permission]}</dd>
+        </dl>
+      </section>
+      <p className="text-small">
+        macOS の通知を使うには、ターミナルで <code>brew install terminal-notifier</code>{' '}
+        を実行してください。見つからないときは、アプリを開いているタブがあればブラウザの通知で、どちらも使えなければ次に画面を開いたときのバナーで知らせます。
+      </p>
+      {permission === 'default' && (
+        <Button onClick={() => void request()}>ブラウザの通知を許可する</Button>
+      )}
     </div>
   );
 }
@@ -416,6 +501,8 @@ export function SettingsPage() {
   const detail =
     health.data === undefined || current === undefined ? undefined : current.key === 'agent' ? (
       <AgentDetail agent={health.data.agent} />
+    ) : current.key === 'notification' && health.data.notifications !== null ? (
+      <NotificationDetail status={health.data.notifications} onChanged={() => health.refetch()} />
     ) : (
       <RowDetail row={current} />
     );
