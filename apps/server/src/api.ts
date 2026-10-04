@@ -36,7 +36,7 @@ import { z } from 'zod';
 import { createDayRecordReader, type DayRecordReader, hasReflection } from './dayRecords';
 import { createHealthApi, type HealthDeps } from './health';
 import { createJobsApi, type JobsApiDeps } from './jobsApi';
-import { monthParam } from './params';
+import { calendarDayParam, monthParam } from './params';
 import { type AppSettings, createSettingsApi } from './settingsApi';
 
 export type ApiDeps = {
@@ -65,7 +65,7 @@ const dayParam = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD の形式�
 const TIMELINE_MAX_DAYS = 14;
 
 const timelineQuery = z
-  .strictObject({ from: dayParam, to: dayParam })
+  .strictObject({ from: calendarDayParam, to: calendarDayParam })
   .refine((q) => q.from <= q.to, { message: 'from は to より前の日にしてください' })
   .refine((q) => daysBetween(q.from, q.to) < TIMELINE_MAX_DAYS, {
     message: `期間は${TIMELINE_MAX_DAYS}日までにしてください`,

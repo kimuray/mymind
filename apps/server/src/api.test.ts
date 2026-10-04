@@ -935,11 +935,24 @@ describe('FR-R01 FR-R02 FR-R03 タイムラインの API', () => {
     ['15日以上の期間', '/timeline?from=2026-09-01&to=2026-09-15'],
     ['業務日の形式でない', '/timeline?from=2026-9-1&to=2026-09-07'],
     ['to がない', '/timeline?from=2026-09-01'],
+    ['存在しない日付', '/timeline?from=2026-02-30&to=2026-03-01'],
+    ['うるう年でない年の2月29日', '/timeline?from=2027-02-23&to=2027-02-29'],
   ])('%s は 400', async (_, path) => {
     expect((await get(path)).status).toBe(400);
   });
 
   it('2週間（14日）までは受け付ける', async () => {
     expect((await get('/timeline?from=2026-09-10&to=2026-09-23')).status).toBe(200);
+  });
+
+  it('うるう年の2月29日と、月末をまたぐ期間を受け付ける', async () => {
+    const t = (await (await get('/timeline?from=2028-02-27&to=2028-03-02')).json()) as TimelineJson;
+    expect(t.days.map((d) => d.day)).toEqual([
+      '2028-02-27',
+      '2028-02-28',
+      '2028-02-29',
+      '2028-03-01',
+      '2028-03-02',
+    ]);
   });
 });
