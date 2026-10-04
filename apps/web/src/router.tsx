@@ -5,8 +5,9 @@ import { CalendarPage } from './pages/CalendarPage';
 import { MorningPage } from './pages/MorningPage';
 import { ReflectionPage } from './pages/ReflectionPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { TimelinePage } from './pages/TimelinePage';
 import { TodayPage } from './pages/TodayPage';
-import { MameGalleryPage, TimelinePage } from './routes/pages';
+import { MameGalleryPage } from './routes/pages';
 
 // 画面の URL（#20 の暫定決定）。ルートはコードで定義する（ADR-0012）
 
