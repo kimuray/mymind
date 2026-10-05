@@ -81,6 +81,15 @@ test.describe('NFR-29 ホバーと押下の反応', () => {
 });
 
 test.describe('FR-T03 状態が変わった直後の動き', () => {
+  // 動きの時間と遅れを確かめるため、このまとまりだけ「視差効果を減らす」を外す（DESIGN.md 2.7）
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+  });
+  // サンドボックスの中ではページを使い回すので、ほかのテストのために戻す
+  test.afterEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+  });
+
   test('画面を開いたときの行には、動きを付けない', async ({ page }) => {
     await page.goto('/');
     await addTask(page, '開いたときは動かさない');
@@ -104,14 +113,28 @@ test.describe('FR-T03 状態が変わった直後の動き', () => {
     });
     await expect(done).toHaveAttribute('data-changed', 'true');
     await expect(done.locator('.si-glyph')).toHaveCSS('animation-name', 'si-pop');
+    await expect(done.locator('.si-glyph')).toHaveCSS('animation-duration', '0.2s');
     await expect(done.locator('.si-check')).toHaveCSS('animation-name', 'si-check-in');
+    // チェックは円より --motion-fast 遅れて現れる
+    await expect(done.locator('.si-check')).toHaveCSS('animation-delay', '0.12s');
     const strike = () =>
       done.locator('.task-name').evaluate((el) => {
         const style = getComputedStyle(el, '::after');
-        return { name: style.animationName, opacity: style.opacity };
+        return {
+          name: style.animationName,
+          duration: style.animationDuration,
+          delay: style.animationDelay,
+          opacity: style.opacity,
+        };
       });
     // 線は引き終えたら消え、完了した行の見た目は今のまま
-    await expect.poll(strike).toEqual({ name: 'task-strike-draw, task-strike-fade', opacity: '0' });
+    await expect.poll(strike).toEqual({
+      name: 'task-strike-draw, task-strike-fade',
+      // 引くのに --motion-slow、引き終えてから --motion-base で消す
+      duration: '0.32s, 0.2s',
+      delay: '0s, 0.32s',
+      opacity: '0',
+    });
   });
 
   test('着手中にすると、バッジが現れる動きを付ける', async ({ page }) => {
