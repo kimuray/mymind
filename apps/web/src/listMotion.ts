@@ -49,7 +49,7 @@ export function parseDuration(value: string): number {
 }
 
 /** 動きのトークン（DESIGN.md 2.7）。値を直書きしないよう、tokens.css から読む */
-function readMotionTokens() {
+export function readMotionTokens() {
   const style = getComputedStyle(document.documentElement);
   const read = (name: string) => style.getPropertyValue(name).trim();
   return {
@@ -64,7 +64,7 @@ function readMotionTokens() {
 const ANIMATION_ID = 'list-motion';
 
 /** 文書の左上からの位置。offset の連なりで測るので、transform（動きの途中のずれ）を含まない */
-function offsetPosition(el: HTMLElement): RowPosition {
+export function offsetPosition(el: HTMLElement): RowPosition {
   let x = 0;
   let y = 0;
   let current: Element | null = el;

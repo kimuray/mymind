@@ -19,6 +19,7 @@ import { dayOf } from '../day';
 import { useDayGuard } from '../dayGuard';
 import { useKeyBindings } from '../keyboard';
 import { useListMotion } from '../listMotion';
+import { useSelectionMotion } from '../selectionMotion';
 import { type ListRow, useTaskListKeys } from '../useTaskListKeys';
 
 /** 最後に触れてからの日数（「3日前」）。日数は domain で数える */
@@ -67,6 +68,8 @@ export function BacklogPage() {
   // 行の追加・移動・並べ替えを目で追えるようにする（DESIGN.md 4.18）
   const listRoot = useRef<HTMLDivElement>(null);
   useListMotion(listRoot, backlog.isSuccess);
+  // 選択の面を行から行へ滑らせる（DESIGN.md 5.2）
+  useSelectionMotion(listRoot);
   const create = useCreateTask();
   const transition = useTransition();
   const move = useMove();

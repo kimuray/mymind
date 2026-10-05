@@ -28,7 +28,8 @@ export function focusRow(id: string) {
   const target =
     row?.querySelector<HTMLButtonElement>('.status-icon:not(:disabled)') ??
     row?.querySelector<HTMLButtonElement>('.task-title');
-  target?.focus();
+  // スクロールは選択の追従（selectionMotion.ts）に任せ、フォーカスの移動では一気に飛ばさない
+  target?.focus({ preventScroll: true });
 }
 
 /** 並べ替えの新しい値。移動先の隣との中間にする（整数を振り直さずに済む） */
