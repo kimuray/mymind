@@ -79,3 +79,69 @@ test.describe('NFR-29 ホバーと押下の反応', () => {
     }
   });
 });
+
+test.describe('FR-T03 状態が変わった直後の動き', () => {
+  // 動きの時間と遅れを確かめるため、このまとまりだけ「視差効果を減らす」を外す（DESIGN.md 2.7）
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+  });
+  // サンドボックスの中ではページを使い回すので、ほかのテストのために戻す
+  test.afterEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+  });
+
+  test('画面を開いたときの行には、動きを付けない', async ({ page }) => {
+    await page.goto('/');
+    await addTask(page, '開いたときは動かさない');
+    await page.reload();
+    const row = page.locator('.task-row', { hasText: '開いたときは動かさない' });
+    await expect(row).toHaveAttribute('data-changed', 'false');
+    await expect(row.locator('.si-glyph')).toHaveAttribute('data-animate', 'false');
+  });
+
+  test('完了にすると、アイコンが弾み、タスク名に線を引いてから消す', async ({ page }) => {
+    await page.goto('/');
+    const row = await addTask(page, '完了の動きを確かめる');
+    // 新しく追加した行は、初めて画面に出す状態なので動かさない
+    await expect(row.locator('.si-glyph')).toHaveAttribute('data-animate', 'false');
+    const icon = row.locator('.status-icon');
+    await icon.click();
+    await icon.click();
+    // 完了にすると行は「完了」の欄へ移って作り直されるが、変わったことは引き継ぐ
+    const done = page.locator('.task-row[data-closed="true"]', {
+      hasText: '完了の動きを確かめる',
+    });
+    await expect(done).toHaveAttribute('data-changed', 'true');
+    await expect(done.locator('.si-glyph')).toHaveCSS('animation-name', 'si-pop');
+    await expect(done.locator('.si-glyph')).toHaveCSS('animation-duration', '0.2s');
+    await expect(done.locator('.si-check')).toHaveCSS('animation-name', 'si-check-in');
+    // チェックは円より --motion-fast 遅れて現れる
+    await expect(done.locator('.si-check')).toHaveCSS('animation-delay', '0.12s');
+    const strike = () =>
+      done.locator('.task-name').evaluate((el) => {
+        const style = getComputedStyle(el, '::after');
+        return {
+          name: style.animationName,
+          duration: style.animationDuration,
+          delay: style.animationDelay,
+          opacity: style.opacity,
+        };
+      });
+    // 線は引き終えたら消え、完了した行の見た目は今のまま
+    await expect.poll(strike).toEqual({
+      name: 'task-strike-draw, task-strike-fade',
+      // 引くのに --motion-slow、引き終えてから --motion-base で消す
+      duration: '0.32s, 0.2s',
+      delay: '0s, 0.32s',
+      opacity: '0',
+    });
+  });
+
+  test('着手中にすると、バッジが現れる動きを付ける', async ({ page }) => {
+    await page.goto('/');
+    const row = await addTask(page, 'バッジの動きを確かめる');
+    await row.locator('.status-icon').click();
+    await expect(row.locator('.chip')).toHaveCSS('animation-name', 'chip-in');
+    await expect(row.locator('.si-fill')).toHaveCSS('animation-name', 'si-fill-grow');
+  });
+});

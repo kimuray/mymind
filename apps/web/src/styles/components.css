@@ -320,6 +320,97 @@
   stroke-linejoin: round;
 }
 
+/*
+ * 状態が変わった直後の動き（DESIGN.md 4.2）。data-animate / data-changed は変わった直後だけ true になり、
+ * 形は状態ごとに作り直すので、動きは変わったときに1回だけ再生される。transform と opacity だけを動かす（2.7）
+ */
+.si-glyph,
+.si-glyph > * {
+  transform-box: view-box;
+  transform-origin: 10px 10px;
+}
+
+.si-glyph[data-animate="true"] {
+  animation: si-pop var(--motion-base) var(--ease-spring) both;
+}
+
+@keyframes si-pop {
+  from {
+    opacity: 0.4;
+    transform: scale(0.7);
+  }
+}
+
+/* 着手中：半分の塗りが中心から広がる */
+.status-icon[data-status="doing"] .si-glyph[data-animate="true"] .si-fill {
+  animation: si-fill-grow var(--motion-base) var(--ease-out) both;
+}
+
+@keyframes si-fill-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* 完了：円が弾んだあと、チェックが少し遅れて現れる */
+.status-icon[data-status="done"] .si-glyph[data-animate="true"] .si-check {
+  animation: si-check-in var(--motion-base) var(--ease-spring) var(--motion-fast) both;
+}
+
+@keyframes si-check-in {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+
+/*
+ * 完了・中止にした瞬間に、タスク名に左から線を引き、引き終えたら消して今の見た目（--ink-3）に戻す。
+ * 完了した行の見た目そのものは Figma のまま変えない
+ */
+.task-name {
+  position: relative;
+}
+
+.task-row[data-changed="true"][data-closed="true"] .task-name::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 1.5px;
+  background: currentColor;
+  transform-origin: left center;
+  pointer-events: none;
+  animation:
+    task-strike-draw var(--motion-slow) var(--ease-out) both,
+    task-strike-fade var(--motion-base) var(--ease-out) var(--motion-slow) forwards;
+}
+
+@keyframes task-strike-draw {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@keyframes task-strike-fade {
+  to {
+    opacity: 0;
+  }
+}
+
+/* 状態のバッジは、状態が変わったときに横から現れる */
+.chip[data-animate="true"] {
+  animation: chip-in var(--motion-base) var(--ease-out) both;
+}
+
+@keyframes chip-in {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+}
+
 /* リストの下のキーの案内 */
 .key-hints {
   display: flex;

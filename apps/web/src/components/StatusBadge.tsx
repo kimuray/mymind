@@ -8,10 +8,13 @@ export function StatusBadge({
   status,
   since,
   today,
+  animate = false,
 }: {
   status: Status;
   since: string;
   today: string;
+  /** 状態が変わった直後か。true なら現れるときに動きを付ける */
+  animate?: boolean;
 }) {
   if (status === 'todo' || status === 'done') return null;
   const text =
@@ -19,7 +22,8 @@ export function StatusBadge({
       ? STATUS_LABELS[status]
       : `${STATUS_LABELS[status]}・${dayOrdinalSince(since, today)}日目`;
   return (
-    <span className="chip" data-status={status}>
+    // 状態ごとに作り直し、変わった直後だけ CSS の動きを再生する
+    <span key={status} className="chip" data-status={status} data-animate={animate}>
       {text}
     </span>
   );
