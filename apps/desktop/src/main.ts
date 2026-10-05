@@ -1,6 +1,7 @@
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { desktopMessageSchema } from '@mymind/server/desktop-bridge';
+
 import {
   app,
   BrowserWindow,
@@ -19,7 +20,8 @@ import {
   writeDesktopState,
 } from './desktopState';
 import { IPC, type LoginItemState } from './ipc';
-import { isAppUrl, isExternalWebUrl } from './navigation';
+import { isAppUrl, isExpectedServerUrl, isExternalWebUrl, serverPort } from './navigation';
+
 import { resolveResources, serverEnv } from './resources';
 import { createSupervisor, type ServerProcess } from './supervisor';
 import { buildTrayMenu } from './tray';
@@ -145,10 +147,16 @@ function registerIpc() {
 /** 初回の起動でだけ、ログイン時の起動をオンにする（オフにしたあとは戻さない、NFR-27） */
 function initLoginItem() {
   const statePath = join(app.getPath('userData'), 'desktop-state.json');
-  const state = readDesktopState(statePath);
-  if (!shouldEnableLoginItemOnFirstRun({ isPackaged: app.isPackaged, state })) return;
+  const read = readDesktopState(statePath);
+  if (read.kind === 'invalid') {
+    console.warn(
+      `デスクトップアプリの状態を読めないので、ログイン時の起動は変えません（${read.reason}）`,
+    );
+    return;
+  }
+  if (!shouldEnableLoginItemOnFirstRun({ isPackaged: app.isPackaged, read })) return;
   app.setLoginItemSettings({ openAtLogin: true });
-  writeDesktopState(statePath, { ...state, loginItemInitialized: true });
+  writeDesktopState(statePath, { loginItemInitialized: true });
 }
 
 const startServer = (): ServerProcess => {
@@ -170,7 +178,18 @@ const supervisor = createSupervisor({
   start: startServer,
   parseMessage: (raw) => {
     const parsed = desktopMessageSchema.safeParse(raw);
-    return parsed.success ? parsed.data : null;
+    if (!parsed.success) return null;
+    // 起動したときに決めた 127.0.0.1 のポートでなければ開かず、起動できなかったことにする（ADR-0007）
+    if (
+      parsed.data.type === 'ready' &&
+      !isExpectedServerUrl(parsed.data.url, serverPort(process.env))
+    ) {
+      return {
+        type: 'fatal',
+        reason: `サーバーが知らせた URL（${parsed.data.url}）が想定と違います`,
+      };
+    }
+    return parsed.data;
   },
   now: () => Date.now(),
   onReady: (url) => {

@@ -22,3 +22,25 @@ export function isExternalWebUrl(url: string): boolean {
     return false;
   }
 }
+
+/**
+ * サーバーが知らせた待ち受けの URL が、起動したときに決めたもの（http://127.0.0.1:<ポート>）と同じか。
+ * 違う URL は開かない（ウィンドウとアプリの画面からの依頼を許すオリジンになるため、ADR-0007）
+ */
+export function isExpectedServerUrl(url: string, port: number): boolean {
+  try {
+    const parsed = new URL(url);
+    return (
+      parsed.origin === `http://127.0.0.1:${port}` &&
+      (parsed.pathname === '/' || parsed.pathname === '')
+    );
+  } catch {
+    return false;
+  }
+}
+
+/** サーバーを待ち受けさせるポート。MYMIND_PORT がなければ 4820（サーバーの既定と同じ） */
+export function serverPort(env: Record<string, string | undefined>): number {
+  const port = Number(env['MYMIND_PORT'] ?? 4820);
+  return Number.isInteger(port) && port >= 1 && port <= 65535 ? port : 4820;
+}
