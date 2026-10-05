@@ -1,3 +1,8 @@
 packages:
   - "apps/*"
   - "packages/*"
+
+# インストール時のスクリプトを許可する依存関係。Electron は本体（バイナリ）をこのスクリプトで落とす（ADR-0015）。
+# ほかの依存関係（esbuild など）の扱いは issue 015 で決める
+onlyBuiltDependencies:
+  - electron

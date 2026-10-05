@@ -18,4 +18,5 @@
 | [ADR-0012](./0012-web-router-and-fonts.md) | 画面のルーターは TanStack Router にし、フォントは @fontsource をそのまま同梱する | 採用 |
 | [ADR-0013](./0013-codex-review-before-pr.md) | PR を作る前に、Codex に差分をレビューしてもらう | 採用 |
 | [ADR-0014](./0014-mcp-read-only-via-api.md) | MCP サーバーは公式 SDK で作り、読み取りだけを API 経由で出す | 採用 |
-| [ADR-0015](./0015-desktop-app-with-electron.md) | 画面の入口をデスクトップアプリにし、Electron で apps/desktop に作る | 採用 |
+| [ADR-0015](./0015-desktop-app-with-electron.md) | 画面の入口をデスクトップアプリにし、Electron で apps/desktop に作る | 採用（spike の結果は ADR-0016） |
+| [ADR-0016](./0016-desktop-runtime-and-bundling.md) | Electron の版、サーバーの束ね方、エージェントの PATH（ADR-0015 の spike の結果） | 採用 |
