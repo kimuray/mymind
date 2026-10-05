@@ -49,3 +49,26 @@ export const shouldEnableLoginItemOnFirstRun = (input: {
   input.isPackaged &&
   (input.read.kind === 'missing' ||
     (input.read.kind === 'ok' && !input.read.state.loginItemInitialized));
+
+/**
+ * 初回の起動で、ログイン時の起動を一度だけオンにする（NFR-27）。
+ * 先に「済ませた」ことを記録し、記録できたときだけオンにする。記録できないままオンにすると、
+ * 利用者があとでオフにしても、次の起動でまた「初めて」と判断してオンに戻してしまうため
+ */
+export function initLoginItemOnce(input: {
+  isPackaged: boolean;
+  read: ReturnType<typeof readDesktopState>;
+  write: (state: DesktopState) => void;
+  enable: () => void;
+}): 'enabled' | 'skipped' | { failed: string } {
+  if (!shouldEnableLoginItemOnFirstRun({ isPackaged: input.isPackaged, read: input.read })) {
+    return 'skipped';
+  }
+  try {
+    input.write({ loginItemInitialized: true });
+  } catch (e) {
+    return { failed: e instanceof Error ? e.message : String(e) };
+  }
+  input.enable();
+  return 'enabled';
+}
