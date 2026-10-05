@@ -219,6 +219,52 @@ test.describe('FR-U01 リストの行の動き', () => {
 });
 
 test.describe('FR-U01 選択のカーソルの動き', () => {
+  test('J を続けて押すと、選択の面は今見えている位置から次の行へ向かい直す', async ({ page }) => {
+    // 動きがあることを確かめるため、このテストだけ「視差効果を減らす」を外す（DESIGN.md 2.7）。
+    // 画面の外の行ではスクロールが混ざるので、行がたまっていても見えるよう縦に広げる
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.setViewportSize({ width: 1440, height: 4000 });
+    try {
+      await page.goto('/');
+      for (const title of ['続けて押す1', '続けて押す2', '続けて押す3']) await addTask(page, title);
+      await page.locator('.task-row', { hasText: '続けて押す1' }).locator('.task-title').click();
+      await page.evaluate(() => {
+        const log: number[] = [];
+        (window as unknown as { __selectionStarts: number[] }).__selectionStarts = log;
+        const original = Element.prototype.animate;
+        Element.prototype.animate = function (this: Element, keyframes, options) {
+          if (typeof options === 'object' && options.id === 'selection-motion') {
+            const first = (keyframes as Keyframe[])[0]?.['transform'];
+            log.push(new DOMMatrixReadOnly(String(first)).m42);
+          }
+          return original.call(this, keyframes, options);
+        };
+      });
+      const step = await page.evaluate(() => {
+        const rows = [...document.querySelectorAll<HTMLElement>('.task-row')].filter((r) =>
+          r.textContent?.includes('続けて押す'),
+        );
+        const [a, b] = rows;
+        return a !== undefined && b !== undefined ? b.offsetTop - a.offsetTop : 0;
+      });
+      await page.keyboard.press('j');
+      await page.keyboard.press('j');
+      const starts = () =>
+        page.evaluate(
+          () => (window as unknown as { __selectionStarts: number[] }).__selectionStarts,
+        );
+      await expect.poll(async () => (await starts()).length).toBe(2);
+      const [first, second] = await starts();
+      // 1回目は1行上から。2回目は、まだ1行目と2行目の間に見えている面から向かうので、1行分より遠い
+      expect(first).toBeCloseTo(-step, 0);
+      expect(second ?? 0).toBeLessThan(-step - 1);
+    } finally {
+      // サンドボックスの中ではページを使い回すので、ほかのテストのために戻す
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+      await page.setViewportSize({ width: 1440, height: 900 });
+    }
+  });
+
   test('選択中の行には、選択の面を ::after に描く', async ({ page }) => {
     await page.goto('/');
     const row = await addTask(page, '選択の面を確かめる');

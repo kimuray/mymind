@@ -20,18 +20,36 @@ export function selectionShift(
   return { dx: from.x + current.x - to.x, dy: from.y + current.y - to.y };
 }
 
-/** 動きの途中の ::after の、今のずれ */
-function currentShift(node: HTMLElement): RowPosition {
-  const running = node
-    .getAnimations({ subtree: true })
-    .filter((a) => a.id === ANIMATION_ID && a.playState === 'running');
-  if (running.length === 0) return { x: 0, y: 0 };
-  const matrix = new DOMMatrixReadOnly(getComputedStyle(node, '::after').transform);
-  for (const a of running) a.cancel();
-  return { x: matrix.m41, y: matrix.m42 };
+/**
+ * 動きの途中の面が、行からまだどれだけずれて見えているか。progress は緩急を適用した進み具合（0〜1）。
+ * 選択が外れた行の ::after はもう描かれないので、DOM からは読まずに、始めのずれと進み具合から求める
+ */
+export function remainingShift(
+  shift: { dx: number; dy: number },
+  progress: number | null,
+): RowPosition {
+  if (progress === null) return { x: 0, y: 0 };
+  return { x: shift.dx * (1 - progress), y: shift.dy * (1 - progress) };
 }
 
-type Selection = { key: unknown; position: RowPosition; node: HTMLElement };
+type Selection = {
+  key: unknown;
+  position: RowPosition;
+  /** この行へ滑らせている動きと、その始めのずれ */
+  motion: { animation: Animation; shift: { dx: number; dy: number } } | null;
+};
+
+/** 前の面の動きが途中なら、今見えているずれを返して止める */
+function takeCurrentShift(previous: Selection): RowPosition {
+  const motion = previous.motion;
+  if (motion === null || motion.animation.playState !== 'running') return { x: 0, y: 0 };
+  const shift = remainingShift(
+    motion.shift,
+    motion.animation.effect?.getComputedTiming().progress ?? null,
+  );
+  motion.animation.cancel();
+  return shift;
+}
 
 /**
  * 選択（カーソル）が行から行へ移るとき、選択の面を滑らせる（FR-U01、DESIGN.md 5.2）。
@@ -50,21 +68,23 @@ export function useSelectionMotion(root: RefObject<HTMLElement | null>) {
     const key = node.dataset['motionKey'] ?? node;
     const position = offsetPosition(node);
     const previous = last.current;
-    last.current = { key, position, node };
-    if (previous?.key === key) return;
+    if (previous?.key === key) {
+      // 同じ行のまま（行が動いた、作り直された）なら、面は動かさずに位置だけ覚え直す
+      last.current = { ...previous, position };
+      return;
+    }
+    last.current = { key, position, motion: null };
     // 選んだ行が画面の外に出ないよう追従する（クリックで選んだ見えている行では、スクロールしない）
     scrollRowIntoView(node);
     if (previous === null || matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
-    const current = previous.node.isConnected ? currentShift(previous.node) : { x: 0, y: 0 };
-    const { dx, dy } = selectionShift(previous.position, position, current);
+    const shift = selectionShift(previous.position, position, takeCurrentShift(previous));
     const t = readMotionTokens();
-    node.animate([{ transform: `translate(${dx}px, ${dy}px)` }, { transform: 'none' }], {
-      duration: t.fast,
-      easing: t.easeOut,
-      pseudoElement: '::after',
-      id: ANIMATION_ID,
-    });
+    const animation = node.animate(
+      [{ transform: `translate(${shift.dx}px, ${shift.dy}px)` }, { transform: 'none' }],
+      { duration: t.fast, easing: t.easeOut, pseudoElement: '::after', id: ANIMATION_ID },
+    );
+    last.current = { key, position, motion: { animation, shift } };
   });
 }
 

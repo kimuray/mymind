@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { scrollBehaviorFor, selectionShift } from './selectionMotion';
+import { remainingShift, scrollBehaviorFor, selectionShift } from './selectionMotion';
 
 describe('FR-U01 選択のカーソルの動き（DESIGN.md 5.2）', () => {
   it('選択の面は、前の行の位置から新しい行へ滑らせる', () => {
@@ -24,5 +24,13 @@ describe('FR-U01 選択のカーソルの動き（DESIGN.md 5.2）', () => {
 
   it('視差効果を減らす設定では、すぐ追従する', () => {
     expect(scrollBehaviorFor(1000, 0, true)).toBe('instant');
+  });
+
+  it('動きの途中の面は、始めのずれのうち残りの分だけずれて見える', () => {
+    expect(remainingShift({ dx: 0, dy: -48 }, 0.25)).toEqual({ x: 0, y: -36 });
+  });
+
+  it('動きの進み具合が分からないときは、ずれがないものとする', () => {
+    expect(remainingShift({ dx: 0, dy: -48 }, null)).toEqual({ x: 0, y: 0 });
   });
 });
