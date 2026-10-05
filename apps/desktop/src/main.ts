@@ -100,8 +100,26 @@ function openWindow(path?: string) {
     return { action: 'deny' };
   });
   window.once('ready-to-show', () => window.show());
-  // 閉じる前の大きさと位置を覚える（フルスクリーンやしまったときは、元の大きさを覚える）
-  window.on('close', () => writeWindowBounds(boundsPath, window.getNormalBounds()));
+  // 大きさと位置を覚える（フルスクリーンやしまったときは、元の大きさ）。閉じる直前だけでなく、
+  // 変えたときにも少し待ってから覚える（アプリが強制終了しても、最後の大きさで開けるように）
+  const saveBounds = () => {
+    try {
+      writeWindowBounds(boundsPath, window.getNormalBounds());
+    } catch (e) {
+      console.warn('ウィンドウの大きさと位置を覚えられませんでした', e);
+    }
+  };
+  let saveTimer: NodeJS.Timeout | null = null;
+  const saveSoon = () => {
+    if (saveTimer !== null) clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveBounds, 500);
+  };
+  window.on('resize', saveSoon);
+  window.on('move', saveSoon);
+  window.on('close', () => {
+    if (saveTimer !== null) clearTimeout(saveTimer);
+    saveBounds();
+  });
   window.on('closed', () => {
     mainWindow = null;
     // ウィンドウを閉じてもアプリとサーバーは動き続ける。Dock からは消し、メニューバーから開き直す

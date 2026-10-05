@@ -112,7 +112,8 @@ test.describe('NFR-01 デスクトップアプリ', () => {
       ({ BrowserWindow }, b) => BrowserWindow.getAllWindows()[0]?.setBounds(b),
       bounds,
     );
-    await window.close();
+    // 利用者が閉じるとき（⌘W、閉じるボタン）と同じく、ウィンドウを閉じる
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.close());
     await expect
       .poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length))
       .toBe(0);
