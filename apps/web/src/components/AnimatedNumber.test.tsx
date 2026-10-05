@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import { AnimatedNumber, numberChange } from './AnimatedNumber';
 import { ProgressBar } from './ProgressBar';
 
-describe('FR-R06 件数と進み具合の変化（DESIGN.md 4.20）', () => {
+describe('FR-R06 / NFR-29 件数と進み具合の変化（DESIGN.md 4.20）', () => {
   it('増えたら下から、減ったら上から入れる', () => {
     expect(numberChange(2, 3)).toBe('up');
     expect(numberChange(3, 2)).toBe('down');

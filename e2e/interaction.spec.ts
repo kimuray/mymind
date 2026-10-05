@@ -738,7 +738,7 @@ test.describe('FR-A05 マメの表情と FB の到着の動き', () => {
   });
 });
 
-test.describe('FR-R06 件数と進み具合の変化', () => {
+test.describe('FR-R06 / NFR-29 件数と進み具合の変化', () => {
   test.beforeEach(async ({ page }) => {
     // 動きがあることを確かめるため、このまとまりだけ「視差効果を減らす」を外す（DESIGN.md 2.7）
     await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -757,5 +757,17 @@ test.describe('FR-R06 件数と進み具合の変化', () => {
     await expect(todo).toHaveText(String(before + 1));
     await expect(todo).toHaveAttribute('data-change', 'up');
     await expect(todo).toHaveCSS('animation-name', 'number-up');
+  });
+
+  test('件数が減ったら、数字を上から入れる', async ({ page }) => {
+    await page.goto('/');
+    const row = await addTask(page, '件数を減らす');
+    const todo = page.locator('.chip[data-status="todo"] .animated-number-value');
+    const before = Number(await todo.textContent());
+    // 未着手から着手中へ進めると、未着手の件数が1つ減る
+    await row.locator('.status-icon').click();
+    await expect(todo).toHaveText(String(before - 1));
+    await expect(todo).toHaveAttribute('data-change', 'down');
+    await expect(todo).toHaveCSS('animation-name', 'number-down');
   });
 });
