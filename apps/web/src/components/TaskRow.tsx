@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 import type { ListTask } from '../api/tasks';
+import { useStatusChanged } from '../statusChange';
 import { StatusBadge } from './StatusBadge';
 import { StatusIcon } from './StatusIcon';
 
@@ -69,6 +70,8 @@ export function TaskRow({
   onEditEnd,
 }: TaskRowProps) {
   const closed = task.status === 'done' || task.status === 'cancelled';
+  // 状態が変わった直後だけ、アイコン・取り消し線・バッジに動きを付ける（DESIGN.md 4.2）
+  const changed = useStatusChanged(task.id, task.status);
   return (
     <li
       className="task-row"
@@ -76,8 +79,9 @@ export function TaskRow({
       data-depth={depth}
       data-selected={selected}
       data-closed={closed}
+      data-changed={changed}
     >
-      <StatusIcon title={task.title} status={task.status} onAdvance={onAdvance} />
+      <StatusIcon title={task.title} status={task.status} onAdvance={onAdvance} animate={changed} />
       {editing ? (
         <TitleEditor initial={task.title} onEnd={(title) => onEditEnd?.(title)} />
       ) : (
@@ -91,7 +95,7 @@ export function TaskRow({
       {task.children.total > 0 && (
         <span className="task-children">{`子 ${task.children.closed}/${task.children.total}`}</span>
       )}
-      <StatusBadge status={task.status} since={task.statusSince} today={today} />
+      <StatusBadge status={task.status} since={task.statusSince} today={today} animate={changed} />
       {aside !== undefined && <span className="task-aside">{aside}</span>}
     </li>
   );

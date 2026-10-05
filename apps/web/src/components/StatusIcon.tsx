@@ -48,13 +48,21 @@ type StatusIconProps = {
   status: Status;
   onAdvance: () => void;
   disabled?: boolean;
+  /** 状態が変わった直後か。true なら新しい形に動きを付ける（DESIGN.md 4.2） */
+  animate?: boolean;
 };
 
 /**
  * ステータスアイコン。クリック（と Space / Enter）で次の状態へ進める（DESIGN.md 4.2）。
  * 進められない状態（中止）はボタンを無効にする。
  */
-export function StatusIcon({ title, status, onAdvance, disabled = false }: StatusIconProps) {
+export function StatusIcon({
+  title,
+  status,
+  onAdvance,
+  disabled = false,
+  animate = false,
+}: StatusIconProps) {
   const canAdvance = nextOnAdvance(status) !== null;
   const label = `${title}：${STATUS_LABELS[status]}${canAdvance ? '（クリックで次の状態へ）' : ''}`;
   return (
@@ -70,7 +78,10 @@ export function StatusIcon({ title, status, onAdvance, disabled = false }: Statu
       }}
     >
       <svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true">
-        <Glyph status={status} />
+        {/* 状態ごとに作り直し、変わった直後だけ CSS の動きを再生する */}
+        <g key={status} className="si-glyph" data-animate={animate}>
+          <Glyph status={status} />
+        </g>
       </svg>
     </button>
   );
