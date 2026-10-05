@@ -44,6 +44,21 @@ module.exports = {
       to: { path: '^apps/server/', dependencyTypesNot: ['type-only'] },
     },
     {
+      name: 'desktop-depends-only-on-server',
+      comment:
+        'apps/desktop はサーバーを起動するために apps/server だけを読み込み、DB やエージェントを直接使わない（ADR-0015）',
+      severity: 'error',
+      from: { path: '^apps/desktop/' },
+      to: { path: '^(apps/web/|packages/)' },
+    },
+    {
+      name: 'nothing-imports-desktop',
+      comment: 'apps/desktop は最上位。ほかのパッケージから読み込まない（ADR-0015）',
+      severity: 'error',
+      from: { pathNot: '^apps/desktop/' },
+      to: { path: '^apps/desktop/' },
+    },
+    {
       name: 'no-circular',
       severity: 'error',
       from: {},
