@@ -75,6 +75,31 @@
   --font-sans: "Inter", "Noto Sans JP", "Hiragino Sans", sans-serif;
   --font-mono: ui-monospace, "SFMono-Regular", "Menlo", monospace;
 
+  /* 2.7 動き（時間） */
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --motion-slow: 320ms;
+  --motion-loop: 1600ms;
+  /* 2.7 動き（緩急） */
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --ease-spring: linear(
+    0,
+    0.081 3.8%,
+    0.302 8.1%,
+    0.604 13.1%,
+    0.854 18.4%,
+    0.982 22.6%,
+    1.052 27%,
+    1.075 31.4%,
+    1.066 36.4%,
+    1.035 42.5%,
+    1.006 50%,
+    0.993 58.6%,
+    0.997 72%,
+    1
+  );
+
   /* 4.1 マメ */
   --mame-best: #f08c78;
   --mame-good: #f2b27e;

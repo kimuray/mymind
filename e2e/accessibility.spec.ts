@@ -63,12 +63,29 @@ test.describe('NFR-22 透明度・動きの設定への対応', () => {
   });
 
   test('設定がなければ、ガラスの面とマメの泡の動きはそのまま', async ({ page }) => {
+    // E2E は既定で「視差効果を減らす」で動かす（playwright.config.ts）ので、このテストだけ戻す
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    try {
+      await page.goto('/dev/mame');
+      await expect(page.getByRole('navigation', { name: '画面' })).not.toHaveCSS(
+        'backdrop-filter',
+        'none',
+      );
+      await expect(page.locator('.mame-bubbles').first()).toHaveCSS('animation-name', 'mame-think');
+      // 動きの時間と緩急は、DESIGN.md 2.7 のトークンを使う
+      await expect(page.locator('.mame-bubbles').first()).toHaveCSS('animation-duration', '1.6s');
+    } finally {
+      // サンドボックスの中ではページを使い回すので、ほかのテストのために戻す
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+    }
+  });
+
+  test('E2E は「視差効果を減らす」で動かし、動きを止めた状態で確かめる', async ({ page }) => {
     await page.goto('/dev/mame');
-    await expect(page.getByRole('navigation', { name: '画面' })).not.toHaveCSS(
-      'backdrop-filter',
-      'none',
+    expect(await page.evaluate(() => matchMedia('(prefers-reduced-motion: reduce)').matches)).toBe(
+      true,
     );
-    await expect(page.locator('.mame-bubbles').first()).toHaveCSS('animation-name', 'mame-think');
+    await expect(page.locator('.mame-bubbles').first()).toHaveCSS('animation-name', 'none');
   });
 });
 

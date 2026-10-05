@@ -22,6 +22,9 @@ export default defineConfig({
   use: {
     baseURL: `http://127.0.0.1:${port}`,
     trace: 'retain-on-failure',
+    // 動きの途中の状態を確かめてしまわないよう、「視差効果を減らす」で動かす（DESIGN.md 2.7）。
+    // 動きがあることを確かめるテストは、ページごとに no-preference に戻す（e2e/accessibility.spec.ts）
+    reducedMotion: 'reduce',
   },
   projects: [
     {

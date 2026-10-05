@@ -304,9 +304,9 @@ ul {
   white-space: nowrap;
 }
 
-/* 考え中の泡だけ、ゆっくり点滅させる。「視差効果を減らす」設定では止める（DESIGN.md 2.3、NFR-22） */
+/* 考え中の泡だけ、ゆっくり点滅させる。「視差効果を減らす」設定では止める（DESIGN.md 2.7、NFR-22） */
 .mame-bubbles {
-  animation: mame-think 1.6s ease-in-out infinite;
+  animation: mame-think var(--motion-loop) var(--ease-in-out) infinite;
 }
 
 @keyframes mame-think {
@@ -315,7 +315,10 @@ ul {
   }
 }
 
-/* 「視差効果を減らす」設定では、マメの表情や画面の切り替えの動きを止める（DESIGN.md 2.3、NFR-22） */
+/*
+ * 「視差効果を減らす」設定では、マメの表情や画面の切り替えの動きを止める（DESIGN.md 2.7、NFR-22）。
+ * 0.01ms は「止める」ための値で、時間のトークンの代わりではない（design:check も許す）
+ */
 @media (prefers-reduced-motion: reduce) {
   .mame-bubbles {
     animation: none;
