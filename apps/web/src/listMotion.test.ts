@@ -73,6 +73,43 @@ describe('FR-U01 リストの行の動き（DESIGN.md 4.18）', () => {
     expect(plan.exits).toEqual([]);
   });
 
+  it('出入りがなく、外側の要素がすべて同じだけずれただけなら動かさない（見出しのフォントの読み込みなど）', () => {
+    const item = (y: number, parent: string | null = null): MotionItem => ({ x: 0, y, parent });
+    const plan = planListMotion(
+      new Map([
+        ['ui:open', item(100)],
+        ['a', item(110, 'ui:open')],
+        ['ui:closed', item(300)],
+        ['ui:hints', item(400)],
+      ]),
+      new Map([
+        ['ui:open', item(108)],
+        ['a', item(118, 'ui:open')],
+        ['ui:closed', item(308)],
+        ['ui:hints', item(408)],
+      ]),
+    );
+    expect(plan).toEqual({ moves: [], enters: [], exits: [] });
+  });
+
+  it('外側の要素のずれ方が違えば（中の行の高さが変わったなど）、これまでどおり動かす', () => {
+    const plan = planListMotion(
+      at([
+        ['ui:open', 100],
+        ['ui:closed', 300],
+      ]),
+      at([
+        ['ui:open', 100],
+        ['ui:closed', 320],
+      ]),
+    );
+    expect(plan.moves).toEqual([{ key: 'ui:closed', dx: 0, dy: -20 }]);
+  });
+
+  it('外側の要素が1つだけで、それがずれたときも、行の出入りがなければ動かさない', () => {
+    expect(planListMotion(at([['ui:open', 100]]), at([['ui:open', 120]])).moves).toEqual([]);
+  });
+
   it('CSS 変数の時間をミリ秒にする', () => {
     expect(parseDuration('200ms')).toBe(200);
     expect(parseDuration(' 0.32s')).toBe(320);
