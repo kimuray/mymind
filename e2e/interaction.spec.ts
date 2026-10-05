@@ -446,3 +446,64 @@ test.describe('FR-U04 詳細ペインの動き', () => {
     }
   });
 });
+
+test.describe('FR-U02 / FR-U03 ダイアログの開閉', () => {
+  test.beforeEach(async ({ page }) => {
+    // 動きがあることを確かめるため、このまとまりだけ「視差効果を減らす」を外す（DESIGN.md 2.7）
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+  });
+  // サンドボックスの中ではページを使い回すので、ほかのテストのために戻す
+  test.afterEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+  });
+
+  test('コマンドパレットは、開く動きの途中でも打った文字を受け付ける', async ({ page }) => {
+    await page.goto('/');
+    await page.keyboard.press('Meta+k');
+    // 開いてすぐに打つ（開く動きの終わりを待たない）
+    await page.keyboard.type('バックログ');
+    await expect(page.getByRole('combobox')).toHaveValue('バックログ');
+    await expect(page.locator('.dialog-backdrop:not(.dialog-leaving)')).toHaveCSS(
+      'animation-name',
+      'overlay-in',
+    );
+  });
+
+  test('閉じると、写しが消えてから取り除かれ、フォーカスはすぐ戻る', async ({ page }) => {
+    await page.goto('/');
+    const input = page.getByLabel('今日のタスクを追加');
+    await input.focus();
+    await page.keyboard.press('Meta+k');
+    await expect(page.getByRole('combobox')).toBeFocused();
+    await page.evaluate(() => {
+      const seen: boolean[] = [];
+      (window as unknown as { __ghosts: boolean[] }).__ghosts = seen;
+      new MutationObserver((records) => {
+        for (const r of records) {
+          for (const n of r.addedNodes) {
+            if (n instanceof HTMLElement && n.classList.contains('dialog-leaving')) {
+              seen.push(n.inert && n.getAttribute('aria-hidden') === 'true');
+            }
+          }
+        }
+      }).observe(document.body, { childList: true });
+    });
+    await page.keyboard.press('Escape');
+    await expect
+      .poll(() => page.evaluate(() => (window as unknown as { __ghosts: boolean[] }).__ghosts))
+      .toEqual([true]);
+    // 写しは操作も読み上げも受けず、フォーカスは開く前の場所へ戻る
+    await expect(input).toBeFocused();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page.locator('.dialog-leaving')).toHaveCount(0);
+  });
+
+  test('視差効果を減らす設定では、閉じたときに写しを出さない', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/');
+    await page.keyboard.press('?');
+    await expect(page.getByRole('dialog', { name: 'ショートカットの一覧' })).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.locator('.dialog-leaving')).toHaveCount(0);
+  });
+});

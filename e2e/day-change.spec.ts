@@ -65,3 +65,25 @@ test.describe('NFR-14 業務日の切り替え検知', () => {
     await expect(page.getByRole('button', { name: /^前の日に書き足すタスク：/ })).toBeVisible();
   });
 });
+
+test.describe('NFR-06 業務日のダイアログを閉じたあとのフォーカス', () => {
+  test('前の日として続けると、開く前にフォーカスを移そうとした入力欄へ戻る', async ({ page }) => {
+    await openBeforeDayChange(page);
+    const input = page.getByLabel('今日のタスクを追加');
+    await input.focus();
+    const dialog = page.getByRole('alertdialog', { name: '日付が変わりました' });
+    await dialog.getByRole('button', { name: /前の日（.+）の記録として続ける/ }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(input).toBeFocused();
+  });
+
+  test('今日の画面へ移っても、開く前にフォーカスを移そうとした入力欄へ戻る', async ({ page }) => {
+    await openBeforeDayChange(page);
+    const input = page.getByLabel('今日のタスクを追加');
+    await input.focus();
+    const dialog = page.getByRole('alertdialog', { name: '日付が変わりました' });
+    await dialog.getByRole('button', { name: '今日の画面へ移る' }).click();
+    await expect(dialog).toHaveCount(0);
+    await expect(input).toBeFocused();
+  });
+});

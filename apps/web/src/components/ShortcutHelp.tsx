@@ -1,4 +1,5 @@
-import { type KeyboardEvent, useId } from 'react';
+import { type KeyboardEvent, useId, useRef } from 'react';
+import { useDialogExit } from '../dialogMotion';
 import { keyName } from '../keyboard';
 import type { KeyCommand } from '../keymap';
 import { Button } from './Button';
@@ -15,6 +16,9 @@ export function ShortcutHelp({
   onClose: () => void;
 }) {
   const titleId = useId();
+  // 閉じたとき、写しを消して閉じる動きにする（DESIGN.md 4.9）
+  const backdrop = useRef<HTMLDivElement>(null);
+  useDialogExit(backdrop);
   const onKeyDown = (e: KeyboardEvent) => {
     // 一覧を開いている間は、画面のショートカットを発火させない
     e.stopPropagation();
@@ -28,7 +32,7 @@ export function ShortcutHelp({
     }
   };
   return (
-    <div className="dialog-backdrop">
+    <div ref={backdrop} className="dialog-backdrop">
       <div
         className="dialog shortcut-help glass-4"
         role="dialog"

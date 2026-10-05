@@ -1,4 +1,5 @@
 import { type KeyboardEvent, useId, useRef, useState } from 'react';
+import { useDialogExit } from '../dialogMotion';
 import { keyName } from '../keyboard';
 import type { KeyAction, KeyCommand } from '../keymap';
 import { useSelectionMotion } from '../selectionMotion';
@@ -31,6 +32,9 @@ export function CommandPalette({
   const [active, setActive] = useState(0);
   // 選んだ候補の面を滑らせ、リストの外に出たら追従する（DESIGN.md 4.16、5.2）
   const list = useRef<HTMLDivElement>(null);
+  // 閉じたとき、写しを消して閉じる動きにする（DESIGN.md 4.9）
+  const backdrop = useRef<HTMLDivElement>(null);
+  useDialogExit(backdrop);
   useSelectionMotion(list);
   const filtered = filterCommands(commands, query);
   const current = filtered[Math.min(active, filtered.length - 1)];
@@ -58,7 +62,7 @@ export function CommandPalette({
   };
 
   return (
-    <div className="dialog-backdrop">
+    <div ref={backdrop} className="dialog-backdrop">
       <div
         className="dialog palette glass-4"
         role="dialog"
