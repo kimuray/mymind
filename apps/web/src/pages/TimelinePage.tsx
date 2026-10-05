@@ -1,11 +1,12 @@
 import { daysBetween, STATUS_LABELS, type TimelineSegment } from '@mymind/domain';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { type TimelineResponse, type TimelineTask, useTimeline } from '../api/timeline';
 import { effectiveLevel, moodOfLevel } from '../components/FeedbackPanel';
 import { Mame, MOOD_LABELS } from '../components/Mame';
 import { PageLayout } from '../components/PageLayout';
 import { currentDay, formatDayHeading } from '../day';
 import { useKeyBindings } from '../keyboard';
+import { useSelectionMotion } from '../selectionMotion';
 
 /** 表示期間（FR-R01：1週間か2週間） */
 const SPANS = [
@@ -180,6 +181,9 @@ export function TimelinePage() {
   const timeline = useTimeline(from, to);
   const data = timeline.data;
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // 選択の面を行から行へ滑らせる（DESIGN.md 5.2）
+  const pageRoot = useRef<HTMLDivElement>(null);
+  useSelectionMotion(pageRoot);
   const tasks = data?.tasks ?? [];
   const selected = tasks.find((t) => t.id === selectedId);
 
@@ -209,7 +213,7 @@ export function TimelinePage() {
       }
       emptyNote="タスクの行を選ぶと、期間の内訳が表示されます"
     >
-      <div className="page timeline">
+      <div className="page timeline" ref={pageRoot}>
         <header className="page-header timeline-header">
           <h1 className="text-display">タイムライン</h1>
           <div className="timeline-controls">

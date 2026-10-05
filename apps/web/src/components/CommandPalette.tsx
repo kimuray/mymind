@@ -1,6 +1,7 @@
-import { type KeyboardEvent, useId, useState } from 'react';
+import { type KeyboardEvent, useId, useRef, useState } from 'react';
 import { keyName } from '../keyboard';
 import type { KeyAction, KeyCommand } from '../keymap';
+import { useSelectionMotion } from '../selectionMotion';
 import { Kbd } from './Kbd';
 
 /** 名前かキーの表示に、入力した文字を含む操作（大文字と小文字は区別しない） */
@@ -28,6 +29,9 @@ export function CommandPalette({
   const id = useId();
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
+  // 選んだ候補の面を滑らせ、リストの外に出たら追従する（DESIGN.md 4.16、5.2）
+  const list = useRef<HTMLDivElement>(null);
+  useSelectionMotion(list);
   const filtered = filterCommands(commands, query);
   const current = filtered[Math.min(active, filtered.length - 1)];
 
@@ -79,7 +83,7 @@ export function CommandPalette({
             setActive(0);
           }}
         />
-        <div id={`${id}-list`} className="palette-list" role="listbox" aria-label="操作">
+        <div id={`${id}-list`} ref={list} className="palette-list" role="listbox" aria-label="操作">
           {filtered.map((c) => (
             <div
               key={c.action}

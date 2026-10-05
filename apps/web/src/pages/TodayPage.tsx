@@ -21,6 +21,7 @@ import { formatDayHeading } from '../day';
 import { useDayGuard } from '../dayGuard';
 import { LIST_HINTS, NAVIGATION_KEYS } from '../keymap';
 import { useListMotion } from '../listMotion';
+import { useSelectionMotion } from '../selectionMotion';
 import { type ListRow, useTaskListKeys } from '../useTaskListKeys';
 
 const isClosed = (s: Status) => s === 'done' || s === 'cancelled';
@@ -46,6 +47,8 @@ export function TodayPage() {
   // 行の追加・移動・並べ替えを目で追えるようにする（DESIGN.md 4.18）。完了の欄へ移る行も追えるよう、画面全体で測る
   const listRoot = useRef<HTMLDivElement>(null);
   useListMotion(listRoot, plan.isSuccess);
+  // 選択の面を行から行へ滑らせる（DESIGN.md 5.2）
+  useSelectionMotion(listRoot);
   const create = useCreateTask();
   const transition = useTransition();
   const move = useMove();

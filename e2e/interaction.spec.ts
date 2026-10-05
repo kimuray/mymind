@@ -213,3 +213,50 @@ test.describe('FR-U01 リストの行の動き', () => {
     await expect.poll(() => rowAnimations(page)).toContain('追加して現れる行');
   });
 });
+
+test.describe('FR-U01 選択のカーソルの動き', () => {
+  test('選択中の行には、選択の面を ::after に描く', async ({ page }) => {
+    await page.goto('/');
+    const row = await addTask(page, '選択の面を確かめる');
+    await row.locator('.task-title').click();
+    await expect(row).toHaveAttribute('data-selected', 'true');
+    const after = await row.evaluate((el) => {
+      const style = getComputedStyle(el, '::after');
+      return { content: style.content, background: style.backgroundColor };
+    });
+    expect(after).toEqual({ content: '""', background: 'rgba(255, 255, 255, 0.5)' });
+  });
+
+  test('J で選択を動かすと、選択の面が前の行から滑って移る', async ({ page }) => {
+    // 動きがあることを確かめるため、このテストだけ「視差効果を減らす」を外す（DESIGN.md 2.7）
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    try {
+      await page.goto('/');
+      await addTask(page, 'カーソルの上');
+      await addTask(page, 'カーソルの下');
+      await page.locator('.task-row', { hasText: 'カーソルの上' }).locator('.task-title').click();
+      await page.evaluate(() => {
+        const log: string[] = [];
+        (window as unknown as { __selectionAnimations: string[] }).__selectionAnimations = log;
+        const original = Element.prototype.animate;
+        Element.prototype.animate = function (this: Element, keyframes, options) {
+          if (typeof options === 'object' && options.id === 'selection-motion') {
+            log.push(`${options.pseudoElement}:${this.querySelector('.task-name')?.textContent}`);
+          }
+          return original.call(this, keyframes, options);
+        };
+      });
+      await page.keyboard.press('j');
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => (window as unknown as { __selectionAnimations: string[] }).__selectionAnimations,
+          ),
+        )
+        .toEqual(['::after:カーソルの下']);
+    } finally {
+      // サンドボックスの中ではページを使い回すので、ほかのテストのために戻す
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+    }
+  });
+});

@@ -18,6 +18,7 @@ import { dayOf, formatDayHeading, formatDaysAgo } from '../day';
 import { useDayGuard } from '../dayGuard';
 import { useKeyBindings } from '../keyboard';
 import { useListMotion } from '../listMotion';
+import { useSelectionMotion } from '../selectionMotion';
 
 const DECISIONS: readonly { value: CarryoverDecision; label: string }[] = [
   { value: 'today', label: '今日もやる' },
@@ -66,6 +67,8 @@ export function MorningPage() {
   // 行の出入りを目で追えるようにする（DESIGN.md 4.18）
   const listRoot = useRef<HTMLDivElement>(null);
   useListMotion(listRoot, carryover.isSuccess && backlog.isSuccess);
+  // 選択の面を行から行へ滑らせる（DESIGN.md 5.2）
+  useSelectionMotion(listRoot);
   const plan = useDayPlan(day);
   const confirm = useConfirmPlan(day);
   const [decisions, setDecisions] = useState<ReadonlyMap<string, CarryoverDecision>>(new Map());

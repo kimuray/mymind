@@ -1,5 +1,5 @@
 import type { Status } from '@mymind/domain';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { type Health, useHealth } from '../api/health';
 import {
   type BrowserPermission,
@@ -16,6 +16,7 @@ import { AgentSelect } from '../components/AgentSelect';
 import { Button } from '../components/Button';
 import { PageLayout } from '../components/PageLayout';
 import { formatDateTime } from '../day';
+import { useSelectionMotion } from '../selectionMotion';
 
 // 日時の書式は部品からも使うので day.ts に置く（このページのテストからも読めるよう、ここから出し直す）
 export { formatDateTime } from '../day';
@@ -641,6 +642,9 @@ function BackupSettings() {
 export function SettingsPage() {
   const health = useHealth();
   const [selected, setSelected] = useState<RowKey>('agent');
+  // 選択の面を行から行へ滑らせる（DESIGN.md 5.2）
+  const pageRoot = useRef<HTMLDivElement>(null);
+  useSelectionMotion(pageRoot);
   const rows = health.data === undefined ? [] : rowsOf(health.data);
   const current = rows.find((r) => r.key === selected);
 
@@ -655,7 +659,7 @@ export function SettingsPage() {
 
   return (
     <PageLayout detail={detail}>
-      <div className="page">
+      <div className="page" ref={pageRoot}>
         <header className="page-header">
           <h1 className="text-display">設定</h1>
           <p className="text-small">アプリの状態、FB の依頼、棚卸し、通知、バックアップ、MCP</p>

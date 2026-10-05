@@ -211,11 +211,6 @@
   padding-left: 40px;
 }
 
-.task-row[data-selected="true"] {
-  background: var(--row-selected-bg);
-  border: var(--row-selected-border);
-}
-
 .task-list-closed .task-row {
   min-height: 40px;
 }
@@ -631,11 +626,6 @@
   text-align: left;
   color: var(--ink-1);
   cursor: pointer;
-}
-
-.settings-row[data-selected="true"] {
-  background: var(--row-selected-bg);
-  border: var(--row-selected-border);
 }
 
 .settings-row-label {
@@ -1229,11 +1219,6 @@
   border-radius: var(--radius-l);
 }
 
-.morning-row[data-selected="true"] {
-  background: var(--row-selected-bg);
-  border: var(--row-selected-border);
-}
-
 .morning-row[data-added="true"] {
   background: var(--status-doing-bg);
 }
@@ -1805,11 +1790,6 @@
   cursor: pointer;
 }
 
-.palette-option[aria-selected="true"] {
-  background: var(--row-selected-bg);
-  border: var(--row-selected-border);
-}
-
 .palette-keys,
 .shortcut-list dd {
   display: flex;
@@ -2020,11 +2000,6 @@
 
 .timeline-task:nth-of-type(even) {
   background: var(--timeline-stripe);
-}
-
-.timeline-task[data-selected="true"] {
-  background: var(--row-selected-bg);
-  border: var(--row-selected-border);
 }
 
 .timeline-cell {
@@ -2324,5 +2299,22 @@
   box-sizing: border-box;
   margin: 0;
   list-style: none;
+  pointer-events: none;
+}
+
+/*
+ * 選択の面（DESIGN.md 4.2、5.2）。行そのものではなく ::after に描き、選択が移ったときは
+ * 新しい行の ::after を前の行の位置から滑らせる（apps/web/src/selectionMotion.ts）。
+ * 行の枠（1.5px の透明な枠）の外側まで覆い、ホバーの層（::before）より上、行の中身より下に置く
+ */
+:is(.task-row, .settings-row, .morning-row, .timeline-task)[data-selected="true"]::after,
+.palette-option[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  inset: -1.5px;
+  z-index: -1;
+  border: var(--row-selected-border);
+  border-radius: inherit;
+  background: var(--row-selected-bg);
   pointer-events: none;
 }
