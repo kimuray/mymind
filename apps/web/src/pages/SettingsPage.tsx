@@ -18,7 +18,7 @@ import { Loading } from '../components/Loading';
 import { PageLayout } from '../components/PageLayout';
 import { SavedNote } from '../components/SavedNote';
 import { formatDateTime } from '../day';
-import { desktopBridge, type LoginItemState } from '../desktop';
+import { changeLoginItem, desktopBridge, type LoginItemState } from '../desktop';
 import { useFadeInAfterLoading } from '../loadMotion';
 import { useSelectionMotion } from '../selectionMotion';
 
@@ -568,10 +568,15 @@ function DesktopSettings() {
           checked={state?.enabled ?? false}
           disabled={state === null || !state.available}
           onChange={(e) => {
+            if (state === null) return;
+            const previous = state;
             const next = e.target.checked;
-            // 保存を待たずに表示を変え、結果で正す
-            setState((s) => (s === null ? s : { ...s, enabled: next }));
-            bridge.setLoginItem(next).then(setState, () => setFailed(true));
+            // 保存を待たずに表示を変え、結果で正す（失敗したら、実際の設定を読み直す）
+            setState({ ...previous, enabled: next });
+            void changeLoginItem(bridge, previous, next).then((result) => {
+              setState(result.state);
+              setFailed(result.failed);
+            });
           }}
         />
         <span className="settings-row-value">

@@ -37,3 +37,24 @@ export function toLoginItemState(value: unknown): LoginItemState {
     enabled: available === true && enabled === true,
   };
 }
+
+/**
+ * ログイン時の起動を変える。失敗したら、実際の設定を読み直して返す（画面が、変わったように見えたままにしない）。
+ * 読み直せもしなければ、変える前の状態を返す
+ */
+export async function changeLoginItem(
+  bridge: DesktopBridge,
+  previous: LoginItemState,
+  enabled: boolean,
+): Promise<{ state: LoginItemState; failed: boolean }> {
+  try {
+    return { state: await bridge.setLoginItem(enabled), failed: false };
+  } catch {
+    // 変えられなかった。どう失敗したかは表示しないので、状態だけを正す
+    try {
+      return { state: await bridge.getLoginItem(), failed: true };
+    } catch {
+      return { state: previous, failed: true };
+    }
+  }
+}
