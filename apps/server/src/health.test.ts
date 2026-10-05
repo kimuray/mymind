@@ -40,6 +40,7 @@ describe('NFR-21 GET /api/health', () => {
       database: { ok: true, message: null, sizeBytes: 0 },
       agent: fakeAgent,
       backup: null,
+      notifications: null,
       recentFailure: null,
     });
   });
@@ -94,6 +95,25 @@ describe('NFR-21 GET /api/health', () => {
         period: '2026-09-24',
         error: '120秒以内に応答がなかったため中止しました',
         finishedAt: '2026-09-24T12:02:01.000Z',
+      },
+    });
+  });
+});
+
+describe('FR-N05 通知を出す手段の状態', () => {
+  it('使う手段、通知のコマンド、ブラウザの通知の許可を返す', async () => {
+    const res = await request({
+      notificationStatus: () => ({
+        channel: 'macos',
+        command: '/opt/homebrew/bin/terminal-notifier',
+        browser: 'default',
+      }),
+    });
+    expect(await res.json()).toMatchObject({
+      notifications: {
+        channel: 'macos',
+        command: '/opt/homebrew/bin/terminal-notifier',
+        browser: 'default',
       },
     });
   });

@@ -34,6 +34,7 @@ test.describe('NFR-21 設定画面の状態', () => {
             result: 'succeeded',
             error: null,
           },
+          notifications: null,
           recentFailure: {
             jobId: 'j1',
             kind: 'daily_feedback',
@@ -136,6 +137,7 @@ test.describe('NFR-04 毎日のバックアップの設定', () => {
             error: '整合性の検査に通りませんでした',
           },
           recentFailure: null,
+          notifications: null,
         }),
       }),
     );
@@ -146,5 +148,80 @@ test.describe('NFR-04 毎日のバックアップの設定', () => {
       '毎日のバックアップに失敗しました（整合性の検査に通りませんでした）',
     );
     await expect(row).toContainText('失敗');
+  });
+});
+
+test.describe('FR-N05 通知', () => {
+  test('どちらの通知も使えなかった通知をバナーで出し、「開く」でその画面へ移って閉じる', async ({
+    page,
+  }) => {
+    let pending = [
+      {
+        kind: 'morning',
+        title: '朝の計画',
+        body: '持ち越しが2件あります',
+        path: '/morning',
+        at: '2026-10-04T23:30:00.000Z',
+      },
+    ];
+    const dismissed: string[] = [];
+    await page.route('**/api/notifications/pending**', (route) => {
+      if (route.request().method() === 'DELETE') {
+        dismissed.push(route.request().url().split('/').at(-1) ?? '');
+        pending = [];
+      }
+      return route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ notifications: pending }),
+      });
+    });
+    await page.goto('/backlog');
+    const banner = page.getByRole('region', { name: '通知' }).getByRole('status');
+    await expect(banner).toContainText('朝の計画');
+    await expect(banner).toContainText('持ち越しが2件あります');
+    await banner.getByRole('button', { name: '開く' }).click();
+    await expect(page).toHaveURL(/\/morning$/);
+    await expect(page.getByRole('region', { name: '通知' }).getByRole('status')).toHaveCount(0);
+    expect(dismissed).toEqual(['morning']);
+  });
+
+  test('画面を開くと、ブラウザの通知の許可の状態をサーバーに知らせる', async ({ page }) => {
+    const reported = page.waitForRequest(
+      (r) => r.url().endsWith('/api/notifications/browser') && r.method() === 'PUT',
+    );
+    await page.goto('/');
+    // ヘッドレスのブラウザは、最初から拒否（denied）になっていることがある。ブラウザが返す値をそのまま知らせる
+    const permission = await page.evaluate(() => Notification.permission);
+    expect((await reported).postDataJSON()).toEqual({ permission });
+  });
+
+  test('通知の手段と、terminal-notifier がないことが設定の画面で分かる', async ({ page }) => {
+    // まだ許可を求めていない状態にする（ヘッドレスのブラウザは最初から拒否になっていることがある）
+    await page.addInitScript(() => {
+      Object.defineProperty(Notification, 'permission', { get: () => 'default' });
+    });
+    await page.route('**/api/health', (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          status: 'ok',
+          database: { ok: true, message: null, sizeBytes: 1024 },
+          agent: { name: 'fake', usable: true, executable: null, message: null },
+          backup: null,
+          notifications: { channel: 'banner', command: null, browser: 'default' },
+          recentFailure: null,
+        }),
+      }),
+    );
+    await page.goto('/settings');
+    const row = page.getByRole('button', { name: /^通知/ });
+    await expect(row).toContainText('画面のバナー');
+    await expect(row).toContainText('バナーだけ');
+    await row.click();
+    const detail = page.getByRole('complementary', { name: '詳細' });
+    await expect(detail).toContainText('brew install terminal-notifier');
+    await expect(detail.getByRole('button', { name: 'ブラウザの通知を許可する' })).toBeVisible();
   });
 });

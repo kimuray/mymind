@@ -25,7 +25,7 @@ import type { Logger } from './logger';
 import type { ScheduledJob } from './scheduler';
 
 /**
- * 通知を出す口（FR-N05 の通知のアダプタ。macOS の通知、ブラウザの通知などは issue 169 で作る）。
+ * 通知を出す口（FR-N05）。macOS の通知、ブラウザの通知、画面のバナーの実装は notificationAdapters.ts。
  * 出せなかったときは理由を返す
  */
 export type NotificationAdapter = {
@@ -132,20 +132,4 @@ export function createNotificationJobs(deps: NotificationDeps): ScheduledJob[] {
     spec: () => schedule(kind),
     run: (scheduledAt) => sendNotification(deps, kind, scheduledAt),
   }));
-}
-
-/**
- * 通知をログに残すだけのアダプタ。OS の通知を出すアダプタ（issue 169）ができるまでの間、条件の判断と記録を動かすために使う。
- * 通知文はタスク名を含むので、ログには種類と画面だけを残す
- */
-export function createLogOnlyNotificationAdapter(logger: Logger): NotificationAdapter {
-  return {
-    notify: async (notification) => {
-      logger.info('通知（OS の通知を出すアダプタはまだありません）', {
-        kind: notification.kind,
-        path: notification.path,
-      });
-      return { ok: true };
-    },
-  };
 }
