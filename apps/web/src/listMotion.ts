@@ -188,11 +188,14 @@ export function useListMotion(
 ) {
   const previous = useRef<Map<string, Snapshot> | null>(null);
   const previousScope = useRef(scope);
+  // 読み込み中を経てから中身が出たか。出たときは、急に現れないようフェードインさせる（DESIGN.md 4.19）
+  const wasLoading = useRef(false);
 
   useLayoutEffect(() => {
     const container = root.current;
     if (container === null || !ready) {
       previous.current = null;
+      if (container !== null) wasLoading.current = true;
       return;
     }
     const origin = container.getBoundingClientRect();
@@ -215,8 +218,24 @@ export function useListMotion(
     previous.current = next;
     const sameScope = previousScope.current === scope;
     previousScope.current = scope;
-    if (before === null || !sameScope) return;
-    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (before === null) {
+      // 画面を開いたときは動かさない。ただし読み込み中を経たときは、外側の要素だけを短くフェードインさせる
+      if (wasLoading.current && !reduced) {
+        const t = readMotionTokens();
+        for (const snap of next.values()) {
+          if (snap.parent !== null) continue;
+          snap.node.animate([{ opacity: 0 }, { opacity: 1 }], {
+            duration: t.base,
+            easing: t.easeOut,
+            id: ANIMATION_ID,
+          });
+        }
+      }
+      wasLoading.current = false;
+      return;
+    }
+    if (!sameScope || reduced) return;
 
     const positions = (snapshots: Map<string, Snapshot>) =>
       new Map<string, MotionItem>(

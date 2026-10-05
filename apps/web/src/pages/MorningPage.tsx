@@ -13,6 +13,7 @@ import { type ListTask, useBacklog, useDayPlan } from '../api/tasks';
 import { Button } from '../components/Button';
 import { FeedbackPanel } from '../components/FeedbackPanel';
 import { Kbd } from '../components/Kbd';
+import { Loading } from '../components/Loading';
 import { PageLayout } from '../components/PageLayout';
 import { dayOf, formatDayHeading, formatDaysAgo } from '../day';
 import { useDayGuard } from '../dayGuard';
@@ -206,6 +207,7 @@ export function MorningPage() {
             </p>
           )}
         </div>
+        {carryover.isPending && <Loading />}
         {carryover.isSuccess && candidates.length === 0 ? (
           <p className="empty-note">持ち越すタスクはありません</p>
         ) : (
@@ -327,7 +329,7 @@ export function MorningPage() {
                 : 'すべての持ち越しを判断すると確定できます'}
           </p>
           <p className="text-small">{`今日の計画 ${plannedCount}件`}</p>
-          <Button kind="confirm" disabled={!allDecided || confirm.isPending} onClick={submit}>
+          <Button kind="confirm" disabled={!allDecided} busy={confirm.isPending} onClick={submit}>
             計画を確定
             <Kbd tone="dark">⌘↵</Kbd>
           </Button>

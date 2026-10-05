@@ -11,6 +11,7 @@ import {
 } from '../api/tasks';
 import { AddTaskInput } from '../components/AddTaskInput';
 import { Button } from '../components/Button';
+import { Loading } from '../components/Loading';
 import { PageLayout } from '../components/PageLayout';
 import { NO_REVIEWS, type ReviewCounts, StocktakePanel } from '../components/StocktakePanel';
 import { TaskDetail } from '../components/TaskDetail';
@@ -214,6 +215,7 @@ export function BacklogPage() {
             </ul>
           </section>
         ))}
+        {backlog.isPending && <Loading />}
         {backlog.isSuccess && tasks.length === 0 && (
           <p className="empty-note" data-motion-key="ui:empty">
             バックログは空です

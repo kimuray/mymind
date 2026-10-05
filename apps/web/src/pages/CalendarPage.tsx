@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   type MonthDay,
   type MonthResponse,
@@ -15,12 +15,14 @@ import { AgentInputPreview } from '../components/AgentInputPreview';
 import { AgentSelect } from '../components/AgentSelect';
 import { formatSummary } from '../components/DaySummary';
 import { effectiveLevel, FeedbackPanel, moodOfLevel } from '../components/FeedbackPanel';
+import { Loading } from '../components/Loading';
 import { Mame, MOOD_LABELS } from '../components/Mame';
 import { MarkdownPreview } from '../components/MarkdownPreview';
 import { MonthlyInputPreview } from '../components/MonthlyInputPreview';
 import { MonthlySummaryPanel, summaryTitle } from '../components/MonthlySummaryPanel';
 import { PageLayout } from '../components/PageLayout';
 import { formatDayHeading } from '../day';
+import { useFadeInAfterLoading } from '../loadMotion';
 
 const WEEKDAY_HEADERS = ['月', '火', '水', '木', '金', '土', '日'] as const;
 
@@ -132,10 +134,12 @@ function DayRecord({ d }: { d: MonthDay }) {
     return <p className="empty-note">{`${title}はまだ来ていない日です`}</p>;
   }
   if (day.data === undefined) {
-    return (
-      <p className="text-small">
-        {day.isError ? '記録を読み込めませんでした' : '読み込んでいます…'}
+    return day.isError ? (
+      <p className="text-small" role="alert">
+        記録を読み込めませんでした
       </p>
+    ) : (
+      <Loading />
     );
   }
   const { summary, log, feedback, condition, job } = day.data;
@@ -312,6 +316,9 @@ function CalendarDetail({
 export function CalendarPage({ ym, day }: { ym: string; day: string | undefined }) {
   const month = useMonth(ym);
   const data = month.data;
+  // 月の記録を読み込んでから出すときは、急に現れないようフェードインさせる（DESIGN.md 4.19）
+  const grid = useRef<HTMLElement>(null);
+  useFadeInAfterLoading(grid, month.isPending);
   const selected = data?.days.find((d) => d.day === day);
 
   return (
@@ -353,8 +360,9 @@ export function CalendarPage({ ym, day }: { ym: string; day: string | undefined 
             月の記録を読み込めませんでした。サーバーが動いているか確かめてください
           </p>
         )}
+        {month.isPending && <Loading />}
         {data !== undefined && (
-          <section className="calendar-grid glass-2" aria-label={formatMonthHeading(ym)}>
+          <section ref={grid} className="calendar-grid glass-2" aria-label={formatMonthHeading(ym)}>
             {WEEKDAY_HEADERS.map((w) => (
               <span key={w} className="calendar-weekday" aria-hidden="true">
                 {w}

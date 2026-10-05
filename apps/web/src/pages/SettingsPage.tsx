@@ -14,8 +14,11 @@ import {
 } from '../api/settings';
 import { AgentSelect } from '../components/AgentSelect';
 import { Button } from '../components/Button';
+import { Loading } from '../components/Loading';
 import { PageLayout } from '../components/PageLayout';
+import { SavedNote } from '../components/SavedNote';
 import { formatDateTime } from '../day';
+import { useFadeInAfterLoading } from '../loadMotion';
 import { useSelectionMotion } from '../selectionMotion';
 
 // 日時の書式は部品からも使うので day.ts に置く（このページのテストからも読めるよう、ここから出し直す）
@@ -334,6 +337,8 @@ function FeedbackSettings() {
           ませんでした。サーバーが動いているか確かめてください
         </p>
       )}
+      {/* 保存できたことを短く知らせる（DESIGN.md 4.19） */}
+      <SavedNote savedAt={update.isSuccess ? update.submittedAt : 0} />
     </section>
   );
 }
@@ -389,6 +394,8 @@ function ReviewSettings() {
           0〜365 の整数で入力してください
         </p>
       )}
+      {/* 保存できたことを短く知らせる（DESIGN.md 4.19） */}
+      <SavedNote savedAt={update.isSuccess ? update.submittedAt : 0} />
     </section>
   );
 }
@@ -511,6 +518,8 @@ function NotificationSettings() {
           設定を保存できませんでした。サーバーが動いているか確かめてください
         </p>
       )}
+      {/* 保存できたことを短く知らせる（DESIGN.md 4.19） */}
+      <SavedNote savedAt={update.isSuccess ? update.submittedAt : 0} />
     </section>
   );
 }
@@ -634,6 +643,8 @@ function BackupSettings() {
         保存先には、外付けのディスクやクラウドの同期フォルダも選べます。使用中の
         DB（mymind.db）そのものを同期フォルダに置くことは、書き込みの途中で同期されて壊れることがあるので勧めません。既にあるフォルダの権限は変えないので、本人だけが読める場所を選んでください
       </p>
+      {/* 保存できたことを短く知らせる（DESIGN.md 4.19） */}
+      <SavedNote savedAt={update.isSuccess ? update.submittedAt : 0} />
     </section>
   );
 }
@@ -641,6 +652,9 @@ function BackupSettings() {
 /** 設定（Figma「PC/設定」）。アプリの状態（NFR-21）と、FB の依頼の設定（FR-A12）を表示する */
 export function SettingsPage() {
   const health = useHealth();
+  // 状態を読み込んでから出すときは、急に現れないようフェードインさせる（DESIGN.md 4.19）
+  const statusList = useRef<HTMLUListElement>(null);
+  useFadeInAfterLoading(statusList, health.isPending);
   const [selected, setSelected] = useState<RowKey>('agent');
   // 選択の面を行から行へ滑らせる（DESIGN.md 5.2）
   const pageRoot = useRef<HTMLDivElement>(null);
@@ -683,7 +697,8 @@ export function SettingsPage() {
               状態を読み込めませんでした。サーバーが動いているか確かめてください
             </p>
           )}
-          <ul>
+          {health.isPending && <Loading />}
+          <ul ref={statusList}>
             {rows.map((row) => (
               <li key={row.key}>
                 <button
