@@ -133,10 +133,11 @@ export function TodayPage() {
               {heading.date}
               <span className="page-weekday">{heading.weekday}</span>
             </h1>
-            <div className="chips">
-              <CountChip status="doing">{`着手中 ${count('doing')}`}</CountChip>
-              <CountChip status="todo">{`未着手 ${count('todo')}`}</CountChip>
-              <CountChip status="done">{`完了 ${count('done')}`}</CountChip>
+            {/* 読み込みの前後で作り直す。読み込み中の 0 から届いた件数へ変わるのを「増えた」として動かさない（DESIGN.md 4.20） */}
+            <div className="chips" key={plan.isSuccess ? 'loaded' : 'loading'}>
+              <CountChip status="doing" label="着手中" count={count('doing')} />
+              <CountChip status="todo" label="未着手" count={count('todo')} />
+              <CountChip status="done" label="完了" count={count('done')} />
             </div>
           </div>
           <Link

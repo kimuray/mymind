@@ -1,4 +1,5 @@
 import { dayOrdinalSince, STATUS_LABELS, type Status } from '@mymind/domain';
+import { AnimatedNumber } from './AnimatedNumber';
 
 /**
  * 状態のバッジ「状態・N日目」（DESIGN.md 4.3、FR-T12）。未着手と完了には付けない。
@@ -29,11 +30,19 @@ export function StatusBadge({
   );
 }
 
-/** 件数などを出すチップ（状態色を薄く重ねる） */
-export function CountChip({ status, children }: { status: Status; children: string }) {
+/** 件数を出すチップ（状態色を薄く重ねる）。件数が変わると数字を入れ替える（DESIGN.md 4.20） */
+export function CountChip({
+  status,
+  label,
+  count,
+}: {
+  status: Status;
+  label: string;
+  count: number;
+}) {
   return (
     <span className="chip" data-status={status}>
-      {children}
+      {label} <AnimatedNumber value={count} />
     </span>
   );
 }

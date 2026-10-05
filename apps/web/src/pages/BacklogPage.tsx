@@ -10,6 +10,7 @@ import {
   useTransition,
 } from '../api/tasks';
 import { AddTaskInput } from '../components/AddTaskInput';
+import { AnimatedNumber } from '../components/AnimatedNumber';
 import { Button } from '../components/Button';
 import { Loading } from '../components/Loading';
 import { PageLayout } from '../components/PageLayout';
@@ -163,7 +164,10 @@ export function BacklogPage() {
       <div className="page" ref={listRoot}>
         <header className="page-header">
           <h1 className="text-display">バックログ</h1>
-          <p className="text-small">{`覚えておくだけのタスク ${tasks.length}`}</p>
+          {/* 読み込みの前後で作り直す。読み込み中の 0 から届いた件数へ変わるのを「増えた」として動かさない（DESIGN.md 4.20） */}
+          <p className="text-small" key={backlog.isSuccess ? 'loaded' : 'loading'}>
+            覚えておくだけのタスク <AnimatedNumber value={tasks.length} />
+          </p>
         </header>
 
         <AddTaskInput

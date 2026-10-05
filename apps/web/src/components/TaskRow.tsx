@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { useState } from 'react';
 import type { ListTask } from '../api/tasks';
 import { useStatusChanged } from '../statusChange';
+import { AnimatedNumber } from './AnimatedNumber';
 import { StatusBadge } from './StatusBadge';
 import { StatusIcon } from './StatusIcon';
 
@@ -94,7 +95,10 @@ export function TaskRow({
         </button>
       )}
       {task.children.total > 0 && (
-        <span className="task-children">{`子 ${task.children.closed}/${task.children.total}`}</span>
+        <span className="task-children">
+          子 <AnimatedNumber value={task.children.closed} />/
+          <AnimatedNumber value={task.children.total} />
+        </span>
       )}
       <StatusBadge status={task.status} since={task.statusSince} today={today} animate={changed} />
       {aside !== undefined && <span className="task-aside">{aside}</span>}

@@ -1,6 +1,7 @@
 import { daysBetween, STATUS_LABELS, type TimelineSegment } from '@mymind/domain';
 import { useRef, useState } from 'react';
 import { type TimelineResponse, type TimelineTask, useTimeline } from '../api/timeline';
+import { AnimatedNumber } from '../components/AnimatedNumber';
 import { effectiveLevel, moodOfLevel } from '../components/FeedbackPanel';
 import { Loading } from '../components/Loading';
 import { Mame, MOOD_LABELS } from '../components/Mame';
@@ -157,7 +158,10 @@ function TaskBreakdown({ task, today }: { task: TimelineTask; today: string }) {
           <div key={b.key}>
             <dt>{b.label}</dt>
             <dd>
-              <span className="timeline-count">{task.breakdown[b.key]}</span>日
+              <span className="timeline-count">
+                <AnimatedNumber value={task.breakdown[b.key]} />
+              </span>
+              日
             </dd>
           </div>
         ))}
