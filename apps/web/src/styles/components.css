@@ -583,6 +583,37 @@
   border-radius: var(--radius-2xl);
 }
 
+/*
+ * 開くときの動き（DESIGN.md 4.9）。影はフェードで、面はごく小さな拡大とフェードで出す。
+ * 入力は動きの終わりを待たずに受け付ける。閉じるときは dialogMotion.ts が写しを消す（.dialog-leaving）
+ */
+.dialog-backdrop {
+  animation: overlay-in var(--motion-base) var(--ease-out) both;
+}
+
+.dialog-backdrop > .dialog {
+  animation: dialog-in var(--motion-base) var(--ease-out) both;
+}
+
+.dialog-backdrop.dialog-leaving,
+.dialog-backdrop.dialog-leaving > .dialog {
+  animation: none;
+  pointer-events: none;
+}
+
+@keyframes overlay-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes dialog-in {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
 .dialog p {
   margin: 0;
   color: var(--ink-2);

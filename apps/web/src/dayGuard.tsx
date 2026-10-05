@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button } from './components/Button';
 import { currentDay, formatDayHeading } from './day';
+import { useDialogExit } from './dialogMotion';
 
 const WATCHED = ['keydown', 'pointerdown', 'focusin'] as const;
 
@@ -86,8 +87,11 @@ type DialogProps = {
 function DayChangedDialog({ ref, screenDay, today, onMoveToToday, onContinue }: DialogProps) {
   const past = formatDayHeading(screenDay).date;
   const now = formatDayHeading(today).date;
+  // 閉じたとき、写しを消して閉じる動きにする（DESIGN.md 4.9）
+  const backdrop = useRef<HTMLDivElement>(null);
+  useDialogExit(backdrop);
   return (
-    <div className="dialog-backdrop">
+    <div ref={backdrop} className="dialog-backdrop">
       <div
         ref={ref}
         className="dialog glass-4"
