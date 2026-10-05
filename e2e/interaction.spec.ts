@@ -713,6 +713,9 @@ test.describe('FR-A05 マメの表情と FB の到着の動き', () => {
     // このテストの中で FB を用意してから開き直す（ほかのテストの順序に頼らない）
     await page.getByRole('textbox', { name: '思考の整理' }).fill('開き直す前の振り返り');
     await page.getByRole('button', { name: '保存してFBをもらう' }).click();
+    // 押した直後はまだ前の FB が見えているので、生成中を経て届くまで待ってから開き直す
+    await expect(page.getByText('マメが考えています')).toBeVisible();
+    await expect(page.getByText('マメが考えています')).toHaveCount(0);
     await expect(page.getByRole('heading', { name: '明日の一手' })).toBeVisible();
     await page.reload();
     await expect(page.getByRole('heading', { name: '明日の一手' })).toBeVisible();
