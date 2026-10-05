@@ -270,3 +270,11 @@ test.describe('FR-N04 通知の設定', () => {
     }
   });
 });
+
+test.describe('NFR-27 デスクトップアプリの設定', () => {
+  test('ブラウザで開いているときは、デスクトップアプリの節を出さない', async ({ page }) => {
+    await page.goto('/settings');
+    await expect(page.getByRole('heading', { name: '設定', level: 1 })).toBeVisible();
+    await expect(page.getByRole('region', { name: 'デスクトップアプリ' })).toHaveCount(0);
+  });
+});

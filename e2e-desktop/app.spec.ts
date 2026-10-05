@@ -65,4 +65,25 @@ test.describe('NFR-01 デスクトップアプリ', () => {
     const res = await fetch(`http://127.0.0.1:${PORT}/api/health`);
     expect(res.status).toBe(200);
   });
+
+  test('NFR-27 ウィンドウを閉じてもアプリとサーバーは動き続ける', async () => {
+    const window = await app.firstWindow();
+    await expect(window.getByLabel('今日のタスクを追加')).toBeVisible({ timeout: 30_000 });
+    await window.close();
+    await expect
+      .poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length))
+      .toBe(0);
+    const res = await fetch(`http://127.0.0.1:${PORT}/api/health`);
+    expect(res.status).toBe(200);
+  });
+
+  test('NFR-27 設定の画面に、デスクトップアプリの節を出す（開発用の起動では切り替えられない）', async () => {
+    const window = await app.firstWindow();
+    await expect(window.getByLabel('今日のタスクを追加')).toBeVisible({ timeout: 30_000 });
+    await window.goto(`http://127.0.0.1:${PORT}/settings`);
+    const section = window.getByRole('region', { name: 'デスクトップアプリ' });
+    await expect(section).toContainText('ログイン時に起動する');
+    await expect(section.getByRole('checkbox')).toBeDisabled();
+    await expect(section).toContainText('開発用の起動では切り替えられません');
+  });
 });

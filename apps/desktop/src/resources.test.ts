@@ -14,6 +14,7 @@ describe('NFR-01 デスクトップアプリがサーバーに渡す成果物の
       webDist: '/repo/apps/web/dist',
       prompts: '/repo/prompts',
       migrations: '/repo/packages/db/migrations',
+      assets: '/repo/apps/desktop/assets',
     });
   });
 
@@ -29,6 +30,7 @@ describe('NFR-01 デスクトップアプリがサーバーに渡す成果物の
       webDist: '/Applications/mymind.app/Contents/Resources/web',
       prompts: '/Applications/mymind.app/Contents/Resources/prompts',
       migrations: '/Applications/mymind.app/Contents/Resources/migrations',
+      assets: '/Applications/mymind.app/Contents/Resources/assets',
     });
   });
 

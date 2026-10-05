@@ -1,5 +1,5 @@
 import type { Status } from '@mymind/domain';
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { type Health, useHealth } from '../api/health';
 import {
   type BrowserPermission,
@@ -18,6 +18,7 @@ import { Loading } from '../components/Loading';
 import { PageLayout } from '../components/PageLayout';
 import { SavedNote } from '../components/SavedNote';
 import { formatDateTime } from '../day';
+import { desktopBridge, type LoginItemState } from '../desktop';
 import { useFadeInAfterLoading } from '../loadMotion';
 import { useSelectionMotion } from '../selectionMotion';
 
@@ -543,6 +544,54 @@ function McpNotice() {
   );
 }
 
+/**
+ * デスクトップアプリの設定（NFR-27）。ログイン時の起動。デスクトップアプリで動いているときだけ出す。
+ * `.app` でないとき（開発時の起動）は切り替えられない
+ */
+function DesktopSettings() {
+  const [bridge] = useState(() => desktopBridge());
+  const [state, setState] = useState<LoginItemState | null>(null);
+  const [failed, setFailed] = useState(false);
+  useEffect(() => {
+    if (bridge === null) return;
+    bridge.getLoginItem().then(setState, () => setFailed(true));
+  }, [bridge]);
+  if (bridge === null) return null;
+  return (
+    <section className="task-list settings-status glass-2" aria-label="デスクトップアプリ">
+      <div className="settings-status-head">
+        <h2>デスクトップアプリ</h2>
+      </div>
+      <label className="settings-toggle">
+        <input
+          type="checkbox"
+          checked={state?.enabled ?? false}
+          disabled={state === null || !state.available}
+          onChange={(e) => {
+            const next = e.target.checked;
+            // 保存を待たずに表示を変え、結果で正す
+            setState((s) => (s === null ? s : { ...s, enabled: next }));
+            bridge.setLoginItem(next).then(setState, () => setFailed(true));
+          }}
+        />
+        <span className="settings-row-value">
+          <span className="settings-row-main">ログイン時に起動する</span>
+          <span className="settings-row-note">
+            {state !== null && !state.available
+              ? '開発用の起動では切り替えられません（.app にしたアプリで使えます）'
+              : 'ウィンドウを閉じてもメニューバーに残り、通知と毎日のバックアップを続けます'}
+          </span>
+        </span>
+      </label>
+      {failed && (
+        <p className="settings-note" role="alert">
+          ログイン時の起動を読み書きできませんでした
+        </p>
+      )}
+    </section>
+  );
+}
+
 /** 毎日のバックアップを残す世代数として保存できる入力か（1〜365） */
 export const isBackupGenerations = (input: string): boolean => {
   if (input.trim() === '') return false;
@@ -725,6 +774,7 @@ export function SettingsPage() {
         <FeedbackSettings />
         <ReviewSettings />
         <NotificationSettings />
+        <DesktopSettings />
         <BackupSettings />
         <McpNotice />
       </div>

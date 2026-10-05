@@ -7,6 +7,8 @@ export type Resources = {
   webDist: string;
   prompts: string;
   migrations: string;
+  /** メニューバーのアイコンなど、アプリの画像 */
+  assets: string;
 };
 
 /**
@@ -24,6 +26,7 @@ export function resolveResources(input: {
       webDist: join(input.resourcesPath, 'web'),
       prompts: join(input.resourcesPath, 'prompts'),
       migrations: join(input.resourcesPath, 'migrations'),
+      assets: join(input.resourcesPath, 'assets'),
     };
   }
   const root = resolve(input.appDir, '../..');
@@ -32,6 +35,7 @@ export function resolveResources(input: {
     webDist: join(root, 'apps', 'web', 'dist'),
     prompts: join(root, 'prompts'),
     migrations: join(root, 'packages', 'db', 'migrations'),
+    assets: join(input.appDir, 'assets'),
   };
 }
 

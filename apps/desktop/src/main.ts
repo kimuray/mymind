@@ -1,10 +1,28 @@
-import { dirname } from 'node:path';
+import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { desktopMessageSchema } from '@mymind/server/desktop-bridge';
-import { app, BrowserWindow, dialog, shell, utilityProcess } from 'electron';
+import {
+  app,
+  BrowserWindow,
+  dialog,
+  type IpcMainInvokeEvent,
+  ipcMain,
+  Menu,
+  nativeImage,
+  shell,
+  Tray,
+  utilityProcess,
+} from 'electron';
+import {
+  readDesktopState,
+  shouldEnableLoginItemOnFirstRun,
+  writeDesktopState,
+} from './desktopState';
+import { IPC, type LoginItemState } from './ipc';
 import { isAppUrl, isExternalWebUrl } from './navigation';
 import { resolveResources, serverEnv } from './resources';
 import { createSupervisor, type ServerProcess } from './supervisor';
+import { buildTrayMenu } from './tray';
 
 /**
  * デスクトップアプリのメインプロセス（ADR-0015）。
@@ -22,6 +40,8 @@ const resources = resolveResources({
 let mainWindow: BrowserWindow | null = null;
 let serverUrl: string | null = null;
 let quitting = false;
+// メニューバーのアイコン。参照を持っておかないと、ガベージコレクションで消える
+let tray: Tray | null = null;
 
 /** ウィンドウの中で開いてよいオリジン。開発時は画面を Vite が配信する（ADR-0007） */
 const allowedOrigins = (): string[] => {
@@ -31,8 +51,16 @@ const allowedOrigins = (): string[] => {
   return origins;
 };
 
-function openWindow(url: string) {
+/**
+ * ウィンドウを開く。path を渡したらその画面へ移る。閉じていれば作り直す（閉じたウィンドウは破棄してメモリを抑える）。
+ * ウィンドウがある間だけ Dock にアイコンを出す（NFR-27、DESIGN.md 3.1）
+ */
+function openWindow(path?: string) {
+  if (serverUrl === null) return;
+  const url = path === undefined ? serverUrl : new URL(path, serverUrl).toString();
+  void app.dock?.show();
   if (mainWindow !== null) {
+    if (path !== undefined) void mainWindow.loadURL(url);
     mainWindow.show();
     mainWindow.focus();
     return;
@@ -45,10 +73,11 @@ function openWindow(url: string) {
     title: 'mymind',
     show: false,
     webPreferences: {
-      // 画面に Node.js の API を渡さない（ADR-0015）
+      // 画面に Node.js の API を渡さない。preload で用途を絞った関数だけを渡す（ADR-0015）
       contextIsolation: true,
       sandbox: true,
       nodeIntegration: false,
+      preload: join(appDir, 'dist', 'preload.cjs'),
     },
   });
   // アプリの外の URL へは移らせず、外部のリンクは既定のブラウザで開く
@@ -66,9 +95,60 @@ function openWindow(url: string) {
   window.once('ready-to-show', () => window.show());
   window.on('closed', () => {
     mainWindow = null;
+    // ウィンドウを閉じてもアプリとサーバーは動き続ける。Dock からは消し、メニューバーから開き直す
+    app.dock?.hide();
   });
   mainWindow = window;
   void window.loadURL(url);
+}
+
+/** メニューバーのアイコンとメニュー（NFR-27） */
+function createTray() {
+  const icon = nativeImage.createFromPath(join(resources.assets, 'trayTemplate.png'));
+  icon.setTemplateImage(true);
+  tray = new Tray(icon);
+  tray.setToolTip('mymind');
+  tray.setContextMenu(
+    Menu.buildFromTemplate(
+      buildTrayMenu({
+        open: () => openWindow(),
+        openPath: (path) => openWindow(path),
+        quit: () => app.quit(),
+      }),
+    ),
+  );
+}
+
+/** ログイン時の起動の状態。開発時（electron .）は、Electron の本体を登録してしまうので切り替えさせない */
+const loginItemState = (): LoginItemState => ({
+  available: app.isPackaged,
+  enabled: app.isPackaged && app.getLoginItemSettings().openAtLogin,
+});
+
+/** 画面からの依頼は、アプリの画面（サーバーと同じオリジン）からのものだけを受け付ける */
+const isFromApp = (event: IpcMainInvokeEvent) =>
+  event.senderFrame !== null && isAppUrl(event.senderFrame.url, allowedOrigins());
+
+function registerIpc() {
+  ipcMain.handle(IPC.getLoginItem, (event) => {
+    if (!isFromApp(event)) throw new Error('アプリの画面からの依頼ではありません');
+    return loginItemState();
+  });
+  ipcMain.handle(IPC.setLoginItem, (event, enabled: unknown) => {
+    if (!isFromApp(event)) throw new Error('アプリの画面からの依頼ではありません');
+    if (typeof enabled !== 'boolean') throw new Error('オン・オフを指定してください');
+    if (app.isPackaged) app.setLoginItemSettings({ openAtLogin: enabled });
+    return loginItemState();
+  });
+}
+
+/** 初回の起動でだけ、ログイン時の起動をオンにする（オフにしたあとは戻さない、NFR-27） */
+function initLoginItem() {
+  const statePath = join(app.getPath('userData'), 'desktop-state.json');
+  const state = readDesktopState(statePath);
+  if (!shouldEnableLoginItemOnFirstRun({ isPackaged: app.isPackaged, state })) return;
+  app.setLoginItemSettings({ openAtLogin: true });
+  writeDesktopState(statePath, { ...state, loginItemInitialized: true });
 }
 
 const startServer = (): ServerProcess => {
@@ -95,9 +175,9 @@ const supervisor = createSupervisor({
   now: () => Date.now(),
   onReady: (url) => {
     serverUrl = url;
-    // 起動し直したときは、開いているウィンドウを読み直す
+    // 起動し直したときは、開いているウィンドウを読み直す（新しいセッショントークンの画面にする）
     if (mainWindow !== null) void mainWindow.loadURL(url);
-    else openWindow(url);
+    else openWindow();
   },
   onRestart: (code, attempt) => {
     console.error(`サーバーが止まったので起動し直します（終了コード ${code}、${attempt} 回目）`);
@@ -114,19 +194,18 @@ const supervisor = createSupervisor({
 if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
-  app.on('second-instance', () => {
-    if (serverUrl !== null) openWindow(serverUrl);
-  });
+  app.on('second-instance', () => openWindow());
   app.whenReady().then(() => {
+    registerIpc();
+    initLoginItem();
+    createTray();
     supervisor.start();
-    app.on('activate', () => {
-      if (serverUrl !== null) openWindow(serverUrl);
-    });
+    app.on('activate', () => openWindow());
   });
   app.on('before-quit', () => {
     quitting = true;
     supervisor.stop();
   });
-  // ウィンドウを閉じたら終了する。メニューバーに残す常駐は #207 で作る
-  app.on('window-all-closed', () => app.quit());
+  // ウィンドウを閉じても終了しない。通知と毎日のバックアップのために、メニューバーに残って動き続ける（NFR-27）
+  app.on('window-all-closed', () => {});
 }
