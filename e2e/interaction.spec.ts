@@ -363,3 +363,43 @@ test.describe('FR-U04 画面の切り替え', () => {
     await expect(page.locator('.pane-sidebar .nav-item .nav-highlight')).toHaveCount(count);
   });
 });
+
+test.describe('FR-U04 詳細ペインの動き', () => {
+  test('別のタスクを選ぶと、詳細ペインの中身がフェードインする', async ({ page }) => {
+    // 動きがあることを確かめるため、このテストだけ「視差効果を減らす」を外す（DESIGN.md 2.7）
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    try {
+      await page.goto('/');
+      const row = await addTask(page, '詳細の入れ替え');
+      await page.evaluate(() => {
+        const log: string[] = [];
+        (window as unknown as { __detailSwaps: string[] }).__detailSwaps = log;
+        const original = Element.prototype.animate;
+        Element.prototype.animate = function (this: Element, keyframes, options) {
+          if (typeof options === 'object' && options.id === 'detail-swap') log.push(this.className);
+          return original.call(this, keyframes, options);
+        };
+      });
+      await row.locator('.task-title').click();
+      await expect
+        .poll(() =>
+          page.evaluate(() => (window as unknown as { __detailSwaps: string[] }).__detailSwaps),
+        )
+        .toEqual(['pane-detail-content']);
+    } finally {
+      // サンドボックスの中ではページを使い回すので、ほかのテストのために戻す
+      await page.emulateMedia({ reducedMotion: 'reduce' });
+    }
+  });
+
+  test('1280px 未満では、詳細ペインを右から滑らせて出し入れする', async ({ page }) => {
+    await page.setViewportSize({ width: 1200, height: 900 });
+    try {
+      await page.goto('/');
+      const pane = page.getByRole('complementary', { name: '詳細' });
+      await expect(pane).toHaveCSS('transition-property', 'transform');
+    } finally {
+      await page.setViewportSize({ width: 1440, height: 900 });
+    }
+  });
+});
