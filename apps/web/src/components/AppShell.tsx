@@ -32,6 +32,8 @@ function NavLink({ target, label }: { target: NavigationTarget; label: string })
   };
   const body = (
     <>
+      {/* 選択中の印。画面を移るとき、前の項目から次の項目へ滑らせる（DESIGN.md 2.9） */}
+      <span className="nav-highlight" aria-hidden="true" />
       <span className="nav-dot" aria-hidden="true" />
       <span className="nav-label">{label}</span>
       <span className="nav-hint">{hint}</span>

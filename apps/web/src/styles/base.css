@@ -200,9 +200,23 @@ ul {
 }
 
 .nav-item.is-active {
-  background: var(--accent-soft);
   color: var(--accent-strong);
   font-weight: 500;
+}
+
+/* 選択中の印（藍色の薄い塗り）。項目の後ろ、ホバーの層の上に置く */
+.nav-highlight {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--accent-soft);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.nav-item.is-active .nav-highlight {
+  opacity: 1;
 }
 
 .nav-dot {
@@ -312,12 +326,94 @@ ul {
 }
 
 /*
+ * 画面の切り替え（DESIGN.md 2.9、FR-U04）。名前を付けた要素は中のガラスの backdrop-filter が
+ * 後ろを見られなくなる（backdrop root になる）ので、名前は切り替えの最中だけ付ける。
+ * サイドバーと地は動かさず、メインと詳細ペインの中身を入れ替え、選択中の印を滑らせる
+ */
+:root:active-view-transition .pane-main {
+  view-transition-name: main-pane;
+}
+
+:root:active-view-transition .pane-detail {
+  view-transition-name: detail-pane;
+}
+
+:root:active-view-transition .nav-item.is-active .nav-highlight {
+  view-transition-name: nav-highlight;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
+
+::view-transition-group(main-pane),
+::view-transition-group(detail-pane),
+::view-transition-group(nav-highlight) {
+  animation-duration: var(--motion-slow);
+  animation-timing-function: var(--ease-out);
+}
+
+::view-transition-old(main-pane),
+::view-transition-old(detail-pane) {
+  animation: page-out var(--motion-fast) var(--ease-out) both;
+}
+
+::view-transition-new(main-pane),
+::view-transition-new(detail-pane) {
+  animation: page-in var(--motion-slow) var(--ease-out) both;
+}
+
+/* 月の移動は、進む向きに合わせて横から入れる */
+:root:active-view-transition-type(forward)::view-transition-new(main-pane) {
+  animation-name: page-in-forward;
+}
+
+:root:active-view-transition-type(backward)::view-transition-new(main-pane) {
+  animation-name: page-in-backward;
+}
+
+@keyframes page-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+@keyframes page-in-forward {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+}
+
+@keyframes page-in-backward {
+  from {
+    opacity: 0;
+    transform: translateX(-12px);
+  }
+}
+
+/*
  * 「視差効果を減らす」設定では、マメの表情や画面の切り替えの動きを止める（DESIGN.md 2.7、NFR-22）。
  * 0.01ms は「止める」ための値で、時間のトークンの代わりではない（design:check も許す）
  */
 @media (prefers-reduced-motion: reduce) {
   .mame-bubbles {
     animation: none;
+  }
+
+  /* 画面の切り替えの疑似要素には * が当たらないので、別に止める */
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
   }
 
   *,
