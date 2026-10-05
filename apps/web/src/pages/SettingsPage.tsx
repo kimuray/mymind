@@ -6,7 +6,12 @@ import {
   browserPermission,
   reportBrowserPermission,
 } from '../api/notifications';
-import { type AgentChoice, useSettings, useUpdateSettings } from '../api/settings';
+import {
+  type AgentChoice,
+  type AppSettings,
+  useSettings,
+  useUpdateSettings,
+} from '../api/settings';
 import { AgentSelect } from '../components/AgentSelect';
 import { Button } from '../components/Button';
 import { PageLayout } from '../components/PageLayout';
@@ -387,6 +392,128 @@ function ReviewSettings() {
   );
 }
 
+type NotificationSettingKey =
+  | 'morningNotification'
+  | 'eveningNotification'
+  | 'inventoryNotification';
+
+const NOTIFICATION_ROWS: { key: NotificationSettingKey; label: string; note: string }[] = [
+  {
+    key: 'morningNotification',
+    label: '朝の通知',
+    note: 'その日の計画をまだ確定していなければ、昨日の FB と持ち越しの件数を知らせます',
+  },
+  {
+    key: 'eveningNotification',
+    label: '夜の通知',
+    note: 'その日の振り返りをまだ書いていなければ、完了件数と長引いているタスクを知らせます',
+  },
+  {
+    key: 'inventoryNotification',
+    label: '棚卸しの通知',
+    note: '棚卸しの対象があれば、その件数を知らせます',
+  },
+];
+
+const WEEKDAYS = ['日', '月', '火', '水', '木', '金', '土'];
+
+/** 時刻の入力として保存できる値か（「HH:MM」、00:00〜23:59） */
+export const isNotificationTime = (input: string): boolean =>
+  /^([01]\d|2[0-3]):([0-5]\d)$/.test(input);
+
+/**
+ * 通知の設定（FR-N04）。種類ごとのオン・オフと時刻（棚卸しは曜日も）。
+ * 変えるたびにその種類の設定をまとめて保存し、サーバーが次の通知の時刻を組み直す
+ */
+function NotificationSettings() {
+  const settings = useSettings();
+  const update = useUpdateSettings();
+  // 保存を待たずに表示を変える（FeedbackSettings と同じ理由）。保存が終わったら、保存した値の表示に戻す
+  const [pending, setPending] = useState<Partial<Pick<AppSettings, NotificationSettingKey>>>({});
+  // 棚卸しだけは曜日も持つ（3種類をまとめて扱うと、型の上で曜日が見えなくなるので分けて読む）
+  const inventory = pending.inventoryNotification ?? settings.data?.settings.inventoryNotification;
+  const saveSetting = <K extends NotificationSettingKey>(key: K, next: AppSettings[K]) => {
+    setPending((p) => ({ ...p, [key]: next }));
+    update.mutate(
+      { [key]: next },
+      {
+        onSettled: () =>
+          setPending((p) => {
+            const { [key]: _, ...rest } = p;
+            return rest;
+          }),
+      },
+    );
+  };
+  return (
+    <section className="task-list settings-status glass-2" aria-label="通知の設定">
+      <div className="settings-status-head">
+        <h2>通知</h2>
+      </div>
+      {NOTIFICATION_ROWS.map((row) => {
+        const value = pending[row.key] ?? settings.data?.settings[row.key];
+        // 実行時は value に曜日も入っている（棚卸し）ので、広げて保存すれば曜日も残る
+        const save = (next: NonNullable<typeof value>) => saveSetting(row.key, next);
+        return (
+          <div key={row.key} className="settings-toggle">
+            <input
+              type="checkbox"
+              id={`settings-${row.key}`}
+              checked={value?.enabled ?? false}
+              disabled={value === undefined}
+              onChange={(e) => {
+                if (value !== undefined) save({ ...value, enabled: e.target.checked });
+              }}
+            />
+            <label className="settings-row-value" htmlFor={`settings-${row.key}`}>
+              <span className="settings-row-main">{row.label}</span>
+              <span className="settings-row-note">{row.note}</span>
+            </label>
+            {row.key === 'inventoryNotification' && inventory !== undefined && (
+              <select
+                className="settings-select"
+                aria-label={`${row.label}の曜日`}
+                value={inventory.weekday}
+                disabled={!inventory.enabled}
+                onChange={(e) =>
+                  saveSetting('inventoryNotification', {
+                    ...inventory,
+                    weekday: Number(e.target.value),
+                  })
+                }
+              >
+                {WEEKDAYS.map((w, i) => (
+                  <option key={w} value={i}>
+                    {w}曜
+                  </option>
+                ))}
+              </select>
+            )}
+            <input
+              type="time"
+              className="settings-time"
+              aria-label={`${row.label}の時刻`}
+              value={value?.time ?? ''}
+              disabled={value === undefined || !value.enabled}
+              onChange={(e) => {
+                // 打ちかけの時刻（空など）は保存しない
+                if (value !== undefined && isNotificationTime(e.target.value)) {
+                  save({ ...value, time: e.target.value });
+                }
+              }}
+            />
+          </div>
+        );
+      })}
+      {update.isError && (
+        <p className="settings-note" role="alert">
+          設定を保存できませんでした。サーバーが動いているか確かめてください
+        </p>
+      )}
+    </section>
+  );
+}
+
 /**
  * MCP で参照したときに送られるデータの知らせ（NFR-05、FR-M01）。MCP の登録は画面からはしないので、文だけを置く
  */
@@ -531,7 +658,7 @@ export function SettingsPage() {
       <div className="page">
         <header className="page-header">
           <h1 className="text-display">設定</h1>
-          <p className="text-small">アプリの状態、FB の依頼、棚卸し、バックアップ、MCP</p>
+          <p className="text-small">アプリの状態、FB の依頼、棚卸し、通知、バックアップ、MCP</p>
         </header>
         <section className="task-list settings-status glass-2" aria-label="状態">
           <div className="settings-status-head">
@@ -578,6 +705,7 @@ export function SettingsPage() {
         </p>
         <FeedbackSettings />
         <ReviewSettings />
+        <NotificationSettings />
         <BackupSettings />
         <McpNotice />
       </div>
