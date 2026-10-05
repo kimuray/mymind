@@ -7,6 +7,7 @@ import { ReflectionPage } from './pages/ReflectionPage';
 import { SettingsPage } from './pages/SettingsPage';
 import { TimelinePage } from './pages/TimelinePage';
 import { TodayPage } from './pages/TodayPage';
+import { viewTransitionTypes } from './pageTransition';
 import { MameGalleryPage } from './routes/pages';
 
 // 画面の URL（#20 の暫定決定）。ルートはコードで定義する（ADR-0012）
@@ -71,7 +72,15 @@ const routeTree = rootRoute.addChildren([
   mameRoute,
 ]);
 
-export const router = createRouter({ routeTree });
+// 画面を移るときは View Transitions で中身を切り替える（DESIGN.md 2.9）。対応していないブラウザでは動きなしで同じ結果になる。
+// 同じ画面の中の移動では切り替えない
+export const router = createRouter({
+  routeTree,
+  defaultViewTransition: {
+    types: ({ fromLocation, toLocation }) =>
+      viewTransitionTypes(fromLocation?.pathname, toLocation.pathname),
+  },
+});
 
 declare module '@tanstack/react-router' {
   interface Register {

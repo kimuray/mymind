@@ -310,3 +310,56 @@ test.describe('FR-U01 選択のカーソルの動き', () => {
     }
   });
 });
+
+test.describe('FR-U04 画面の切り替え', () => {
+  /** 画面の切り替え（View Transitions）を始めたときの種類を記録する */
+  async function recordViewTransitions(page: Page) {
+    await page.evaluate(() => {
+      const log: string[][] = [];
+      (window as unknown as { __viewTransitions: string[][] }).__viewTransitions = log;
+      const original = document.startViewTransition.bind(document);
+      document.startViewTransition = ((arg: StartViewTransitionOptions) => {
+        log.push(typeof arg === 'object' && arg !== null ? [...(arg.types ?? [])] : []);
+        return original(arg);
+      }) as typeof document.startViewTransition;
+    });
+  }
+  const viewTransitions = (page: Page) =>
+    page.evaluate(() => (window as unknown as { __viewTransitions: string[][] }).__viewTransitions);
+
+  test('別の画面へ移ると、中身を切り替える', async ({ page }) => {
+    await page.goto('/');
+    await recordViewTransitions(page);
+    await page.keyboard.press('g');
+    await page.keyboard.press('b');
+    await expect(page).toHaveURL(/\/backlog$/);
+    expect(await viewTransitions(page)).toEqual([['page']]);
+  });
+
+  test('カレンダーで日を選んでも切り替えず、月を移ると向きを付けて切り替える', async ({ page }) => {
+    await page.goto('/calendar/2026-10');
+    await recordViewTransitions(page);
+    await page.locator('.calendar-cell').first().click();
+    await expect(page).toHaveURL(/\/calendar\/2026-10\/2026-10-\d\d$/);
+    await page.getByRole('link', { name: '次の月' }).click();
+    await expect(page).toHaveURL(/\/calendar\/2026-11$/);
+    expect(await viewTransitions(page)).toEqual([['forward']]);
+  });
+
+  for (const path of ['/', '/settings']) {
+    test(`サイドバーの選択中の印は、項目の後ろの面で示す（${path}）`, async ({ page }) => {
+      await page.goto(path);
+      const active = page.locator('.nav-item.is-active .nav-highlight');
+      await expect(active).toHaveCount(1);
+      await expect(active).toHaveCSS('opacity', '1');
+      await expect(active).toHaveCSS('background-color', 'rgba(47, 75, 124, 0.12)');
+    });
+  }
+
+  test('どのサイドバーの項目にも、滑らせる選択中の印がある', async ({ page }) => {
+    await page.goto('/');
+    const items = page.locator('.pane-sidebar .nav-item');
+    const count = await items.count();
+    await expect(page.locator('.pane-sidebar .nav-item .nav-highlight')).toHaveCount(count);
+  });
+});
