@@ -1,6 +1,6 @@
 import { canTransition, nextOnAdvance, type Status } from '@mymind/domain';
 import { Link } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   type ListTask,
   type Suggestion,
@@ -20,6 +20,7 @@ import { TaskRow } from '../components/TaskRow';
 import { formatDayHeading } from '../day';
 import { useDayGuard } from '../dayGuard';
 import { LIST_HINTS, NAVIGATION_KEYS } from '../keymap';
+import { useListMotion } from '../listMotion';
 import { type ListRow, useTaskListKeys } from '../useTaskListKeys';
 
 const isClosed = (s: Status) => s === 'done' || s === 'cancelled';
@@ -42,6 +43,9 @@ export function TodayPage() {
   const day = guard.day;
   const screen = { expectedDay: day, ...(guard.allowPastDay ? { allowPastDay: true } : {}) };
   const plan = useDayPlan(day);
+  // 行の追加・移動・並べ替えを目で追えるようにする（DESIGN.md 4.18）。完了の欄へ移る行も追えるよう、画面全体で測る
+  const listRoot = useRef<HTMLDivElement>(null);
+  useListMotion(listRoot, plan.isSuccess);
   const create = useCreateTask();
   const transition = useTransition();
   const move = useMove();
@@ -118,7 +122,7 @@ export function TodayPage() {
   return (
     <PageLayout detail={detail}>
       {guard.dialog}
-      <div className="page">
+      <div className="page" ref={listRoot}>
         <header className="page-header">
           <div className="page-title">
             <h1 className="text-display">

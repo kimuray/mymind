@@ -76,6 +76,7 @@ export function TaskRow({
     <li
       className="task-row"
       data-task-id={task.id}
+      data-motion-key={task.id}
       data-depth={depth}
       data-selected={selected}
       data-closed={closed}

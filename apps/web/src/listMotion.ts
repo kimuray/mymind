@@ -1,0 +1,198 @@
+import { type RefObject, useLayoutEffect, useRef } from 'react';
+
+/** 行の位置。リストを包む要素の左上からの距離（スクロールしても変わらない） */
+export type RowPosition = { x: number; y: number };
+
+export type ListMotionPlan = {
+  /** 位置が変わった行と、新しい位置から見た元の位置へのずれ */
+  moves: { key: string; dx: number; dy: number }[];
+  /** 新しく現れた行 */
+  enters: string[];
+  /** なくなった行 */
+  exits: string[];
+};
+
+/** これより小さいずれは動かさない（小数の丸めで毎回動かないように） */
+const MOVE_THRESHOLD_PX = 0.5;
+
+/**
+ * 前と今の行の位置から、どの行をどう動かすかを決める（DESIGN.md 4.18）。
+ * 欄をまたいで移った行（完了の欄へ、など）も、同じ key なら位置の移動として扱う。
+ */
+export function planListMotion(
+  previous: ReadonlyMap<string, RowPosition>,
+  next: ReadonlyMap<string, RowPosition>,
+): ListMotionPlan {
+  const moves: ListMotionPlan['moves'] = [];
+  const enters: string[] = [];
+  for (const [key, to] of next) {
+    const from = previous.get(key);
+    if (from === undefined) {
+      enters.push(key);
+      continue;
+    }
+    const dx = from.x - to.x;
+    const dy = from.y - to.y;
+    if (Math.abs(dx) >= MOVE_THRESHOLD_PX || Math.abs(dy) >= MOVE_THRESHOLD_PX) {
+      moves.push({ key, dx, dy });
+    }
+  }
+  const exits = [...previous.keys()].filter((key) => !next.has(key));
+  return { moves, enters, exits };
+}
+
+/** CSS 変数の時間（"200ms"、"0.2s"）をミリ秒にする */
+export function parseDuration(value: string): number {
+  const n = Number.parseFloat(value);
+  if (Number.isNaN(n)) return 0;
+  return value.trim().endsWith('ms') ? n : n * 1000;
+}
+
+/** 動きのトークン（DESIGN.md 2.7）。値を直書きしないよう、tokens.css から読む */
+function readMotionTokens() {
+  const style = getComputedStyle(document.documentElement);
+  const read = (name: string) => style.getPropertyValue(name).trim();
+  return {
+    fast: parseDuration(read('--motion-fast')),
+    base: parseDuration(read('--motion-base')),
+    easeOut: read('--ease-out') || 'ease-out',
+    easeInOut: read('--ease-in-out') || 'ease-in-out',
+  };
+}
+
+/** この部品が付けた動きの印。ほかの動き（CSS のもの）と区別して、測る前に止める */
+const ANIMATION_ID = 'list-motion';
+
+/** 文書の左上からの位置。offset の連なりで測るので、transform（動きの途中のずれ）を含まない */
+function offsetPosition(el: HTMLElement): RowPosition {
+  let x = 0;
+  let y = 0;
+  let current: Element | null = el;
+  while (current instanceof HTMLElement) {
+    x += current.offsetLeft;
+    y += current.offsetTop;
+    current = current.offsetParent;
+  }
+  return { x, y };
+}
+
+type Snapshot = { position: RowPosition; node: HTMLElement; size: { w: number; h: number } };
+
+const isVisible = (top: number, height: number) => top + height > 0 && top < window.innerHeight;
+
+/** なくなった行の写しを、元の場所に重ねて消す。React が外した要素を、画面の外側の層に移して使う */
+function playExit(node: HTMLElement, left: number, top: number, size: Snapshot['size']) {
+  const t = readMotionTokens();
+  const ghost = node;
+  ghost.setAttribute('aria-hidden', 'true');
+  ghost.inert = true;
+  ghost.classList.add('list-motion-ghost');
+  // 位置と大きさは行ごとに違うので CSSOM で与える（CSP は style 属性を許さないが、CSSOM は許す）
+  ghost.style.left = `${left}px`;
+  ghost.style.top = `${top}px`;
+  ghost.style.width = `${size.w}px`;
+  ghost.style.height = `${size.h}px`;
+  document.body.append(ghost);
+  const animation = ghost.animate(
+    [
+      { opacity: 1, transform: 'none' },
+      { opacity: 0, transform: 'translateX(24px)' },
+    ],
+    { duration: t.fast, easing: t.easeOut, id: ANIMATION_ID },
+  );
+  const remove = () => ghost.remove();
+  animation.addEventListener('finish', remove);
+  animation.addEventListener('cancel', remove);
+}
+
+/**
+ * リストの行の追加・移動・並べ替えを、目で追える動きにする（FR-U01、DESIGN.md 4.18）。
+ * 描画のたびに `data-motion-key` の付いた行の位置を測り、前と比べて FLIP で動かす。
+ * 動かすのは transform と opacity だけで、入力は止めない。
+ * `ready` が false のあいだ（読み込み中）と、初めて ready になったときは動かさない（画面を開いたときに全行が動かないように）。
+ * `scope` が変わったとき（詳細ペインで別のタスクを選んだ、など）も、中身が入れ替わっただけなので動かさない。
+ */
+export function useListMotion(
+  root: RefObject<HTMLElement | null>,
+  ready: boolean,
+  scope: string | null = null,
+) {
+  const previous = useRef<Map<string, Snapshot> | null>(null);
+  const previousScope = useRef(scope);
+
+  useLayoutEffect(() => {
+    const container = root.current;
+    if (container === null || !ready) {
+      previous.current = null;
+      return;
+    }
+    const origin = container.getBoundingClientRect();
+    const base = offsetPosition(container);
+    const next = new Map<string, Snapshot>();
+    for (const el of container.querySelectorAll<HTMLElement>('[data-motion-key]')) {
+      const key = el.dataset['motionKey'];
+      if (key === undefined || el.offsetParent === null) continue;
+      // 位置は transform を含まない offset で測る。動きの途中でも、行の本来の位置が分かる
+      const o = offsetPosition(el);
+      next.set(key, {
+        position: { x: o.x - base.x, y: o.y - base.y },
+        node: el,
+        size: { w: el.offsetWidth, h: el.offsetHeight },
+      });
+    }
+
+    const before = previous.current;
+    previous.current = next;
+    const sameScope = previousScope.current === scope;
+    previousScope.current = scope;
+    if (before === null || !sameScope) return;
+    if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const positions = (snapshots: Map<string, Snapshot>) =>
+      new Map([...snapshots].map(([key, snap]) => [key, snap.position]));
+    // 本来の位置が変わらない行は、動きの途中でもそのままにする（再描画のたびに動かし直さない）
+    const plan = planListMotion(positions(before), positions(next));
+    if (plan.moves.length === 0 && plan.enters.length === 0 && plan.exits.length === 0) return;
+
+    const t = readMotionTokens();
+    for (const { key, dx, dy } of plan.moves) {
+      const snap = next.get(key);
+      if (snap === undefined) continue;
+      // 前後どちらも画面の外なら動かさない（長いリストでも重くしない）
+      const top = origin.top + snap.position.y;
+      if (!isVisible(top, snap.size.h) && !isVisible(top + dy, snap.size.h)) continue;
+      // 動きの途中で行き先が変わったら、今見えている位置から動かし直す
+      const running = snap.node.getAnimations().filter((a) => a.id === ANIMATION_ID);
+      let shift = { dx, dy };
+      if (running.length > 0) {
+        const r = snap.node.getBoundingClientRect();
+        shift = { dx: r.left - origin.left - snap.position.x, dy: r.top - top };
+        for (const a of running) a.cancel();
+      }
+      snap.node.animate(
+        [{ transform: `translate(${shift.dx}px, ${shift.dy}px)` }, { transform: 'none' }],
+        { duration: t.base, easing: t.easeInOut, id: ANIMATION_ID },
+      );
+    }
+    for (const key of plan.enters) {
+      const snap = next.get(key);
+      if (snap === undefined || !isVisible(origin.top + snap.position.y, snap.size.h)) continue;
+      snap.node.animate(
+        [
+          { opacity: 0, transform: 'translateY(-6px)' },
+          { opacity: 1, transform: 'none' },
+        ],
+        { duration: t.base, easing: t.easeOut, id: ANIMATION_ID },
+      );
+    }
+    for (const key of plan.exits) {
+      const snap = before.get(key);
+      // React が外した要素だけを使う（まだ画面にある要素は動かさない）
+      if (snap === undefined || snap.node.isConnected) continue;
+      const left = origin.left + snap.position.x;
+      const top = origin.top + snap.position.y;
+      if (!isVisible(top, snap.size.h)) continue;
+      playExit(snap.node, left, top, snap.size);
+    }
+  });
+}

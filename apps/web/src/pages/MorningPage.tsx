@@ -5,7 +5,7 @@ import {
   STATUS_LABELS,
 } from '@mymind/domain';
 import { Link } from '@tanstack/react-router';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { ApiError } from '../api/client';
 import { useSetCondition } from '../api/feedback';
 import { useCarryover, useConfirmPlan } from '../api/morning';
@@ -17,6 +17,7 @@ import { PageLayout } from '../components/PageLayout';
 import { dayOf, formatDayHeading, formatDaysAgo } from '../day';
 import { useDayGuard } from '../dayGuard';
 import { useKeyBindings } from '../keyboard';
+import { useListMotion } from '../listMotion';
 
 const DECISIONS: readonly { value: CarryoverDecision; label: string }[] = [
   { value: 'today', label: '今日もやる' },
@@ -62,6 +63,9 @@ export function MorningPage() {
   const day = guard.day;
   const carryover = useCarryover(day);
   const backlog = useBacklog();
+  // 行の出入りを目で追えるようにする（DESIGN.md 4.18）
+  const listRoot = useRef<HTMLDivElement>(null);
+  useListMotion(listRoot, carryover.isSuccess && backlog.isSuccess);
   const plan = useDayPlan(day);
   const confirm = useConfirmPlan(day);
   const [decisions, setDecisions] = useState<ReadonlyMap<string, CarryoverDecision>>(new Map());
@@ -187,7 +191,7 @@ export function MorningPage() {
   return (
     <PageLayout detail={detail} emptyNote={emptyNote}>
       {guard.dialog}
-      <div className="page morning">
+      <div className="page morning" ref={listRoot}>
         {header}
 
         <div className="morning-section-head">
@@ -206,6 +210,7 @@ export function MorningPage() {
             {candidates.map((task) => (
               <li
                 key={task.id}
+                data-motion-key={task.id}
                 className="morning-row"
                 data-selected={task.id === selectedId}
                 aria-current={task.id === selectedId ? 'true' : undefined}
@@ -268,6 +273,7 @@ export function MorningPage() {
               return (
                 <li
                   key={task.id}
+                  data-motion-key={task.id}
                   className="morning-row"
                   data-selected={task.id === selectedId}
                   data-added={added}

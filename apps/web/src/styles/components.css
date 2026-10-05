@@ -2313,3 +2313,16 @@
 .status-icon:not(:disabled):active {
   transform: scale(var(--press-scale-icon));
 }
+
+/*
+ * リストからなくなった行の写し（DESIGN.md 4.18、apps/web/src/listMotion.ts）。
+ * 元の場所に重ねて消すだけなので、操作も読み上げも受けない。位置と大きさは行ごとに CSSOM で与える
+ */
+.list-motion-ghost {
+  position: fixed;
+  z-index: 4;
+  box-sizing: border-box;
+  margin: 0;
+  list-style: none;
+  pointer-events: none;
+}
