@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { type MotionItem, parseDuration, planListMotion, type RowPosition } from './listMotion';
+import {
+  type MotionItem,
+  parseDuration,
+  planListMotion,
+  type RowPosition,
+  survivingDescendants,
+} from './listMotion';
 
 const at = (entries: [string, number][]) =>
   new Map<string, RowPosition>(entries.map(([key, y]) => [key, { x: 0, y }]));
@@ -130,6 +136,30 @@ describe('FR-U01 リストの行の動き（DESIGN.md 4.18）', () => {
         new Map(),
       );
       expect(plan.exits).toEqual(['open']);
+    });
+
+    it('最後の完了タスクを未完了へ戻すと、「完了」の面の写しからその行を隠す', () => {
+      const previous = new Map([
+        ['open', item(100)],
+        ['a', item(110, 'open')],
+        ['closed', item(200)],
+        ['b', item(210, 'closed')],
+      ]);
+      const next = new Map([
+        ['open', item(100)],
+        ['a', item(110, 'open')],
+        ['b', item(160, 'open')],
+      ]);
+      expect(planListMotion(previous, next).exits).toEqual(['closed']);
+      expect(survivingDescendants(previous, next, 'closed')).toEqual(['b']);
+    });
+
+    it('面と一緒に消える行は、写しの中で隠さない', () => {
+      const previous = new Map([
+        ['closed', item(200)],
+        ['b', item(210, 'closed')],
+      ]);
+      expect(survivingDescendants(previous, new Map(), 'closed')).toEqual([]);
     });
   });
 });

@@ -63,6 +63,27 @@ export function planListMotion(
   return { moves, enters, exits };
 }
 
+/**
+ * 消える要素（exitKey）の中にあって、次の描画にも残る子孫の key。
+ * 最後の完了タスクを未完了へ戻すと「完了」の面は消えるが、その行は別の面へ移って残るので、
+ * 面の写しからその行を隠し、同じタスクが二重に見えないようにする
+ */
+export function survivingDescendants(
+  previous: ReadonlyMap<string, MotionItem>,
+  next: ReadonlyMap<string, MotionItem>,
+  exitKey: string,
+): string[] {
+  const isInside = (key: string) => {
+    let parent = previous.get(key)?.parent;
+    while (parent !== null && parent !== undefined) {
+      if (parent === exitKey) return true;
+      parent = previous.get(parent)?.parent;
+    }
+    return false;
+  };
+  return [...previous.keys()].filter((key) => next.has(key) && isInside(key));
+}
+
 /** CSS 変数の時間（"200ms"、"0.2s"）をミリ秒にする */
 export function parseDuration(value: string): number {
   const n = Number.parseFloat(value);
@@ -115,10 +136,23 @@ function motionParent(el: HTMLElement, container: HTMLElement): string | null {
 
 const isVisible = (top: number, height: number) => top + height > 0 && top < window.innerHeight;
 
-/** なくなった行の写しを、元の場所に重ねて消す。React が外した要素を、画面の外側の層に移して使う */
-function playExit(node: HTMLElement, left: number, top: number, size: Snapshot['size']) {
+/**
+ * なくなった行の写しを、元の場所に重ねて消す。React が外した要素を、画面の外側の層に移して使う。
+ * hidden は写しの中で隠す子孫の key（別の場所へ移って残る行）
+ */
+function playExit(
+  node: HTMLElement,
+  left: number,
+  top: number,
+  size: Snapshot['size'],
+  hidden: readonly string[],
+) {
   const t = readMotionTokens();
   const ghost = node;
+  for (const el of ghost.querySelectorAll<HTMLElement>('[data-motion-key]')) {
+    const key = el.dataset['motionKey'];
+    if (key !== undefined && hidden.includes(key)) el.style.visibility = 'hidden';
+  }
   ghost.setAttribute('aria-hidden', 'true');
   ghost.inert = true;
   ghost.classList.add('list-motion-ghost');
@@ -238,7 +272,13 @@ export function useListMotion(
       const left = origin.left + snap.position.x;
       const top = origin.top + snap.position.y;
       if (!isVisible(top, snap.size.h)) continue;
-      playExit(snap.node, left, top, snap.size);
+      playExit(
+        snap.node,
+        left,
+        top,
+        snap.size,
+        survivingDescendants(positions(before), positions(next), key),
+      );
     }
   });
 }
