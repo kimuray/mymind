@@ -312,6 +312,8 @@ CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 | 夜 | 21:30 | その日の振り返りが未保存 | 「今日は3件完了。競合調査が待ちのまま5日目です」 |
 | 棚卸し | 日曜 21:45 | 棚卸しの対象が1件以上 | 「30日以上触れていないタスクが4件あります」 |
 
+種類ごとのオン・オフと時刻（棚卸しは曜日も）は設定（`morningNotification`、`eveningNotification`、`inventoryNotification`）で変えられます。オフの種類は予定を持たず、設定を保存したらスケジューラの予定を組み直します（FR-N04）。
+
 PCがスリープしていて時刻を過ぎた場合は、復帰後2時間以内であれば送り、それを過ぎたらその日は送りません。
 
 通知を送るかと通知文は `domain` の `composeMorning`・`composeEvening`・`composeInventory` が決め、件数や日数はサーバー（`apps/server/src/notifications.ts`）が画面と同じ関数で数えて渡します（FR-A10）。

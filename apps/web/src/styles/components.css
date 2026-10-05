@@ -1619,6 +1619,19 @@
   margin-right: var(--space-2);
 }
 
+.settings-time,
+.settings-select {
+  flex-shrink: 0;
+  min-height: 40px;
+  padding: 0 var(--space-3);
+  border: var(--button-secondary-border);
+  border-radius: var(--radius-m);
+  background: var(--button-secondary-bg);
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink-1);
+}
+
 .settings-path {
   flex-shrink: 0;
   width: 280px;

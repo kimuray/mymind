@@ -76,6 +76,8 @@ export type ApiDeps = {
   logs: DailyLogRepository;
   /** 画面のバナーに出す通知と、ブラウザの通知の許可の状態（FR-N05）。省くと空の状態で始める */
   notifications?: NotificationsApiDeps;
+  /** 設定を保存したあとに呼ぶ（通知の予定の組み直し、FR-N04） */
+  onSettingsChange?: () => void;
 };
 
 const dayParam = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD の形式で指定してください');
@@ -261,6 +263,7 @@ export function createApi({
     permission: createBrowserPermissionState(),
     events: jobs.events,
   },
+  onSettingsChange,
 }: ApiDeps) {
   /**
    * 一覧の各行に、画面で必要な値を加える。日数や件数はここで計算し、画面や AI には計算させない。
@@ -860,7 +863,7 @@ export function createApi({
   return taskRoutes
     .route('/', createJobsApi(jobs))
     .route('/', createHealthApi(health))
-    .route('/', createSettingsApi(settings, settingsDefaults, settingsRuntime))
+    .route('/', createSettingsApi(settings, settingsDefaults, settingsRuntime, onSettingsChange))
     .route('/', createNotificationsApi(notifications));
 }
 

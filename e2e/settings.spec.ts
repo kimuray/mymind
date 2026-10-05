@@ -225,3 +225,48 @@ test.describe('FR-N05 通知', () => {
     await expect(detail.getByRole('button', { name: 'ブラウザの通知を許可する' })).toBeVisible();
   });
 });
+
+test.describe('FR-N04 通知の設定', () => {
+  test('種類ごとにオン・オフと時刻、棚卸しの曜日を変えて保存できる', async ({ page }) => {
+    await page.goto('/settings');
+    const section = page.getByRole('region', { name: '通知の設定' });
+    const evening = section.getByRole('checkbox', { name: /^夜の通知/ });
+    const eveningTime = section.getByLabel('夜の通知の時刻');
+    await expect(evening).toBeChecked();
+    await expect(eveningTime).toHaveValue('21:30');
+    const read = async () =>
+      (
+        (await (await page.request.get('/api/settings')).json()) as {
+          settings: Record<string, unknown>;
+        }
+      ).settings;
+    try {
+      await eveningTime.fill('22:15');
+      await expect
+        .poll(read)
+        .toMatchObject({ eveningNotification: { enabled: true, time: '22:15' } });
+      await section.getByLabel('棚卸しの通知の曜日').selectOption('土曜');
+      await expect
+        .poll(read)
+        .toMatchObject({ inventoryNotification: { enabled: true, time: '21:45', weekday: 6 } });
+      await evening.uncheck();
+      await expect
+        .poll(read)
+        .toMatchObject({ eveningNotification: { enabled: false, time: '22:15' } });
+      await expect(eveningTime).toBeDisabled();
+    } finally {
+      await page.evaluate(async () => {
+        const token =
+          document.querySelector('meta[name="mymind-token"]')?.getAttribute('content') ?? '';
+        await fetch('/api/settings', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', 'X-Mymind-Token': token },
+          body: JSON.stringify({
+            eveningNotification: { enabled: true, time: '21:30' },
+            inventoryNotification: { enabled: true, time: '21:45', weekday: 0 },
+          }),
+        });
+      });
+    }
+  });
+});
