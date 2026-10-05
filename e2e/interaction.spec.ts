@@ -346,10 +346,20 @@ test.describe('FR-U04 画面の切り替え', () => {
     expect(await viewTransitions(page)).toEqual([['forward']]);
   });
 
-  test('サイドバーの選択中の印は、項目の後ろの面で示す', async ({ page }) => {
+  for (const path of ['/', '/settings']) {
+    test(`サイドバーの選択中の印は、項目の後ろの面で示す（${path}）`, async ({ page }) => {
+      await page.goto(path);
+      const active = page.locator('.nav-item.is-active .nav-highlight');
+      await expect(active).toHaveCount(1);
+      await expect(active).toHaveCSS('opacity', '1');
+      await expect(active).toHaveCSS('background-color', 'rgba(47, 75, 124, 0.12)');
+    });
+  }
+
+  test('どのサイドバーの項目にも、滑らせる選択中の印がある', async ({ page }) => {
     await page.goto('/');
-    const active = page.locator('.nav-item.is-active .nav-highlight');
-    await expect(active).toHaveCSS('opacity', '1');
-    await expect(active).toHaveCSS('background-color', 'rgba(47, 75, 124, 0.12)');
+    const items = page.locator('.pane-sidebar .nav-item');
+    const count = await items.count();
+    await expect(page.locator('.pane-sidebar .nav-item .nav-highlight')).toHaveCount(count);
   });
 });

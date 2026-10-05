@@ -195,6 +195,7 @@ export function AppShell() {
               className="nav-item"
               activeProps={{ className: 'nav-item is-active', 'aria-current': 'page' as const }}
             >
+              <span className="nav-highlight" aria-hidden="true" />
               <span className="nav-dot" aria-hidden="true" />
               <span className="nav-label">設定</span>
             </Link>
