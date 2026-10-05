@@ -1,5 +1,5 @@
 import { daysBetween, nextOnAdvance, type ReviewDecision, type Status } from '@mymind/domain';
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useRef, useState } from 'react';
 import { type StaleTask, useReviewDecision, useStaleTasks } from '../api/review';
 import {
   type ListTask,
@@ -18,6 +18,7 @@ import { TaskRow } from '../components/TaskRow';
 import { dayOf } from '../day';
 import { useDayGuard } from '../dayGuard';
 import { useKeyBindings } from '../keyboard';
+import { useListMotion } from '../listMotion';
 import { type ListRow, useTaskListKeys } from '../useTaskListKeys';
 
 /** 最後に触れてからの日数（「3日前」）。日数は domain で数える */
@@ -63,6 +64,9 @@ export function BacklogPage() {
   const screenDay = guard.day;
   const screen = { expectedDay: screenDay, ...(guard.allowPastDay ? { allowPastDay: true } : {}) };
   const backlog = useBacklog();
+  // 行の追加・移動・並べ替えを目で追えるようにする（DESIGN.md 4.18）
+  const listRoot = useRef<HTMLDivElement>(null);
+  useListMotion(listRoot, backlog.isSuccess);
   const create = useCreateTask();
   const transition = useTransition();
   const move = useMove();
@@ -152,7 +156,7 @@ export function BacklogPage() {
   return (
     <PageLayout detail={detail}>
       {guard.dialog}
-      <div className="page">
+      <div className="page" ref={listRoot}>
         <header className="page-header">
           <h1 className="text-display">バックログ</h1>
           <p className="text-small">{`覚えておくだけのタスク ${tasks.length}`}</p>

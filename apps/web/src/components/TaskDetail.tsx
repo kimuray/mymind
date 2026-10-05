@@ -5,9 +5,10 @@ import {
   type Status,
   TRANSITIONS,
 } from '@mymind/domain';
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { type ListTask, type TaskEventJson, useTaskEvents } from '../api/tasks';
 import { formatShortDay } from '../day';
+import { useListMotion } from '../listMotion';
 import { AddTaskInput } from './AddTaskInput';
 import { Button } from './Button';
 import { StatusBadge } from './StatusBadge';
@@ -71,6 +72,9 @@ export function TaskDetail({
 }: TaskDetailProps) {
   const [showOthers, setShowOthers] = useState(false);
   const events = useTaskEvents(task.id);
+  // 子タスクの出入りを目で追えるようにする（DESIGN.md 4.18）。別のタスクを選んだときは動かさない
+  const childList = useRef<HTMLUListElement>(null);
+  useListMotion(childList, true, task.id);
   const primary = PRIMARY[task.status];
   const others = TRANSITIONS[task.status].filter((s) => s !== primary.to);
   const inProgress =
@@ -121,9 +125,9 @@ export function TaskDetail({
         <section className="task-children-detail" aria-label="子タスク">
           <h3 className="text-label">子タスク</h3>
           {childTasks.length > 0 && (
-            <ul>
+            <ul ref={childList}>
               {childTasks.map((child) => (
-                <li key={child.id}>
+                <li key={child.id} data-motion-key={child.id}>
                   <span className="chip" data-status={child.status}>
                     {STATUS_LABELS[child.status]}
                   </span>

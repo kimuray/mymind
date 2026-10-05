@@ -145,3 +145,75 @@ test.describe('FR-T03 状態が変わった直後の動き', () => {
     await expect(row.locator('.si-fill')).toHaveCSS('animation-name', 'si-fill-grow');
   });
 });
+
+test.describe('FR-U01 リストの行の動き', () => {
+  // 動きがあることを確かめるため、このまとまりだけ「視差効果を減らす」を外す（DESIGN.md 2.7）。
+  // 画面の外の行は動かさないので、ほかのテストで今日のリストに行がたまっていても見えるよう、縦に広げる
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.setViewportSize({ width: 1440, height: 4000 });
+  });
+  // サンドボックスの中ではページを使い回すので、ほかのテストのために戻す
+  test.afterEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize({ width: 1440, height: 900 });
+  });
+
+  /** 行に付けた動き（Web Animations）を、行のタスク名ごとに記録する */
+  async function recordRowAnimations(page: Page) {
+    await page.evaluate(() => {
+      const log: string[] = [];
+      (window as unknown as { __rowAnimations: string[] }).__rowAnimations = log;
+      const original = Element.prototype.animate;
+      Element.prototype.animate = function (this: Element, keyframes, options) {
+        if (typeof options === 'object' && options.id === 'list-motion') {
+          log.push(this.querySelector('.task-name')?.textContent ?? '');
+        }
+        return original.call(this, keyframes, options);
+      };
+    });
+  }
+  const rowAnimations = (page: Page) =>
+    page.evaluate(() => (window as unknown as { __rowAnimations: string[] }).__rowAnimations);
+
+  test('画面を開いたときは、行を動かさない', async ({ page }) => {
+    await page.goto('/');
+    await addTask(page, '開いたときの行');
+    await page.reload();
+    await recordRowAnimations(page);
+    await expect(page.locator('.task-row', { hasText: '開いたときの行' })).toBeVisible();
+    expect(await rowAnimations(page)).toEqual([]);
+  });
+
+  test('並べ替えると、入れ替わった行が元の位置から滑って移る', async ({ page }) => {
+    await page.goto('/');
+    await addTask(page, '並べ替えの上');
+    await addTask(page, '並べ替えの下');
+    await recordRowAnimations(page);
+    await page.locator('.task-row', { hasText: '並べ替えの下' }).locator('.task-title').click();
+    await page.keyboard.press('Meta+ArrowUp');
+    await expect
+      .poll(async () => (await rowAnimations(page)).sort())
+      .toEqual(['並べ替えの上', '並べ替えの下']);
+  });
+
+  test('明日へ送った行は、元の場所で消える', async ({ page }) => {
+    await page.goto('/');
+    await addTask(page, '明日へ送る行');
+    await page.locator('.task-row', { hasText: '明日へ送る行' }).locator('.task-title').click();
+    await page.keyboard.press('t');
+    await expect(
+      page.locator('.task-row:not(.list-motion-ghost)', { hasText: '明日へ送る行' }),
+    ).toHaveCount(0);
+    // 写しは消え終わると取り除かれる
+    await expect(page.locator('.list-motion-ghost')).toHaveCount(0);
+  });
+
+  test('追加した行は、現れる動きで入る', async ({ page }) => {
+    await page.goto('/');
+    await addTask(page, '先にある行');
+    await recordRowAnimations(page);
+    await addTask(page, '追加して現れる行');
+    await expect.poll(() => rowAnimations(page)).toContain('追加して現れる行');
+  });
+});
