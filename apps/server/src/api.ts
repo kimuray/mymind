@@ -93,6 +93,15 @@ const periodDays = (from: string, to: string) => {
   return days;
 };
 
+/** タスク名の検索（FR-M02）。空白だけの語は受け付けない */
+const searchQuery = z.strictObject({
+  q: z
+    .string()
+    .trim()
+    .min(1, '検索の語を入れてください')
+    .max(100, '検索の語は100文字までにしてください'),
+});
+
 /** 更新系の API に共通する、画面が想定している状態（NFR-13、NFR-14） */
 const screenState = {
   /** 画面が表示している業務日。現在の業務日と違えば、allowPastDay がない限り拒否する */
@@ -250,12 +259,16 @@ export function createApi({
   const withListInfo = <T extends Task>(list: T[]) => {
     const parentIds = [...new Set(list.flatMap((t) => (t.parentId === null ? [] : [t.parentId])))];
     const parents = new Map(tasks.findMany(parentIds).map((p) => [p.id, p.title]));
+    // 履歴と子は、行ごとに問い合わせずにまとめて読む（NFR-18）
+    const ids = list.map((t) => t.id);
+    const events = tasks.listEventsOfTasks(ids);
+    const childrenOf = tasks.listChildrenOfMany(ids);
     return list.map((t) => {
-      const children = tasks.listChildren(t.id);
+      const children = childrenOf.get(t.id) ?? [];
       return {
         ...t,
         statusSince:
-          statusSinceDay(tasks.listEvents(t.id)) ??
+          statusSinceDay(events.get(t.id) ?? []) ??
           toBusinessDay(new Date(t.createdAt), dayOptions),
         parentTitle: t.parentId === null ? null : (parents.get(t.parentId) ?? null),
         children: {
@@ -719,6 +732,20 @@ export function createApi({
           : conflict(c, result.error);
       }
       return c.json({ task: result.task });
+    })
+
+    /** タスク名の部分一致で探す（FR-M02、MCP の search_tasks のため）。読み取りだけ */
+    .get('/tasks/search', (c) => {
+      const query = searchQuery.safeParse(c.req.query());
+      if (!query.success) {
+        return fail(
+          c,
+          400,
+          'INVALID_REQUEST',
+          query.error.issues[0]?.message ?? '検索の語が正しくありません',
+        );
+      }
+      return c.json({ tasks: withListInfo(tasks.searchByTitle(query.data.q)) });
     })
 
     .get('/tasks/:id/events', (c) => {
