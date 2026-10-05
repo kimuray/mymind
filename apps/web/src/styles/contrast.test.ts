@@ -5,6 +5,12 @@ import { describe, expect, it } from 'vitest';
 // ガラスの面の上の文字は、画面の E2E（axe）では背景色を決められないので、ここで確かめる
 
 const css = readFileSync(new URL('./tokens.css', import.meta.url), 'utf8');
+const components = readFileSync(new URL('./components.css', import.meta.url), 'utf8');
+
+/** 読み込み中の文と処理中のボタンを点滅させるときの、いちばん薄い不透明度（components.css の soft-pulse） */
+const pulseOpacity = Number(
+  components.match(/@keyframes soft-pulse\s*\{\s*50%\s*\{\s*opacity:\s*([\d.]+);/)?.[1],
+);
 
 type Rgba = [number, number, number, number];
 
@@ -83,5 +89,32 @@ describe('NFR-06 文字色のコントラスト', () => {
     const highlight = over(token('status-paused-bg'), over(token('glass-2'), surfaces.詳細ペイン));
     expect(contrast(token('status-paused-text'), highlight)).toBeGreaterThanOrEqual(4.5);
     expect(contrast(token('ink-2'), highlight)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  describe('点滅のいちばん薄いところ（DESIGN.md 4.19）', () => {
+    const grounds = { 地色: ground, 振り返りの地色: token('ground-evening') };
+    /** 要素ごと不透明度を下げたときの色（下の地が透ける） */
+    const faded = ([r, g, b]: Rgba, under: Rgba) => over([r, g, b, pulseOpacity], under);
+
+    it('点滅の不透明度を components.css から読める', () => {
+      expect(pulseOpacity).toBeGreaterThan(0);
+      expect(pulseOpacity).toBeLessThan(1);
+    });
+
+    for (const [name, under] of Object.entries(grounds)) {
+      it(`読み込み中の文（--ink-2）は、${name}の上で点滅しても 4.5:1 以上`, () => {
+        expect(contrast(faded(token('ink-2'), under), under)).toBeGreaterThanOrEqual(4.5);
+      });
+
+      it(`処理中の主ボタンの白い文字は、${name}の上で点滅しても 4.5:1 以上`, () => {
+        const fill = faded(token('accent'), under);
+        expect(contrast(faded(token('text-on-accent'), under), fill)).toBeGreaterThanOrEqual(4.5);
+      });
+
+      it(`処理中の確定ボタンの白い文字は、${name}の上で点滅しても 4.5:1 以上`, () => {
+        const fill = faded(over(token('button-confirm-bg'), under), under);
+        expect(contrast(faded(token('text-on-accent'), under), fill)).toBeGreaterThanOrEqual(4.5);
+      });
+    }
   });
 });

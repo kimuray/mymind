@@ -2370,8 +2370,8 @@
 .loading-note {
   margin: 0;
   font-size: 13px;
-  /* 点滅のいちばん薄いところでも、--ink-4 より薄く見えないようにする（ui.md） */
-  color: var(--ink-3);
+  /* 点滅のいちばん薄いところでも、振り返りの地（--ground-evening）の上で 4.5:1 を保つ（ui.md、NFR-06） */
+  color: var(--ink-2);
   animation: soft-pulse var(--motion-loop) var(--ease-in-out) infinite;
 }
 

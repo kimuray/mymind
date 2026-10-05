@@ -637,3 +637,31 @@ test.describe('NFR-03 読み込み中と処理中', () => {
     }
   });
 });
+
+test.describe('NFR-03 読み込みが終わったときのフェードイン', () => {
+  test.beforeEach(async ({ page }) => {
+    // 動きがあることを確かめるため、このまとまりだけ「視差効果を減らす」を外す（DESIGN.md 2.7）
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.addInitScript(() => {
+      const log: string[] = [];
+      (window as unknown as { __loadFades: string[] }).__loadFades = log;
+      const original = Element.prototype.animate;
+      Element.prototype.animate = function (this: Element, keyframes, options) {
+        if (typeof options === 'object' && options.id === 'load-fade') log.push(this.className);
+        return original.call(this, keyframes, options);
+      };
+    });
+  });
+  // サンドボックスの中ではページを使い回すので、ほかのテストのために戻す
+  test.afterEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+  });
+  const loadFades = (page: Page) =>
+    page.evaluate(() => (window as unknown as { __loadFades: string[] }).__loadFades);
+
+  test('カレンダーの月の記録を読み込んでから出すときは、フェードインさせる', async ({ page }) => {
+    await page.goto('/calendar/2026-10');
+    await expect(page.locator('.calendar-grid')).toBeVisible();
+    await expect.poll(() => loadFades(page)).toEqual([expect.stringContaining('calendar-grid')]);
+  });
+});

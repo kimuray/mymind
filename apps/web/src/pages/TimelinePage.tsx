@@ -7,6 +7,7 @@ import { Mame, MOOD_LABELS } from '../components/Mame';
 import { PageLayout } from '../components/PageLayout';
 import { currentDay, formatDayHeading } from '../day';
 import { useKeyBindings } from '../keyboard';
+import { useFadeInAfterLoading } from '../loadMotion';
 import { useSelectionMotion } from '../selectionMotion';
 
 /** 表示期間（FR-R01：1週間か2週間） */
@@ -180,6 +181,9 @@ export function TimelinePage() {
   const [to, setTo] = useState(today);
   const from = shiftDay(to, -(span - 1));
   const timeline = useTimeline(from, to);
+  // 読み込んでから出すときは、急に現れないようフェードインさせる（DESIGN.md 4.19）
+  const table = useRef<HTMLElement>(null);
+  useFadeInAfterLoading(table, timeline.isPending);
   const data = timeline.data;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   // 選択の面を行から行へ滑らせる（DESIGN.md 5.2）
@@ -267,6 +271,7 @@ export function TimelinePage() {
         {timeline.isPending && <Loading />}
         {data !== undefined && (
           <section
+            ref={table}
             className="timeline-table glass-2"
             aria-label={`${formatRange(data.from, data.to)}のタイムライン`}
             aria-busy={timeline.isPlaceholderData}

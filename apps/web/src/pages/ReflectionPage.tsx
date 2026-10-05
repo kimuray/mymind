@@ -18,6 +18,7 @@ import { DAY_OPTIONS, formatDateTime, formatDayHeading } from '../day';
 import { useDayGuard } from '../dayGuard';
 import { useKeyBindings } from '../keyboard';
 import { useListMotion } from '../listMotion';
+import { useFadeInAfterLoading } from '../loadMotion';
 import { useReflectionDrafts } from '../useReflectionDrafts';
 
 const sameDraft = (a: ReflectionDraft, b: ReflectionDraft) =>
@@ -73,6 +74,12 @@ export function ReflectionPage({ day: dayParam }: { day: string | undefined }) {
   const guard = useDayGuard(dayParam === undefined);
   const day = dayParam ?? guard.day;
   const log = useDayPlan(day);
+  // 読み込み中を経て入力欄を出すときは、フェードインさせる（DESIGN.md 4.19）。入力欄は読み込みの後に作られるので、ここで見て渡す
+  const sawLoading = useRef(false);
+  if (!log.isSuccess) sawLoading.current = true;
+  useEffect(() => {
+    if (log.isSuccess) sawLoading.current = false;
+  }, [log.isSuccess]);
 
   return (
     <>
@@ -82,6 +89,7 @@ export function ReflectionPage({ day: dayParam }: { day: string | undefined }) {
         <ReflectionEditor
           key={day}
           day={day}
+          fadeIn={sawLoading.current}
           isToday={day === guard.day}
           summary={log.data.summary}
           dayData={log.data}
@@ -108,12 +116,15 @@ export function ReflectionPage({ day: dayParam }: { day: string | undefined }) {
 
 function ReflectionEditor({
   day,
+  fadeIn,
   isToday,
   saved,
   summary,
   dayData,
 }: {
   day: string;
+  /** 読み込み中を経て作られたか。true なら、出るときにフェードインさせる */
+  fadeIn: boolean;
   isToday: boolean;
   saved: ReflectionDraft & { updatedAt: string | null };
   summary: DaySummaryData;
@@ -130,6 +141,7 @@ function ReflectionEditor({
   // 下書きの案内が出入りしても、入力欄が急に押し下げられないようにする（DESIGN.md 4.18、FR-T06）
   const pageRoot = useRef<HTMLDivElement>(null);
   useListMotion(pageRoot, true);
+  useFadeInAfterLoading(pageRoot, false, fadeIn);
   const [notice, setNotice] = useState('');
   const [previewKey, setPreviewKey] = useState<number | null>(null);
   const [modes, setModes] = useState<Record<FieldKey, MarkdownMode>>({
