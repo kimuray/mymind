@@ -35,7 +35,10 @@ export function resolveResources(input: {
   };
 }
 
-/** サーバーの子プロセスに渡す環境変数。今の環境（MYMIND_DATA_DIR、MYMIND_PORT など）に、成果物の場所を足す */
+/**
+ * サーバーの子プロセスに渡す環境変数。今の環境（MYMIND_DATA_DIR、MYMIND_PORT など）に、成果物の場所を足す。
+ * 待ち受けは必ず 127.0.0.1 にする（NFR-02）。起動した環境にコンテナ用の設定が残っていても引き継がない
+ */
 export function serverEnv(
   base: Record<string, string | undefined>,
   resources: Resources,
@@ -45,6 +48,8 @@ export function serverEnv(
   return {
     ...env,
     MYMIND_DESKTOP: '1',
+    MYMIND_HOST: '127.0.0.1',
+    MYMIND_IN_CONTAINER: '0',
     MYMIND_WEB_DIST: resources.webDist,
     MYMIND_PROMPTS_DIR: resources.prompts,
     MYMIND_MIGRATIONS_DIR: resources.migrations,

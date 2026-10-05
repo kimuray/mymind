@@ -81,7 +81,11 @@ export function loadConfig(
     };
   }
   const e = parsed.data;
-  if (e.MYMIND_HOST === ALL_INTERFACES && e.MYMIND_IN_CONTAINER !== '1') {
+  // デスクトップアプリはコンテナの中で動かないので、0.0.0.0 は常に拒否する（NFR-02）
+  if (
+    e.MYMIND_HOST === ALL_INTERFACES &&
+    (e.MYMIND_IN_CONTAINER !== '1' || e.MYMIND_DESKTOP === '1')
+  ) {
     return { ok: false, error: { kind: 'all_interfaces_outside_container' } };
   }
   return {

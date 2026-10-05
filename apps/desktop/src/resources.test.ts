@@ -41,9 +41,19 @@ describe('NFR-01 デスクトップアプリがサーバーに渡す成果物の
       MYMIND_DATA_DIR: '/data',
       MYMIND_PORT: '4820',
       MYMIND_DESKTOP: '1',
+      MYMIND_HOST: '127.0.0.1',
+      MYMIND_IN_CONTAINER: '0',
       MYMIND_WEB_DIST: '/repo/apps/web/dist',
       MYMIND_PROMPTS_DIR: '/repo/prompts',
       MYMIND_MIGRATIONS_DIR: '/repo/packages/db/migrations',
     });
+  });
+
+  it('NFR-02 起動した環境にコンテナ用の待ち受けの設定があっても、127.0.0.1 で待ち受けさせる', () => {
+    const env = serverEnv(
+      { MYMIND_HOST: '0.0.0.0', MYMIND_IN_CONTAINER: '1' },
+      resolveResources({ isPackaged: false, resourcesPath: '', appDir: '/repo/apps/desktop' }),
+    );
+    expect(env).toMatchObject({ MYMIND_HOST: '127.0.0.1', MYMIND_IN_CONTAINER: '0' });
   });
 });

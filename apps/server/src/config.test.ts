@@ -156,4 +156,10 @@ describe('NFR-01 デスクトップアプリから渡す設定', () => {
       error: { kind: 'invalid_env' },
     });
   });
+
+  it('NFR-02 デスクトップアプリの子プロセスでは、コンテナの指定があっても 0.0.0.0 を拒否する', () => {
+    expect(
+      loadConfig({ MYMIND_HOST: '0.0.0.0', MYMIND_IN_CONTAINER: '1', MYMIND_DESKTOP: '1' }),
+    ).toEqual({ ok: false, error: { kind: 'all_interfaces_outside_container' } });
+  });
 });
