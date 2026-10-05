@@ -8,6 +8,12 @@ const WATCHED = ['keydown', 'pointerdown', 'focusin'] as const;
 /** サーバーが業務日の不一致（409 DAY_CHANGED）を返したときに、main.tsx が送る出来事の名前 */
 export const DAY_CHANGED_EVENT = 'mymind:day-changed';
 
+/** 今フォーカスのある要素（なければ null）。ダイアログを閉じたら、ここへ戻す */
+function focusedElement(): HTMLElement | null {
+  const el = document.activeElement;
+  return el instanceof HTMLElement && el !== document.body ? el : null;
+}
+
 /**
  * 業務日の切り替え検知（NFR-14、architecture.md 12.4）。
  * 画面は表示している業務日を持ち、入力系の操作のたびに今の業務日と比べる。変わっていたら操作を止めて、
@@ -19,6 +25,8 @@ export function useDayGuard(enabled = true) {
   const [allowPastDay, setAllowPastDay] = useState(false);
   const [changedTo, setChangedTo] = useState<string | null>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
+  // ダイアログを閉じたら、開く前にフォーカスがあった場所へ戻す（DESIGN.md 4.9、NFR-06）
+  const returnFocus = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (!enabled) return;
@@ -37,6 +45,10 @@ export function useDayGuard(enabled = true) {
         e.preventDefault();
         e.stopPropagation();
       }
+      // focusin のあいだは activeElement がまだ前の要素なので、フォーカスを受けようとした要素を覚える。
+      // ダイアログの既定のボタンへフォーカスが移るときも、古い状態のままここへ来るので、最初の要素を保つ
+      returnFocus.current ??=
+        e.type === 'focusin' && e.target instanceof HTMLElement ? e.target : focusedElement();
       setChangedTo(now);
     };
     // 画面の処理より先に確かめるため、捕獲の段階で受け取る
@@ -49,10 +61,21 @@ export function useDayGuard(enabled = true) {
   // サーバーが 409（DAY_CHANGED）を返したときも、同じ選択を出す（画面の確認をすり抜けた場合の保険）
   useEffect(() => {
     if (!enabled) return;
-    const onServerDayChanged = () => setChangedTo(currentDay());
+    const onServerDayChanged = () => {
+      returnFocus.current ??= focusedElement();
+      setChangedTo(currentDay());
+    };
     window.addEventListener(DAY_CHANGED_EVENT, onServerDayChanged);
     return () => window.removeEventListener(DAY_CHANGED_EVENT, onServerDayChanged);
   }, [enabled]);
+
+  // 閉じたあと（ダイアログが外れてから）、覚えておいた場所へフォーカスを戻す
+  useEffect(() => {
+    if (changedTo !== null) return;
+    const target = returnFocus.current;
+    returnFocus.current = null;
+    if (target?.isConnected) target.focus();
+  }, [changedTo]);
 
   const dialog =
     changedTo === null ? null : (
