@@ -2,7 +2,7 @@ import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { desktopMessageSchema } from '@mymind/server/desktop-bridge';
 import { app, BrowserWindow, dialog, shell, utilityProcess } from 'electron';
-import { isAppUrl, isExternalWebUrl } from './navigation';
+import { isAppUrl, isExpectedServerUrl, isExternalWebUrl, serverPort } from './navigation';
 import { resolveResources, serverEnv } from './resources';
 import { createSupervisor, type ServerProcess } from './supervisor';
 
@@ -90,7 +90,18 @@ const supervisor = createSupervisor({
   start: startServer,
   parseMessage: (raw) => {
     const parsed = desktopMessageSchema.safeParse(raw);
-    return parsed.success ? parsed.data : null;
+    if (!parsed.success) return null;
+    // 起動したときに決めた 127.0.0.1 のポートでなければ開かず、起動できなかったことにする（ADR-0007）
+    if (
+      parsed.data.type === 'ready' &&
+      !isExpectedServerUrl(parsed.data.url, serverPort(process.env))
+    ) {
+      return {
+        type: 'fatal',
+        reason: `サーバーが知らせた URL（${parsed.data.url}）が想定と違います`,
+      };
+    }
+    return parsed.data;
   },
   now: () => Date.now(),
   onReady: (url) => {
