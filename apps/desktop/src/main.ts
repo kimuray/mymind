@@ -17,11 +17,7 @@ import {
   utilityProcess,
 } from 'electron';
 import { buildAppMenu } from './appMenu';
-import {
-  readDesktopState,
-  shouldEnableLoginItemOnFirstRun,
-  writeDesktopState,
-} from './desktopState';
+import { initLoginItemOnce, readDesktopState, writeDesktopState } from './desktopState';
 import { IPC, type LoginItemState } from './ipc';
 import { isAppUrl, isExpectedServerUrl, isExternalWebUrl, serverPort } from './navigation';
 import { handleNotifyRequest } from './notifications';
@@ -150,7 +146,17 @@ function registerIpc() {
   ipcMain.handle(IPC.setLoginItem, (event, enabled: unknown) => {
     if (!isFromApp(event)) throw new Error('アプリの画面からの依頼ではありません');
     if (typeof enabled !== 'boolean') throw new Error('オン・オフを指定してください');
-    if (app.isPackaged) app.setLoginItemSettings({ openAtLogin: enabled });
+    if (app.isPackaged) {
+      app.setLoginItemSettings({ openAtLogin: enabled });
+      // 利用者が選んだので、次の起動で「初めて」としてオンに戻さない（書けなくても選んだ設定は保つ）
+      try {
+        writeDesktopState(join(app.getPath('userData'), 'desktop-state.json'), {
+          loginItemInitialized: true,
+        });
+      } catch (e) {
+        console.warn('デスクトップアプリの状態を書けませんでした', e);
+      }
+    }
     return loginItemState();
   });
 }
@@ -165,9 +171,17 @@ function initLoginItem() {
     );
     return;
   }
-  if (!shouldEnableLoginItemOnFirstRun({ isPackaged: app.isPackaged, read })) return;
-  app.setLoginItemSettings({ openAtLogin: true });
-  writeDesktopState(statePath, { loginItemInitialized: true });
+  const result = initLoginItemOnce({
+    isPackaged: app.isPackaged,
+    read,
+    write: (state) => writeDesktopState(statePath, state),
+    enable: () => app.setLoginItemSettings({ openAtLogin: true }),
+  });
+  if (typeof result === 'object') {
+    console.warn(
+      `デスクトップアプリの状態を書けないので、ログイン時の起動は変えません（${result.failed}）`,
+    );
+  }
 }
 
 const startServer = (): ServerProcess => {
