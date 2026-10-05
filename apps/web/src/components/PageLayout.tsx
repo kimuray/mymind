@@ -10,12 +10,15 @@ export function PageLayout({
   children,
   detail,
   detailKey,
+  detailLoading = false,
   emptyNote = '項目を選ぶと、ここに詳細が表示されます',
 }: {
   children: ReactNode;
   detail?: ReactNode;
   /** 詳細に出している項目の識別子。変わったら中身の入れ替えに動きを付ける（省くと、出ているかどうかだけで判断する） */
   detailKey?: string | null;
+  /** 詳細の元のデータを読み込んでいるか。読み込みが終わって中身が出たときは動かさない */
+  detailLoading?: boolean;
   /** 詳細がないときに出す案内 */
   emptyNote?: string;
 }) {
@@ -23,6 +26,7 @@ export function PageLayout({
   useDetailSwap(
     content,
     detail === undefined ? null : detailKey === undefined ? 'detail' : detailKey,
+    detailLoading,
   );
   return (
     <>

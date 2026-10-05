@@ -658,7 +658,7 @@ export function SettingsPage() {
     );
 
   return (
-    <PageLayout detail={detail} detailKey={selected}>
+    <PageLayout detail={detail} detailKey={selected} detailLoading={health.data === undefined}>
       <div className="page" ref={pageRoot}>
         <header className="page-header">
           <h1 className="text-display">設定</h1>
