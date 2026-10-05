@@ -7,7 +7,7 @@ import type { Logger } from './logger';
 import type { NotificationAdapter } from './notifications';
 
 /** 通知を出す手段（architecture.md 9.2）。この順に、使えるものを選ぶ */
-export type NotificationChannelName = 'macos' | 'browser' | 'banner';
+export type NotificationChannelName = 'desktop' | 'macos' | 'browser' | 'banner';
 
 export type NotificationChannel = NotificationAdapter & {
   name: NotificationChannelName;
@@ -87,6 +87,20 @@ export function notifierArgs(notification: Notification, baseUrl: string): strin
     '-group',
     `mymind-${notification.kind}`,
   ];
+}
+
+/**
+ * デスクトップアプリの OS の通知（ADR-0015、FR-N05）。メインプロセスに頼み、出せたかの返事を待つ。
+ * デスクトップアプリの子プロセスとして動いているときだけ使う
+ */
+export function createDesktopChannel(notifier: {
+  notify: (notification: Notification) => Promise<CommandResult>;
+}): NotificationChannel {
+  return {
+    name: 'desktop',
+    isAvailable: () => true,
+    notify: (notification) => notifier.notify(notification),
+  };
 }
 
 /** macOS の通知（terminal-notifier）。コマンドが見つかるときだけ使う */

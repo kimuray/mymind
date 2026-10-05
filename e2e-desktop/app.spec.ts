@@ -86,4 +86,13 @@ test.describe('NFR-01 デスクトップアプリ', () => {
     await expect(section.getByRole('checkbox')).toBeDisabled();
     await expect(section).toContainText('開発用の起動では切り替えられません');
   });
+
+  test('FR-N05 設定の状態に、デスクトップアプリの通知を使うことを出す', async () => {
+    const window = await app.firstWindow();
+    await expect(window.getByLabel('今日のタスクを追加')).toBeVisible({ timeout: 30_000 });
+    await window.goto(`http://127.0.0.1:${PORT}/settings`);
+    const row = window.getByRole('button', { name: /^通知/ });
+    await expect(row).toContainText('デスクトップアプリの通知');
+    await expect(row).toContainText('使えます');
+  });
 });

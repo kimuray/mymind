@@ -33,7 +33,7 @@ import {
 import { type ConfigError, loadConfig } from './config';
 import { createDailyBackupJob, dailyBackupDir } from './dailyBackup';
 import { acquireLock, ensureDataDir, issueSessionToken } from './dataDir';
-import { desktopParentPort } from './desktopBridge';
+import { createDesktopNotifier, desktopParentPort } from './desktopBridge';
 import { createEventBus } from './events';
 import { createJobRunner } from './jobRunner';
 import { listen } from './listen';
@@ -43,6 +43,7 @@ import {
   createBannerChannel,
   createBrowserChannel,
   createBrowserPermissionState,
+  createDesktopChannel,
   createMacosChannel,
   createNotificationRouter,
   createPendingNotifications,
@@ -196,11 +197,18 @@ async function main(): Promise<number> {
   const pendingNotifications = createPendingNotifications(() => new Date());
   const browserPermission = createBrowserPermissionState();
   const notifierCommand = () => findExecutable(NOTIFIER_COMMAND, process.env['PATH']);
-  const notificationChannels = [
-    createMacosChannel({ command: notifierCommand, baseUrl: `http://127.0.0.1:${port}` }),
-    createBrowserChannel({ events, permission: browserPermission }),
-    createBannerChannel({ pending: pendingNotifications, events }),
-  ];
+  // デスクトップアプリでは OS の通知だけを使い、出せなかったときは画面のバナーに回す（ADR-0015）
+  const notificationChannels =
+    parent === null
+      ? [
+          createMacosChannel({ command: notifierCommand, baseUrl: `http://127.0.0.1:${port}` }),
+          createBrowserChannel({ events, permission: browserPermission }),
+          createBannerChannel({ pending: pendingNotifications, events }),
+        ]
+      : [
+          createDesktopChannel(createDesktopNotifier(parent)),
+          createBannerChannel({ pending: pendingNotifications, events }),
+        ];
   // 朝・夜・棚卸しの通知（FR-N01〜N03）。オン・オフと時刻は設定で変えられ、変えたら組み直す（FR-N04）
   for (const job of createNotificationJobs({
     tasks,

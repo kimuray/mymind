@@ -70,6 +70,7 @@ type Row = {
 };
 
 const CHANNEL_NAMES: Record<string, string> = {
+  desktop: 'デスクトップアプリの通知',
   macos: 'macOS の通知',
   browser: 'ブラウザの通知',
   banner: '画面のバナー',
@@ -90,9 +91,11 @@ function notificationRow(n: NonNullable<Health['notifications']>): Row {
     label: '通知',
     value: CHANNEL_NAMES[channel] ?? channel,
     note:
-      n.command !== null
-        ? n.command
-        : 'terminal-notifier が見つかりません。ブラウザの通知か、画面のバナーで知らせます',
+      channel === 'desktop'
+        ? 'OS の通知で知らせます。出せなかったときは、画面のバナーで知らせます'
+        : n.command !== null
+          ? n.command
+          : 'terminal-notifier が見つかりません。ブラウザの通知か、画面のバナーで知らせます',
     chip:
       channel === 'banner'
         ? { status: 'waiting', text: 'バナーだけ' }
@@ -243,19 +246,31 @@ function NotificationDetail({
           <h3>{row.value}</h3>
           <Chip chip={row.chip} />
         </div>
-        <dl className="settings-facts">
-          <dt>terminal-notifier</dt>
-          <dd>{status.command ?? '見つかりません'}</dd>
-          <dt>ブラウザの通知</dt>
-          <dd>{PERMISSION_NAMES[permission]}</dd>
-        </dl>
+        {status.channel !== 'desktop' && (
+          <dl className="settings-facts">
+            <dt>terminal-notifier</dt>
+            <dd>{status.command ?? '見つかりません'}</dd>
+            <dt>ブラウザの通知</dt>
+            <dd>{PERMISSION_NAMES[permission]}</dd>
+          </dl>
+        )}
       </section>
-      <p className="text-small">
-        macOS の通知を使うには、ターミナルで <code>brew install terminal-notifier</code>{' '}
-        を実行してください。見つからないときは、アプリを開いているタブがあればブラウザの通知で、どちらも使えなければ次に画面を開いたときのバナーで知らせます。
-      </p>
-      {permission === 'default' && (
-        <Button onClick={() => void request()}>ブラウザの通知を許可する</Button>
+      {status.channel === 'desktop' ? (
+        <p className="text-small">
+          デスクトップアプリでは OS
+          の通知で知らせ、クリックするとその画面を開きます。届かないときは、macOS
+          の「システム設定」の「通知」で mymind が許可されているか確かめてください。
+        </p>
+      ) : (
+        <>
+          <p className="text-small">
+            macOS の通知を使うには、ターミナルで <code>brew install terminal-notifier</code>{' '}
+            を実行してください。見つからないときは、アプリを開いているタブがあればブラウザの通知で、どちらも使えなければ次に画面を開いたときのバナーで知らせます。
+          </p>
+          {permission === 'default' && (
+            <Button onClick={() => void request()}>ブラウザの通知を許可する</Button>
+          )}
+        </>
       )}
     </div>
   );
