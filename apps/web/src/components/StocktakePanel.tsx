@@ -1,6 +1,5 @@
 import { type ReviewDecision, STATUS_LABELS } from '@mymind/domain';
 import type { StaleTask } from '../api/review';
-import { AnimatedNumber } from './AnimatedNumber';
 import { Button } from './Button';
 import { Kbd } from './Kbd';
 import { ProgressBar } from './ProgressBar';
@@ -56,9 +55,8 @@ export function StocktakePanel({
       <div className="stocktake-progress">
         <p className="text-small">
           <span>進み具合</span>
-          <span>
-            <AnimatedNumber value={Math.min(done + 1, total)} /> / <AnimatedNumber value={total} />
-          </span>
+          {/* 進み具合の変化はバー（ProgressBar）の伸び縮みで見せる。数字は文のまま読み上げる */}
+          <span>{`${Math.min(done + 1, total)} / ${total}`}</span>
         </p>
         <ProgressBar value={done} max={total} label="棚卸しの進み具合" />
       </div>
