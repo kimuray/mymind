@@ -10,7 +10,7 @@ description: デザイントークン、コンポーネント、キーボード�
 
 ## デザイントークン
 
-色、角の丸み、余白、書体、ガラスの表現は、`DESIGN.md` で定義したトークン（CSS 変数）だけを使います。コンポーネントの中に `#2F4B7C` や `rgba(...)` を直書きしません。トークンの定義は `apps/web/src/styles/tokens.css` に置き、`pnpm design:check` でそれ以外のファイルにある色の直書きを検出します。新しい値が必要になったら、先に `DESIGN.md` と `tokens.css` に追加します。
+色、角の丸み、余白、書体、ガラスの表現、動きの時間と緩急は、`DESIGN.md` で定義したトークン（CSS 変数）だけを使います。コンポーネントの中に `#2F4B7C` や `rgba(...)` を直書きしません。トークンの定義は `apps/web/src/styles/tokens.css` に置き、`pnpm design:check` でそれ以外のファイルにある色の直書きと、`transition`・`animation` の時間と緩急の直書きを検出します。動かすのは `transform` と `opacity` だけにします（DESIGN.md 2.7）。新しい値が必要になったら、先に `DESIGN.md` と `tokens.css` に追加します。
 
 ## コンポーネント
 

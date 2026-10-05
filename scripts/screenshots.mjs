@@ -44,7 +44,8 @@ try {
   await seed();
   const isClaudeSandbox = process.env.SANDBOX_RUNTIME === '1';
   const browser = await chromium.launch(isClaudeSandbox ? { args: ['--single-process'] } : {});
-  const page = await browser.newPage({ viewport: VIEWPORT });
+  // 動きの途中を撮らないよう、「視差効果を減らす」で開く（DESIGN.md 2.7。E2E と同じ）
+  const page = await browser.newPage({ viewport: VIEWPORT, reducedMotion: 'reduce' });
   const ym = businessDay().slice(0, 7);
   const initialSettings = await settings();
   for (const screen of screens) {
