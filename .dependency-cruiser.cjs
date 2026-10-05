@@ -23,6 +23,13 @@ module.exports = {
       to: { path: '^(apps/|packages/(mcp)/)' },
     },
     {
+      name: 'mcp-depends-only-on-domain',
+      comment: 'packages/mcp は DB を直接読まず、サーバーの API を呼ぶ（ADR-0014、FR-M03）',
+      severity: 'error',
+      from: { path: '^packages/mcp/' },
+      to: { path: '^(apps/|packages/(db|agent)/)' },
+    },
+    {
       name: 'no-child-process-outside-agent',
       comment: 'エージェントの起動は packages/agent の AgentRunner を経由する',
       severity: 'error',
