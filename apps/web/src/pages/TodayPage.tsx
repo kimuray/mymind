@@ -123,7 +123,7 @@ export function TodayPage() {
     );
 
   return (
-    <PageLayout detail={detail}>
+    <PageLayout detail={detail} detailKey={selected?.id ?? null}>
       {guard.dialog}
       <div className="page" ref={listRoot}>
         <header className="page-header">

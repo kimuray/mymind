@@ -146,10 +146,13 @@ ul {
     bottom: var(--space-4);
     width: 380px;
     transform: translateX(calc(100% + var(--space-4)));
+    /* 閉じるときは開くときより短く（DESIGN.md 2.7） */
+    transition: transform var(--motion-fast) var(--ease-out);
   }
 
   .pane-detail[data-open="true"] {
     transform: none;
+    transition-duration: var(--motion-base);
   }
 }
 

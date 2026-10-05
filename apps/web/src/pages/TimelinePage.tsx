@@ -211,6 +211,7 @@ export function TimelinePage() {
           <TaskBreakdown task={selected} today={data.today} />
         )
       }
+      detailKey={selected?.id ?? null}
       emptyNote="タスクの行を選ぶと、期間の内訳が表示されます"
     >
       <div className="page timeline" ref={pageRoot}>

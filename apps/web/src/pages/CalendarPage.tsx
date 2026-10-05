@@ -321,6 +321,8 @@ export function CalendarPage({ ym, day }: { ym: string; day: string | undefined 
           <CalendarDetail key={`${ym}-${day ?? ''}`} ym={ym} data={data} selected={selected} />
         )
       }
+      detailKey={`${ym}-${day ?? ''}`}
+      detailLoading={data === undefined}
       emptyNote="月の記録を読み込んでいます"
     >
       <div className="page calendar">
