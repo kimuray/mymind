@@ -147,12 +147,16 @@ test.describe('FR-T03 状態が変わった直後の動き', () => {
 });
 
 test.describe('FR-U01 リストの行の動き', () => {
-  // 動きがあることを確かめるため、このまとまりだけ「視差効果を減らす」を外す（DESIGN.md 2.7）
+  // 動きがあることを確かめるため、このまとまりだけ「視差効果を減らす」を外す（DESIGN.md 2.7）。
+  // 画面の外の行は動かさないので、ほかのテストで今日のリストに行がたまっていても見えるよう、縦に広げる
   test.beforeEach(async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.setViewportSize({ width: 1440, height: 4000 });
   });
+  // サンドボックスの中ではページを使い回すので、ほかのテストのために戻す
   test.afterEach(async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize({ width: 1440, height: 900 });
   });
 
   /** 行に付けた動き（Web Animations）を、行のタスク名ごとに記録する */
