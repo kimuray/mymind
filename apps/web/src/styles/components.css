@@ -2163,7 +2163,8 @@
   transition: opacity var(--motion-fast) var(--ease-out);
 }
 
-:is(.button-primary, .button-confirm)::before {
+/* 基本のルール（.button:not(.button-text)）と同じ詳細度にし、後ろに書いて勝たせる */
+.button:is(.button-primary, .button-confirm)::before {
   background: var(--hover-fill-on-accent);
 }
 

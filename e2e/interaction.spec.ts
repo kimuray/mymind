@@ -41,6 +41,14 @@ test.describe('NFR-29 ホバーと押下の反応', () => {
     await expect(icon).toHaveCSS('transform', 'none');
   });
 
+  test('主ボタンには、藍色の面の上で見える白の層を重ねる', async ({ page }) => {
+    await page.goto('/');
+    const primary = page.getByRole('link', { name: /振り返りを書く/ });
+    expect(await primary.evaluate((el) => getComputedStyle(el, '::before').backgroundColor)).toBe(
+      'rgba(255, 255, 255, 0.12)',
+    );
+  });
+
   test('使えないボタンには、ホバーの層を重ねない', async ({ page }) => {
     await page.goto('/');
     // 使えない状態はデータの状態に左右されるので、共通のボタンの見た目のものを置いて確かめる
