@@ -10,6 +10,7 @@ import { ApiError } from '../api/client';
 import { useSetCondition } from '../api/feedback';
 import { useCarryover, useConfirmPlan } from '../api/morning';
 import { type ListTask, useBacklog, useDayPlan } from '../api/tasks';
+import { AnimatedNumber } from '../components/AnimatedNumber';
 import { Button } from '../components/Button';
 import { FeedbackPanel } from '../components/FeedbackPanel';
 import { Kbd } from '../components/Kbd';
@@ -203,7 +204,8 @@ export function MorningPage() {
           {carryoverTitle.note !== null && <p className="text-small">{carryoverTitle.note}</p>}
           {candidates.length > 0 && (
             <p className="text-small morning-progress">
-              {`${decidedCount} / ${candidates.length} 件を判断済み`}
+              <AnimatedNumber value={decidedCount} /> / <AnimatedNumber value={candidates.length} />{' '}
+              件を判断済み
             </p>
           )}
         </div>

@@ -42,6 +42,8 @@ test.describe('FR-R06 棚卸し', () => {
       const panel = page.getByRole('region', { name: '棚卸し' });
       await expect(panel).toBeVisible();
       await expect(panel).toContainText('0日以上触れていないタスクを1件ずつ判断');
+      // 進み具合は、読み上げに値を渡すバーで示す（DESIGN.md 4.20）
+      await expect(panel.getByRole('progressbar', { name: '棚卸しの進み具合' })).toBeVisible();
 
       // ほかのテストが残したタスクは「残す」で後ろへ回す（0日の設定では、残しても対象のまま後ろに並ぶ）
       // 同じ名前のタスクがほかのテストにあっても進んだと分かるよう、進み具合の表示が変わるのを待つ

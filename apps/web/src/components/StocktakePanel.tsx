@@ -1,7 +1,9 @@
 import { type ReviewDecision, STATUS_LABELS } from '@mymind/domain';
 import type { StaleTask } from '../api/review';
+import { AnimatedNumber } from './AnimatedNumber';
 import { Button } from './Button';
 import { Kbd } from './Kbd';
+import { ProgressBar } from './ProgressBar';
 
 export type ReviewCounts = Readonly<Record<ReviewDecision, number>>;
 
@@ -54,9 +56,11 @@ export function StocktakePanel({
       <div className="stocktake-progress">
         <p className="text-small">
           <span>進み具合</span>
-          <span>{`${Math.min(done + 1, total)} / ${total}`}</span>
+          <span>
+            <AnimatedNumber value={Math.min(done + 1, total)} /> / <AnimatedNumber value={total} />
+          </span>
         </p>
-        <progress value={done} max={total} aria-label="棚卸しの進み具合" />
+        <ProgressBar value={done} max={total} label="棚卸しの進み具合" />
       </div>
 
       {current === undefined ? (

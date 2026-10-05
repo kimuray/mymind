@@ -1715,28 +1715,23 @@
   margin: 0;
 }
 
-.stocktake-progress progress {
+/* 進み具合のバー（DESIGN.md 4.20）。塗りは scaleX で伸び縮みさせる */
+.progress-bar {
+  overflow: hidden;
   width: 100%;
   height: 8px;
-  border: none;
   border-radius: var(--radius-full);
   background: var(--code-bg);
-  appearance: none;
-  overflow: hidden;
 }
 
-.stocktake-progress progress::-webkit-progress-bar {
-  background: var(--code-bg);
-}
-
-.stocktake-progress progress::-webkit-progress-value {
+.progress-bar-fill {
+  display: block;
+  width: 100%;
+  height: 100%;
   border-radius: var(--radius-full);
   background: var(--accent);
-}
-
-.stocktake-progress progress::-moz-progress-bar {
-  border-radius: var(--radius-full);
-  background: var(--accent);
+  transform-origin: left center;
+  transition: transform var(--motion-base) var(--ease-out);
 }
 
 .stocktake-card {
@@ -2454,4 +2449,39 @@
 
 .saved-note[data-shown="true"] {
   opacity: 1;
+}
+
+/*
+ * 件数などの数字（DESIGN.md 4.20、NFR-29）。値が変わったときだけ、増えたら下から・減ったら上から入れる。
+ * 桁は tabular-nums で揃え、入れ替わるあいだも幅が変わらないようにする
+ */
+.animated-number {
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+}
+
+.animated-number-value {
+  display: inline-block;
+}
+
+.animated-number-value[data-change="up"] {
+  animation: number-up var(--motion-base) var(--ease-out) both;
+}
+
+.animated-number-value[data-change="down"] {
+  animation: number-down var(--motion-base) var(--ease-out) both;
+}
+
+@keyframes number-up {
+  from {
+    opacity: 0;
+    transform: translateY(0.5em);
+  }
+}
+
+@keyframes number-down {
+  from {
+    opacity: 0;
+    transform: translateY(-0.5em);
+  }
 }
