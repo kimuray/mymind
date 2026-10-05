@@ -1403,10 +1403,6 @@
   text-decoration: none;
 }
 
-.calendar-month-link:hover {
-  background: var(--button-secondary-bg);
-}
-
 .calendar-grid {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
@@ -2117,4 +2113,98 @@
   margin: 0;
   color: var(--ink-2);
   overflow-wrap: anywhere;
+}
+
+/*
+ * ホバーと押下（DESIGN.md 2.8）。塗りそのものは動かさず（2.7：transform と opacity だけ）、
+ * 要素の後ろに重ねた層の opacity と、要素の transform だけを変える。
+ * isolation で要素ごとに重なりを閉じ、層（z-index: -1）を要素の背景の上・中身の下に置く。
+ */
+:is(
+  .button:not(.button-text),
+  .status-icon,
+  .task-row,
+  .settings-row,
+  .morning-row,
+  .timeline-task,
+  .palette-option,
+  .segmented-item,
+  .condition-option,
+  .calendar-cell,
+  .calendar-month-link,
+  .nav-item
+) {
+  position: relative;
+  isolation: isolate;
+}
+
+:is(
+  .button:not(.button-text),
+  .status-icon,
+  .task-row,
+  .settings-row,
+  .morning-row,
+  .timeline-task,
+  .palette-option,
+  .segmented-item,
+  .condition-option,
+  .calendar-cell,
+  .calendar-month-link,
+  .nav-item
+)::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--hover-fill);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-fast) var(--ease-out);
+}
+
+:is(.button-primary, .button-confirm)::before {
+  background: var(--hover-fill-on-accent);
+}
+
+/* タッチの画面でホバーが残らないよう、ポインタで乗せられるときだけ */
+@media (hover: hover) {
+  :is(
+    .button:not(.button-text),
+    .status-icon,
+    .task-row,
+    .settings-row,
+    .morning-row,
+    .timeline-task,
+    .palette-option,
+    .segmented-item,
+    .condition-option,
+    .calendar-cell,
+    .calendar-month-link,
+    .nav-item
+  ):not(:disabled):hover::before {
+    opacity: 1;
+  }
+}
+
+/* 押下で沈む。行そのものは縮めず、行の中のボタンが縮む */
+:is(
+  .button,
+  .status-icon,
+  .segmented-item,
+  .condition-option,
+  .calendar-cell,
+  .calendar-month-link
+) {
+  transition: transform var(--motion-fast) var(--ease-out);
+}
+
+:is(.button, .segmented-item, .condition-option, .calendar-cell, .calendar-month-link):not(
+  :disabled
+):active {
+  transform: scale(var(--press-scale));
+}
+
+.status-icon:not(:disabled):active {
+  transform: scale(var(--press-scale-icon));
 }

@@ -199,10 +199,6 @@ ul {
   text-decoration: none;
 }
 
-.nav-item:hover {
-  background: var(--accent-soft);
-}
-
 .nav-item.is-active {
   background: var(--accent-soft);
   color: var(--accent-strong);
