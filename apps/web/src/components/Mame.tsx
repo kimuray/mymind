@@ -1,5 +1,6 @@
 // マメ（DESIGN.md 4.1）。形は docs/design/mockup-source/Mame.dc.html を 48×48 の座標系のまま写したもの。
 // 色は Mame.css のクラスで tokens.css の --mame-* を当てる（本番の CSP は style 属性を許さない。ADR-0007）。
+import { useRef } from 'react';
 import './Mame.css';
 
 export const MOODS = ['best', 'good', 'normal', 'bad', 'worst', 'sleep', 'think'] as const;
@@ -85,6 +86,13 @@ type MameProps = {
 /** 調子を表すキャラクター。画面ごとに描き直さず、必ずこのコンポーネントを使う（ui.md） */
 export function Mame({ mood, size = 44, label }: MameProps) {
   const s = SHAPES[mood];
+  // 表情が変わったあとだけ、ふわっと弾ませる（DESIGN.md 4.1）。最初に描くときは動かさない（カレンダーで並ぶマメが一斉に動かないように）
+  const shownMood = useRef(mood);
+  const changed = useRef(false);
+  if (shownMood.current !== mood) {
+    shownMood.current = mood;
+    changed.current = true;
+  }
   return (
     <svg
       className="mame"
@@ -95,57 +103,60 @@ export function Mame({ mood, size = 44, label }: MameProps) {
       role="img"
       aria-label={label ?? MOOD_LABELS[mood]}
     >
-      <ellipse className="mame-ground" cx="24" cy="44.4" rx="10.5" ry="1.7" opacity="0.08" />
-      <path className="mame-stem" d={s.stem} strokeWidth="1.4" strokeLinecap="round" />
-      <path
-        className="mame-leaf"
-        d={s.leaf}
-        fillOpacity="0.8"
-        strokeWidth="0.9"
-        strokeLinejoin="round"
-      />
-      {s.flower > 0 && (
-        <circle className="mame-flower" cx="24" cy="6.2" r={s.flower} strokeWidth="0.9" />
-      )}
-      <ellipse className="mame-body" cx="24" cy="29.5" rx="15.5" ry="14" fillOpacity="0.86" />
-      <ellipse className="mame-under" cx="24" cy="35.5" rx="12.5" ry="7.5" opacity="0.12" />
-      <ellipse
-        className="mame-rim"
-        cx="24"
-        cy="29.5"
-        rx="15.5"
-        ry="14"
-        strokeOpacity="0.9"
-        strokeWidth="1.1"
-      />
-      <path
-        className="mame-shine"
-        d="M12.3 27a12 11 0 0 1 8.6-9.6"
-        strokeWidth="2.2"
-        strokeLinecap="round"
-        opacity="0.9"
-      />
-      <circle className="mame-spark" cx="31.6" cy="19.6" r="1.2" opacity="0.85" />
-      <path
-        className="mame-face"
-        d={s.eyes}
-        strokeWidth="1.9"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        className="mame-face"
-        d={s.mouth}
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      {mood === 'think' && (
-        <g className="mame-bubbles">
-          <circle cx="38.5" cy="14" r="1.1" opacity="0.45" />
-          <circle cx="42" cy="9.5" r="1.6" opacity="0.45" />
-        </g>
-      )}
+      {/* 表情ごとに作り直し、変わった直後だけ CSS の動きを再生する */}
+      <g key={mood} className="mame-figure" data-animate={changed.current}>
+        <ellipse className="mame-ground" cx="24" cy="44.4" rx="10.5" ry="1.7" opacity="0.08" />
+        <path className="mame-stem" d={s.stem} strokeWidth="1.4" strokeLinecap="round" />
+        <path
+          className="mame-leaf"
+          d={s.leaf}
+          fillOpacity="0.8"
+          strokeWidth="0.9"
+          strokeLinejoin="round"
+        />
+        {s.flower > 0 && (
+          <circle className="mame-flower" cx="24" cy="6.2" r={s.flower} strokeWidth="0.9" />
+        )}
+        <ellipse className="mame-body" cx="24" cy="29.5" rx="15.5" ry="14" fillOpacity="0.86" />
+        <ellipse className="mame-under" cx="24" cy="35.5" rx="12.5" ry="7.5" opacity="0.12" />
+        <ellipse
+          className="mame-rim"
+          cx="24"
+          cy="29.5"
+          rx="15.5"
+          ry="14"
+          strokeOpacity="0.9"
+          strokeWidth="1.1"
+        />
+        <path
+          className="mame-shine"
+          d="M12.3 27a12 11 0 0 1 8.6-9.6"
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          opacity="0.9"
+        />
+        <circle className="mame-spark" cx="31.6" cy="19.6" r="1.2" opacity="0.85" />
+        <path
+          className="mame-face"
+          d={s.eyes}
+          strokeWidth="1.9"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <path
+          className="mame-face"
+          d={s.mouth}
+          strokeWidth="1.5"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {mood === 'think' && (
+          <g className="mame-bubbles">
+            <circle cx="38.5" cy="14" r="1.1" opacity="0.45" />
+            <circle cx="42" cy="9.5" r="1.6" opacity="0.45" />
+          </g>
+        )}
+      </g>
     </svg>
   );
 }

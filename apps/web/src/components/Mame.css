@@ -65,3 +65,40 @@
   fill: none;
   stroke: var(--mame-face);
 }
+
+/*
+ * 表情の変化と考え中の動き（DESIGN.md 4.1、NFR-29）。足元を中心に、transform と opacity だけを動かす。
+ * 表情が変わった直後は、少しつぶれてから弾んで戻る。考え中のあいだは、ゆっくり上下する
+ */
+.mame-figure {
+  transform-box: view-box;
+  transform-origin: 24px 44px;
+}
+
+.mame-figure[data-animate="true"] {
+  animation: mame-pop var(--motion-slow) var(--ease-spring) both;
+}
+
+.mame[data-mood="think"] .mame-figure {
+  animation: mame-bob var(--motion-loop) var(--ease-in-out) infinite;
+}
+
+/* 考え中に変わった直後は、弾んでから上下し始める */
+.mame[data-mood="think"] .mame-figure[data-animate="true"] {
+  animation:
+    mame-pop var(--motion-slow) var(--ease-spring) both,
+    mame-bob var(--motion-loop) var(--ease-in-out) var(--motion-slow) infinite;
+}
+
+@keyframes mame-pop {
+  from {
+    opacity: 0.6;
+    transform: scale(1.06, 0.9);
+  }
+}
+
+@keyframes mame-bob {
+  50% {
+    transform: translateY(-1.2px);
+  }
+}

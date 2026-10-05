@@ -1325,6 +1325,11 @@
   animation: notice-in var(--motion-base) var(--ease-out) both;
 }
 
+/* 振り返りの下端の知らせ（「保存しました」など）は、変わるたびに短くフェードインする */
+.notice-text {
+  animation: notice-in var(--motion-base) var(--ease-out) both;
+}
+
 @keyframes notice-in {
   from {
     opacity: 0;
@@ -1499,6 +1504,60 @@
 .feedback-steps li[data-active="true"] {
   font-weight: 600;
   color: var(--ink-1);
+}
+
+/*
+ * FB が届いたときと生成の進み具合の動き（DESIGN.md 4.6、NFR-29）。
+ * 進んだ段階は横から現れ、届いた本文は上から順にフェードインする（1つごとに --motion-fast ずつ遅らせる）
+ */
+.feedback-steps li[data-active="true"] {
+  animation: step-in var(--motion-base) var(--ease-out) both;
+}
+
+@keyframes step-in {
+  from {
+    opacity: 0.5;
+    transform: translateX(-4px);
+  }
+}
+
+.feedback-body[data-arrived="true"] > * {
+  animation: feedback-in var(--motion-slow) var(--ease-out) both;
+}
+
+.feedback-body[data-arrived="true"] > :nth-child(2) {
+  animation-delay: var(--motion-fast);
+}
+
+.feedback-body[data-arrived="true"] > :nth-child(3) {
+  animation-delay: calc(var(--motion-fast) * 2);
+}
+
+.feedback-body[data-arrived="true"] > :nth-child(n + 4) {
+  animation-delay: calc(var(--motion-fast) * 3);
+}
+
+@keyframes feedback-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+
+/* 押した調子の選択肢のマメは、小さく弾む */
+.condition-mame {
+  display: inline-flex;
+}
+
+.condition-mame[data-picked="true"] {
+  transform-origin: center bottom;
+  animation: mame-pick var(--motion-slow) var(--ease-spring) both;
+}
+
+@keyframes mame-pick {
+  from {
+    transform: scale(0.8);
+  }
 }
 
 /* カレンダー（DESIGN.md 4.14、Figma「PC/カレンダー」） */
