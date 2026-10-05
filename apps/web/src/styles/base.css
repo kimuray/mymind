@@ -299,6 +299,12 @@ ul {
   color: var(--ink-4);
 }
 
+.mame-gallery-demo {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+}
+
 .mame-gallery {
   border-collapse: collapse;
   font-size: 13px;

@@ -665,3 +665,72 @@ test.describe('NFR-03 読み込みが終わったときのフェードイン', (
     await expect.poll(() => loadFades(page)).toEqual([expect.stringContaining('calendar-grid')]);
   });
 });
+
+test.describe('FR-A05 マメの表情と FB の到着の動き', () => {
+  test.beforeEach(async ({ page }) => {
+    // 動きがあることを確かめるため、このまとまりだけ「視差効果を減らす」を外す（DESIGN.md 2.7）
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+  });
+  // サンドボックスの中ではページを使い回すので、ほかのテストのために戻す
+  test.afterEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+  });
+
+  test('並んだマメは、最初に描くときには動かさない', async ({ page }) => {
+    await page.goto('/dev/mame');
+    const figures = page.locator('.mame-figure[data-animate="true"]');
+    await expect(page.locator('.mame-figure').first()).toBeVisible();
+    await expect(figures).toHaveCount(0);
+  });
+
+  test('FB が届くと、マメが考え中から弾んで表情を変え、本文が上から順に現れる', async ({
+    page,
+  }) => {
+    await page.goto('/reflection');
+    const mame = page.locator('.feedback-mame .mame-figure');
+    await page.getByRole('textbox', { name: '思考の整理' }).fill('動きを確かめる振り返り');
+    await page.getByRole('button', { name: '保存してFBをもらう' }).click();
+    await expect(page.getByText('マメが考えています')).toBeVisible();
+    // 考え中のあいだは、ゆっくり上下する
+    await expect(page.locator('.feedback-mame .mame[data-mood="think"] .mame-figure')).toHaveCSS(
+      'animation-name',
+      /mame-bob/,
+    );
+    await expect(page.getByRole('heading', { name: '明日の一手' })).toBeVisible();
+    await expect(mame).toHaveAttribute('data-animate', 'true');
+    await expect(mame).toHaveCSS('animation-name', 'mame-pop');
+    const body = page.locator('.feedback-body');
+    await expect(body).toHaveAttribute('data-arrived', 'true');
+    await expect(body.locator('> .feedback-section').first()).toHaveCSS(
+      'animation-name',
+      'feedback-in',
+    );
+    await expect(body.locator('> :nth-child(2)')).toHaveCSS('animation-delay', '0.12s');
+  });
+
+  test('開いたときにすでにある FB は、動かさずに出す', async ({ page }) => {
+    await page.goto('/reflection');
+    // このテストの中で FB を用意してから開き直す（ほかのテストの順序に頼らない）
+    await page.getByRole('textbox', { name: '思考の整理' }).fill('開き直す前の振り返り');
+    await page.getByRole('button', { name: '保存してFBをもらう' }).click();
+    await expect(page.getByRole('heading', { name: '明日の一手' })).toBeVisible();
+    await page.reload();
+    await expect(page.getByRole('heading', { name: '明日の一手' })).toBeVisible();
+    await expect(page.locator('.feedback-body')).toHaveAttribute('data-arrived', 'false');
+    await expect(page.locator('.feedback-mame .mame-figure')).toHaveAttribute(
+      'data-animate',
+      'false',
+    );
+  });
+
+  test('調子を選ぶと、選んだマメが小さく弾む', async ({ page }) => {
+    await page.goto('/reflection');
+    const picker = page.getByRole('group', { name: '調子を直す' });
+    await expect(picker.locator('.condition-mame[data-picked="true"]')).toHaveCount(0);
+    await picker.getByRole('button', { name: /好調/ }).first().click();
+    await expect(picker.locator('.condition-mame[data-picked="true"]')).toHaveCSS(
+      'animation-name',
+      'mame-pick',
+    );
+  });
+});

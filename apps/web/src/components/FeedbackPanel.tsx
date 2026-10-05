@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import type { DayResponse } from '../api/tasks';
 import { formatDateTime } from '../day';
 import { Button } from './Button';
@@ -48,6 +49,8 @@ function ConditionPicker({
   onChange: (level: number | null) => void;
 }) {
   const level = effectiveLevel(condition);
+  // 押した選択肢のマメを小さく弾ませる（DESIGN.md 4.6）。押すたびに作り直して、同じ選択肢でも弾む
+  const [picked, setPicked] = useState<{ level: number; count: number } | null>(null);
   return (
     <fieldset className="condition-picker" aria-label="調子を直す">
       {LEVEL_MOODS.map((mood, i) => (
@@ -57,9 +60,18 @@ function ConditionPicker({
           className="condition-option"
           aria-pressed={level === i}
           // 手動で選んだ値をもう一度押すと、AI の判定に戻す
-          onClick={() => onChange(condition?.userLevel === i ? null : i)}
+          onClick={() => {
+            setPicked((p) => ({ level: i, count: (p?.count ?? 0) + 1 }));
+            onChange(condition?.userLevel === i ? null : i);
+          }}
         >
-          <Mame mood={mood} size={28} label="" />
+          <span
+            key={picked?.level === i ? picked.count : 0}
+            className="condition-mame"
+            data-picked={picked?.level === i}
+          >
+            <Mame mood={mood} size={28} label="" />
+          </span>
           <span>{MOOD_LABELS[mood]}</span>
         </button>
       ))}
@@ -101,6 +113,13 @@ export function FeedbackPanel({
   const level = effectiveLevel(condition);
   const mood: Mood = state === 'generating' ? 'think' : moodOfLevel(level);
   const content = feedback?.content ?? null;
+  // 生成中から FB が届いたときだけ、本文を上から順に出す（DESIGN.md 4.6）。開いたときにすでにある FB は動かさない
+  const shownState = useRef(state);
+  const arrived = useRef(false);
+  if (shownState.current !== state) {
+    arrived.current = shownState.current === 'generating' && state === 'done';
+    shownState.current = state;
+  }
 
   return (
     <section className="feedback" aria-label={heading}>
@@ -126,7 +145,7 @@ export function FeedbackPanel({
         <p className="text-small">{`AI判定の根拠：${condition.aiReason}`}</p>
       )}
 
-      <div aria-live="polite" className="feedback-body">
+      <div aria-live="polite" className="feedback-body" data-arrived={arrived.current}>
         {state === 'generating' && job !== null && (
           <div className="feedback-generating">
             <ol className="feedback-steps">

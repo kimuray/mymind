@@ -320,7 +320,10 @@ function ReflectionEditor({
             disabled={busy || agent === undefined}
           />
           <p className="text-small reflection-notice" aria-live="polite">
-            {notice}
+            {/* 知らせが変わるたびに作り直し、短くフェードインさせる（保存できた節目を目で分かるように、DESIGN.md 4.6） */}
+            <span key={notice} className="notice-text">
+              {notice}
+            </span>
           </p>
           <Button kind="text" disabled={busy} onClick={() => void openPreview()}>
             送信内容を見る
