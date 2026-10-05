@@ -2,8 +2,20 @@
   "name": "@mymind/desktop",
   "private": true,
   "type": "module",
-  "main": "dist/main.js",
+  "main": "dist/main.mjs",
+  "scripts": {
+    "build": "vite build",
+    "start": "electron .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@mymind/server": "workspace:*",
+    "zod": "^4.6.5"
+  },
   "devDependencies": {
-    "electron": "^44.5.1"
+    "@types/node": "^24.19.0",
+    "electron": "^44.5.1",
+    "vite": "^8.3.1"
   }
 }

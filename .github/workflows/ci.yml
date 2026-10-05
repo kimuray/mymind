@@ -91,6 +91,11 @@ jobs:
         run: pnpm test:e2e
         env:
           MYMIND_AGENT: fake
+      # デスクトップアプリ（Electron）の起動とサーバーの見守り（ADR-0015、ADR-0016）。
+      # pnpm test:e2e の本番ビルドで apps/desktop の dist もできている。仮想ディスプレイの上で動かす
+      - if: steps.gate.outputs.enabled == 'true'
+        name: デスクトップアプリの E2E
+        run: xvfb-run --auto-servernum pnpm test:desktop
       - uses: actions/upload-artifact@v7
         if: failure() && steps.gate.outputs.enabled == 'true'
         with:

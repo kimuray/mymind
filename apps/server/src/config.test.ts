@@ -19,6 +19,8 @@ describe('NFR-02 起動の設定', () => {
           fakeMode: 'success',
           fakeDelayMs: 800,
         },
+        paths: { webDist: null, prompts: null, migrations: null },
+        desktop: false,
       },
     });
   });
@@ -39,6 +41,8 @@ describe('NFR-02 起動の設定', () => {
           fakeMode: 'success',
           fakeDelayMs: 800,
         },
+        paths: { webDist: null, prompts: null, migrations: null },
+        desktop: false,
       },
     });
   });
@@ -118,6 +122,36 @@ describe('NFR-02 起動の設定', () => {
 
   it('知らないエージェントは受け付けない', () => {
     expect(loadConfig({ MYMIND_AGENT: 'gpt' })).toMatchObject({
+      ok: false,
+      error: { kind: 'invalid_env' },
+    });
+  });
+});
+
+describe('NFR-01 デスクトップアプリから渡す設定', () => {
+  it('成果物の場所とデスクトップアプリで動いていることを受け取る', () => {
+    expect(
+      loadConfig({
+        MYMIND_WEB_DIST: '/app/Resources/web',
+        MYMIND_PROMPTS_DIR: '/app/Resources/prompts',
+        MYMIND_MIGRATIONS_DIR: '/app/Resources/migrations',
+        MYMIND_DESKTOP: '1',
+      }),
+    ).toMatchObject({
+      ok: true,
+      value: {
+        paths: {
+          webDist: '/app/Resources/web',
+          prompts: '/app/Resources/prompts',
+          migrations: '/app/Resources/migrations',
+        },
+        desktop: true,
+      },
+    });
+  });
+
+  it('成果物の場所が相対パスなら起動を拒否する', () => {
+    expect(loadConfig({ MYMIND_WEB_DIST: 'web/dist' })).toMatchObject({
       ok: false,
       error: { kind: 'invalid_env' },
     });

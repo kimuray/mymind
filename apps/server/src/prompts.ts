@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { composePrompt, readPromptVersion } from '@mymind/agent';
 
@@ -11,8 +12,8 @@ export type LoadedPrompt = { text: string; version: string };
  * バージョンはプロンプトの先頭の prompt_version（FB に記録して、新旧の出力を比べられるようにする）
  */
 function loadPrompt(file: string, dir: string): LoadedPrompt {
-  const template = readFileSync(`${dir}${file}`, 'utf8');
-  const policy = readFileSync(`${dir}coaching-policy.md`, 'utf8');
+  const template = readFileSync(join(dir, file), 'utf8');
+  const policy = readFileSync(join(dir, 'coaching-policy.md'), 'utf8');
   return {
     text: composePrompt(template, policy),
     version: readPromptVersion(template) ?? 'unknown',

@@ -42,6 +42,7 @@ mymind は、日々のTODOと振り返りを管理し、ローカルのAIエー�
 ## リポジトリの構成
 
 ```
+apps/desktop    デスクトップアプリ（Electron）。サーバーを子プロセスで起動して見守り、ウィンドウで画面を開く（ADR-0015）
 apps/server     API、静的配信、ジョブランナー、スケジューラ、通知
 apps/web        画面、キーボード操作、Mame コンポーネント
 packages/domain 状態遷移、業務日、自動ルール、集計（純粋関数）
@@ -64,6 +65,8 @@ e2e/            Playwright の E2E テスト
 | `pnpm design:check` | デザイントークン以外の色の直書きを検出 |
 | `pnpm test` | 単体テストと結合テスト |
 | `pnpm test:e2e` | E2E テスト |
+| `pnpm test:desktop` | デスクトップアプリ（Electron）の起動とサーバーの見守りの E2E（先に `pnpm build`。Claude Code のサンドボックスの中では起動できないので CI で動かす） |
+| `pnpm desktop:start` / `pnpm desktop:dev` | デスクトップアプリをビルドして起動する（データは `./.data`）/ 画面を Vite から読む開発用（別に `pnpm --filter @mymind/web dev` を動かす） |
 | `pnpm screenshots` | 各画面のスクリーンショットを `.data/screenshots/` に出力（先に `pnpm build`） |
 | `pnpm docs:check` / `pnpm docs:build` | 設計文書のリンク・参照の検査 / 人が読むための HTML の生成 |
 | `pnpm check` | 上記のうち E2E 以外をすべて実行 |
