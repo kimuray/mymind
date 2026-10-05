@@ -60,7 +60,33 @@ export function planListMotion(
       return parent === null || parent === undefined || next.has(parent);
     })
     .map(([key]) => key);
+  if (isLayoutShiftOnly(next, moves, enters, exits)) return { moves: [], enters, exits };
   return { moves, enters, exits };
+}
+
+/**
+ * 行の出入りがなく、外側の要素がすべて同じだけずれただけか。
+ * 見出しのフォントの読み込みなどで、測る範囲の上にあるものの高さが変わっただけなので、行の移動として動かさない
+ * （画面を開いた直後に全体が動いて見えないように）
+ */
+function isLayoutShiftOnly(
+  next: ReadonlyMap<string, MotionItem>,
+  moves: ListMotionPlan['moves'],
+  enters: readonly string[],
+  exits: readonly string[],
+): boolean {
+  if (moves.length === 0 || enters.length > 0 || exits.length > 0) return false;
+  const roots = [...next].filter(([, item]) => item.parent === null || item.parent === undefined);
+  if (roots.length === 0 || moves.length !== roots.length) return false;
+  const first = moves[0];
+  if (first === undefined) return false;
+  const rootKeys = new Set(roots.map(([key]) => key));
+  return moves.every(
+    (m) =>
+      rootKeys.has(m.key) &&
+      Math.abs(m.dx - first.dx) < MOVE_THRESHOLD_PX &&
+      Math.abs(m.dy - first.dy) < MOVE_THRESHOLD_PX,
+  );
 }
 
 /**
