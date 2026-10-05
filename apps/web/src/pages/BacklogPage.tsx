@@ -171,8 +171,9 @@ export function BacklogPage() {
           onSubmit={(title) => create.mutate({ title, ...screen })}
         />
 
+        {/* 通知・グループの面・空の案内も出入りと押し下げを動かす（DESIGN.md 4.18、FR-T06）。key はタスクの ID とぶつからない名前にする */}
         {notice !== null && (
-          <p className="suggestions" aria-live="polite">
+          <p className="suggestions" aria-live="polite" data-motion-key="ui:notice">
             {notice}
             <Button kind="text" onClick={() => setNotice(null)}>
               閉じる
@@ -181,7 +182,12 @@ export function BacklogPage() {
         )}
 
         {groups.map((group) => (
-          <section key={group.key} className="task-list glass-2" aria-label={group.title}>
+          <section
+            key={group.key}
+            className="task-list glass-2"
+            aria-label={group.title}
+            data-motion-key={`ui:group:${group.key}`}
+          >
             <h2 className="text-label">{group.title}</h2>
             <ul>
               {group.tasks.map((task) => (
@@ -209,7 +215,9 @@ export function BacklogPage() {
           </section>
         ))}
         {backlog.isSuccess && tasks.length === 0 && (
-          <p className="empty-note">バックログは空です</p>
+          <p className="empty-note" data-motion-key="ui:empty">
+            バックログは空です
+          </p>
         )}
       </div>
     </PageLayout>

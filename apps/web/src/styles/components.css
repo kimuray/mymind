@@ -1319,6 +1319,19 @@
   margin-top: auto;
 }
 
+/* 一度だけ出る完了の知らせは、出るときにフェードインさせる（DESIGN.md 4.18、FR-T06） */
+.morning-done,
+.stocktake-card[role="status"] {
+  animation: notice-in var(--motion-base) var(--ease-out) both;
+}
+
+@keyframes notice-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
 .morning-done {
   display: flex;
   align-items: center;

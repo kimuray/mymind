@@ -507,3 +507,58 @@ test.describe('FR-U02 / FR-U03 ダイアログの開閉', () => {
     await expect(page.locator('.dialog-leaving')).toHaveCount(0);
   });
 });
+
+test.describe('FR-T06 提案や通知の出入り', () => {
+  // 動きがあることを確かめるため、このまとまりだけ「視差効果を減らす」を外す（DESIGN.md 2.7）。
+  // 画面の外の行は動かさないので、ほかのテストで今日のリストに行がたまっていても見えるよう、縦に広げる
+  test.beforeEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.setViewportSize({ width: 1440, height: 4000 });
+  });
+  // サンドボックスの中ではページを使い回すので、ほかのテストのために戻す
+  test.afterEach(async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize({ width: 1440, height: 900 });
+  });
+
+  test('通知が出るとリストの面が押し下げられる動きになり、中の行は二重に動かない', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await addTask(page, '通知の上の行');
+    const parent = await addTask(page, '通知の親');
+    const child = await addTask(page, '通知の子');
+    await child.locator('.task-title').click();
+    await page.keyboard.press('Tab');
+    await expect(page.locator('.task-row[data-depth="1"]', { hasText: '通知の子' })).toBeVisible();
+    await page.evaluate(() => {
+      const log: string[] = [];
+      (window as unknown as { __motions: string[] }).__motions = log;
+      const original = Element.prototype.animate;
+      Element.prototype.animate = function (this: Element, keyframes, options) {
+        if (typeof options === 'object' && options.id === 'list-motion') {
+          log.push((this as HTMLElement).dataset['motionKey'] ?? '');
+        }
+        return original.call(this, keyframes, options);
+      };
+    });
+    // 子を持つタスクを子にしようとすると、通知が出る
+    await parent.locator('.task-title').click();
+    await page.keyboard.press('Tab');
+    await expect(page.getByText('タスクの親子は2階層までです')).toBeVisible();
+    const motions = () =>
+      page.evaluate(() => (window as unknown as { __motions: string[] }).__motions);
+    await expect.poll(motions).toContain('ui:notice');
+    expect(await motions()).toContain('ui:open');
+    // 面の中の行は、面と一緒に動くので個別には動かさない
+    expect((await motions()).filter((k) => !k.startsWith('ui:'))).toEqual([]);
+
+    // 閉じると、通知の写しが消えてから取り除かれる
+    await page
+      .locator('.suggestions', { hasText: 'タスクの親子は2階層までです' })
+      .getByRole('button', { name: '閉じる' })
+      .click();
+    await expect(page.getByText('タスクの親子は2階層までです')).toHaveCount(0);
+    await expect(page.locator('.list-motion-ghost')).toHaveCount(0);
+  });
+});

@@ -16,6 +16,7 @@ import { PageLayout } from '../components/PageLayout';
 import { DAY_OPTIONS, formatDateTime, formatDayHeading } from '../day';
 import { useDayGuard } from '../dayGuard';
 import { useKeyBindings } from '../keyboard';
+import { useListMotion } from '../listMotion';
 import { useReflectionDrafts } from '../useReflectionDrafts';
 
 const sameDraft = (a: ReflectionDraft, b: ReflectionDraft) =>
@@ -121,6 +122,9 @@ function ReflectionEditor({
   const [editorVersion, setEditorVersion] = useState(0);
   const lastSaved = useRef<ReflectionDraft>(savedText);
   const drafts = useReflectionDrafts({ day, draft, saved });
+  // 下書きの案内が出入りしても、入力欄が急に押し下げられないようにする（DESIGN.md 4.18、FR-T06）
+  const pageRoot = useRef<HTMLDivElement>(null);
+  useListMotion(pageRoot, true);
   const [notice, setNotice] = useState('');
   const [previewKey, setPreviewKey] = useState<number | null>(null);
   const [modes, setModes] = useState<Record<FieldKey, MarkdownMode>>({
@@ -232,7 +236,7 @@ function ReflectionEditor({
 
   return (
     <PageLayout detail={detail} emptyNote="まだFBをもらっていません">
-      <div className="page reflection">
+      <div className="page reflection" ref={pageRoot}>
         <header className="page-header">
           <div className="reflection-title">
             <p className="text-label">振り返り</p>
@@ -249,7 +253,7 @@ function ReflectionEditor({
         <DaySummary summary={summary} />
 
         {drafts.offer !== null && (
-          <div className="draft-offer glass-2" role="status">
+          <div className="draft-offer glass-2" role="status" data-motion-key="ui:draft-offer">
             <p>{`保存していない下書きがあります（${formatDateTime(drafts.offer.updatedAt)}）`}</p>
             <Button kind="text" onClick={restoreDrafts}>
               復元する
@@ -260,7 +264,7 @@ function ReflectionEditor({
           </div>
         )}
 
-        <div className="reflection-fields">
+        <div className="reflection-fields" data-motion-key="ui:fields">
           {FIELDS.map((f) => (
             <MarkdownField
               key={`${f.key}-${editorVersion}`}
@@ -275,7 +279,7 @@ function ReflectionEditor({
           ))}
         </div>
 
-        <div className="reflection-actions">
+        <div className="reflection-actions" data-motion-key="ui:actions">
           <AgentSelect
             id="reflection-agent"
             label="エージェント"
