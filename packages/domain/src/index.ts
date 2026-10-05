@@ -3,6 +3,7 @@ export * from './carryover';
 export * from './daySummary';
 export * from './jobs';
 export * from './morningPlan';
+export * from './notifications';
 export * from './plans';
 export * from './review';
 export * from './rules';

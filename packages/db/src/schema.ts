@@ -1,5 +1,5 @@
 // アプリのスキーマ（docs/architecture.md 5章）。変更したら pnpm --filter @mymind/db db:generate でマイグレーションを作る。
-import { JOB_KINDS, JOB_STATUSES, STATUSES } from '@mymind/domain';
+import { JOB_KINDS, JOB_STATUSES, NOTIFICATION_KINDS, STATUSES } from '@mymind/domain';
 import {
   type AnySQLiteColumn,
   integer,
@@ -106,3 +106,14 @@ export const conditions = sqliteTable('conditions', {
   userLevel: integer('user_level'),
   updatedAt: text('updated_at').notNull(),
 });
+
+/** 送った通知（FR-N01〜N04、architecture.md 9.1）。同じ種類・同じ業務日は2回送らない */
+export const notificationsSent = sqliteTable(
+  'notifications_sent',
+  {
+    kind: text('kind', { enum: NOTIFICATION_KINDS }).notNull(),
+    day: text('day').notNull(), // 業務日
+    sentAt: text('sent_at').notNull(), // UTC
+  },
+  (t) => [primaryKey({ columns: [t.kind, t.day] })],
+);

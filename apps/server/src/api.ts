@@ -8,12 +8,9 @@ import type {
 } from '@mymind/db';
 import {
   type BusinessDayOptions,
-  blankDaysSince,
   CARRYOVER_DECISIONS,
   canBecomeChild,
   canHaveChildren,
-  carryoverBaseDay,
-  carryoverCandidates,
   changeStatus,
   daysBetween,
   daysOfMonth,
@@ -29,7 +26,6 @@ import {
   STATUSES,
   type Status,
   statusSinceDay,
-  summarizeDay,
   timelineBreakdown,
   timelineSegments,
   toBusinessDay,
@@ -38,7 +34,14 @@ import { type Context, Hono } from 'hono';
 import type { ContentfulStatusCode } from 'hono/utils/http-status';
 import { validator } from 'hono/validator';
 import { z } from 'zod';
-import { createDayRecordReader, type DayRecordReader, hasReflection } from './dayRecords';
+import {
+  createDayRecordReader,
+  type DayRecordReader,
+  findCarryover as findCarryoverOf,
+  hasReflection,
+  listReviewTargets,
+  summarizeDayOf,
+} from './dayRecords';
 import { createHealthApi, type HealthDeps } from './health';
 import { createJobsApi, type JobsApiDeps } from './jobsApi';
 import { calendarDayParam, monthParam } from './params';
@@ -279,26 +282,7 @@ export function createApi({
     });
   };
 
-  /**
-   * 持ち越し候補（FR-D03、FR-D09、architecture.md 4.5）。
-   * 基準日は「今日より前で、計画がある最後の業務日」。その日の計画にあって未完了で、今日の計画にまだないタスク
-   */
-  const findCarryover = (day: string) => {
-    const baseDay = carryoverBaseDay(tasks.listPlanDays(), day);
-    if (baseDay === null) return { baseDay, blankDays: 0, candidates: [] };
-    const basePlan = tasks.listPlan(baseDay);
-    const ids = new Set(
-      carryoverCandidates(
-        basePlan.map((t) => ({ taskId: t.id, status: t.status })),
-        tasks.listPlan(day).map((t) => t.id),
-      ).map((t) => t.taskId),
-    );
-    return {
-      baseDay,
-      blankDays: blankDaysSince(baseDay, day),
-      candidates: basePlan.filter((t) => ids.has(t.id)),
-    };
-  };
+  const findCarryover = (day: string) => findCarryoverOf(tasks, day);
 
   /**
    * カレンダーの1日分（FR-R04、FR-A09）。件数や有無はここで決め、画面では数えない。
@@ -464,14 +448,7 @@ export function createApi({
         // 前日の FB：最後に FB をもらった日のもの（architecture.md 4.5、FR-D02）
         previous: previousFeedback(day.data),
         // 振り返りの冒頭の記録のまとめ（FR-D07）。件数や日数はここで数える
-        summary: summarizeDay(
-          day.data,
-          tasks.listSummaryCandidates(day.data).map((t) => ({
-            taskId: t.id,
-            title: t.title,
-            events: tasks.listEvents(t.id),
-          })),
-        ),
+        summary: summarizeDayOf(tasks, day.data),
       });
     })
 
@@ -663,10 +640,7 @@ export function createApi({
       const today = toBusinessDay(now(), dayOptions);
       const { reviewAfterDays } = currentSettings();
       const touchedDay = (t: Task) => toBusinessDay(new Date(t.lastTouchedAt), dayOptions);
-      const stale = tasks
-        .listBacklog(today)
-        .filter((t) => isReviewTarget(touchedDay(t), today, reviewAfterDays))
-        .sort((a, b) => a.lastTouchedAt.localeCompare(b.lastTouchedAt));
+      const stale = listReviewTargets(tasks, today, reviewAfterDays, dayOptions);
       return c.json({
         today,
         afterDays: reviewAfterDays,
