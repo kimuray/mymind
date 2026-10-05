@@ -13,6 +13,7 @@ import {
 import { AddTaskInput } from '../components/AddTaskInput';
 import { Button } from '../components/Button';
 import { Kbd } from '../components/Kbd';
+import { Loading } from '../components/Loading';
 import { PageLayout } from '../components/PageLayout';
 import { CountChip } from '../components/StatusBadge';
 import { TaskDetail } from '../components/TaskDetail';
@@ -188,6 +189,7 @@ export function TodayPage() {
             ))}
           </ul>
         )}
+        {plan.isPending && <Loading />}
         {plan.isSuccess && tasks.length === 0 && (
           <p className="empty-note" data-motion-key="ui:empty">
             今日の計画はまだありません。上の欄からタスクを追加できます

@@ -2362,3 +2362,37 @@
   background: var(--row-selected-bg);
   pointer-events: none;
 }
+
+/*
+ * 読み込み中と処理中（DESIGN.md 4.19、NFR-03）。読み込み中の文と処理中のボタンは、控えめにゆっくり点滅させる。
+ * 保存できたことの知らせは、出入りをフェードにする
+ */
+.loading-note {
+  margin: 0;
+  font-size: 13px;
+  /* 点滅のいちばん薄いところでも、--ink-4 より薄く見えないようにする（ui.md） */
+  color: var(--ink-3);
+  animation: soft-pulse var(--motion-loop) var(--ease-in-out) infinite;
+}
+
+.button[aria-busy="true"] {
+  cursor: progress;
+  animation: soft-pulse var(--motion-loop) var(--ease-in-out) infinite;
+}
+
+@keyframes soft-pulse {
+  50% {
+    opacity: 0.8;
+  }
+}
+
+.saved-note {
+  margin: 0;
+  color: var(--status-done-text);
+  opacity: 0;
+  transition: opacity var(--motion-base) var(--ease-out);
+}
+
+.saved-note[data-shown="true"] {
+  opacity: 1;
+}

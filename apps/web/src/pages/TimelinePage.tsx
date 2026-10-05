@@ -2,6 +2,7 @@ import { daysBetween, STATUS_LABELS, type TimelineSegment } from '@mymind/domain
 import { useRef, useState } from 'react';
 import { type TimelineResponse, type TimelineTask, useTimeline } from '../api/timeline';
 import { effectiveLevel, moodOfLevel } from '../components/FeedbackPanel';
+import { Loading } from '../components/Loading';
 import { Mame, MOOD_LABELS } from '../components/Mame';
 import { PageLayout } from '../components/PageLayout';
 import { currentDay, formatDayHeading } from '../day';
@@ -263,6 +264,7 @@ export function TimelinePage() {
             タイムラインを読み込めませんでした。サーバーが動いているか確かめてください
           </p>
         )}
+        {timeline.isPending && <Loading />}
         {data !== undefined && (
           <section
             className="timeline-table glass-2"

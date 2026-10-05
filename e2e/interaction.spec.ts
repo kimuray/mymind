@@ -562,3 +562,78 @@ test.describe('FR-T06 提案や通知の出入り', () => {
     await expect(page.locator('.list-motion-ghost')).toHaveCount(0);
   });
 });
+
+test.describe('NFR-03 読み込み中と処理中', () => {
+  test('すぐ読み込めたときは、読み込み中の表示を出さない', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.getByLabel('今日のタスクを追加')).toBeVisible();
+    await expect(page.getByText('読み込んでいます…')).toHaveCount(0);
+  });
+
+  test('読み込みが長いときだけ、読み込み中の表示を出す', async ({ page }) => {
+    let release = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.route('**/api/days/*', async (route) => {
+      if (route.request().method() === 'GET') await held;
+      await route.continue();
+    });
+    try {
+      await page.goto('/');
+      await expect(page.getByRole('status').filter({ hasText: '読み込んでいます…' })).toBeVisible();
+      release();
+      await expect(page.getByText('読み込んでいます…')).toHaveCount(0);
+    } finally {
+      release();
+      await page.unroute('**/api/days/*');
+    }
+  });
+
+  test('保存しているあいだ、押したボタンだけを処理中として示す', async ({ page }) => {
+    let release = () => {};
+    const held = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    await page.route('**/api/days/*/log', async (route) => {
+      if (route.request().method() === 'PUT') await held;
+      await route.continue();
+    });
+    try {
+      await page.goto('/reflection');
+      await page.getByRole('textbox', { name: '思考の整理' }).fill('処理中を確かめる');
+      const saveOnly = page.getByRole('button', { name: /保存のみ/ });
+      await saveOnly.click();
+      await expect(saveOnly).toHaveAttribute('aria-busy', 'true');
+      await expect(page.getByRole('button', { name: /保存してFBをもらう/ })).not.toHaveAttribute(
+        'aria-busy',
+      );
+      release();
+      await expect(saveOnly).not.toHaveAttribute('aria-busy');
+      await expect(page.getByText('保存しました', { exact: true })).toBeVisible();
+    } finally {
+      release();
+      await page.unroute('**/api/days/*/log');
+    }
+  });
+
+  test('設定を保存すると、「保存しました」を短く出す', async ({ page }) => {
+    await page.goto('/settings');
+    const section = page.getByRole('region', { name: '通知の設定' });
+    const eveningTime = section.getByLabel('夜の通知の時刻');
+    await expect(eveningTime).toHaveValue('21:30');
+    try {
+      await eveningTime.fill('22:05');
+      await expect(section.getByRole('status').filter({ hasText: '保存しました' })).toBeVisible();
+    } finally {
+      await eveningTime.fill('21:30');
+      await expect
+        .poll(async () => {
+          const res = await page.request.get('/api/settings');
+          const body = (await res.json()) as { settings: Record<string, unknown> };
+          return JSON.stringify(body.settings);
+        })
+        .toContain('21:30');
+    }
+  });
+});

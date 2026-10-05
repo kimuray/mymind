@@ -11,6 +11,7 @@ import { Button } from '../components/Button';
 import { DaySummary } from '../components/DaySummary';
 import { FeedbackPanel } from '../components/FeedbackPanel';
 import { Kbd } from '../components/Kbd';
+import { Loading } from '../components/Loading';
 import { MarkdownField, type MarkdownMode } from '../components/MarkdownField';
 import { PageLayout } from '../components/PageLayout';
 import { DAY_OPTIONS, formatDateTime, formatDayHeading } from '../day';
@@ -92,9 +93,13 @@ export function ReflectionPage({ day: dayParam }: { day: string | undefined }) {
         />
       ) : (
         <PageLayout>
-          <p className="empty-note" aria-live="polite">
-            {log.isError ? '振り返りを読み込めませんでした' : '読み込んでいます…'}
-          </p>
+          {log.isError ? (
+            <p className="empty-note" role="alert">
+              振り返りを読み込めませんでした
+            </p>
+          ) : (
+            <Loading />
+          )}
         </PageLayout>
       )}
     </>
@@ -143,6 +148,8 @@ function ReflectionEditor({
   const agent = chosenAgent ?? defaultAgent;
   const heading = formatDayHeading(day);
   const busy = save.isPending || request.isPending;
+  // どのボタンで始めた処理か。押したボタンだけを処理中として示す（DESIGN.md 4.19）
+  const [running, setRunning] = useState<'save' | 'request' | null>(null);
 
   /** 変更がなければ保存しない。保存できなければ false */
   const saveDraft = async (): Promise<boolean> => {
@@ -159,7 +166,12 @@ function ReflectionEditor({
   };
 
   const saveOnly = async () => {
-    if (await saveDraft()) setNotice('保存しました');
+    setRunning('save');
+    try {
+      if (await saveDraft()) setNotice('保存しました');
+    } finally {
+      setRunning(null);
+    }
   };
 
   /** 送信内容のプレビューを開く（開き直すたびに作り直す） */
@@ -175,10 +187,15 @@ function ReflectionEditor({
       await openPreview();
       return;
     }
-    if (!(await saveDraft())) return;
+    setRunning('request');
+    if (!(await saveDraft())) {
+      setRunning(null);
+      return;
+    }
     request.mutate(agent, {
       onSuccess: () => setNotice('保存して、FBを依頼しました'),
       onError: (e) => setNotice(`保存しました。FBを依頼できませんでした（${errorText(e)}）`),
+      onSettled: () => setRunning(null),
     });
   };
 
@@ -296,11 +313,16 @@ function ReflectionEditor({
           <Button kind="text" disabled={busy} onClick={() => void openPreview()}>
             送信内容を見る
           </Button>
-          <Button disabled={busy} onClick={() => void saveOnly()}>
+          <Button disabled={busy} busy={running === 'save'} onClick={() => void saveOnly()}>
             保存のみ
             <Kbd>⌘S</Kbd>
           </Button>
-          <Button kind="confirm" disabled={busy} onClick={() => void saveAndRequest()}>
+          <Button
+            kind="confirm"
+            disabled={busy}
+            busy={running === 'request'}
+            onClick={() => void saveAndRequest()}
+          >
             保存してFBをもらう
             <Kbd tone="dark">⌘↵</Kbd>
           </Button>

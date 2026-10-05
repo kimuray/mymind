@@ -15,6 +15,7 @@ import { AgentInputPreview } from '../components/AgentInputPreview';
 import { AgentSelect } from '../components/AgentSelect';
 import { formatSummary } from '../components/DaySummary';
 import { effectiveLevel, FeedbackPanel, moodOfLevel } from '../components/FeedbackPanel';
+import { Loading } from '../components/Loading';
 import { Mame, MOOD_LABELS } from '../components/Mame';
 import { MarkdownPreview } from '../components/MarkdownPreview';
 import { MonthlyInputPreview } from '../components/MonthlyInputPreview';
@@ -132,10 +133,12 @@ function DayRecord({ d }: { d: MonthDay }) {
     return <p className="empty-note">{`${title}はまだ来ていない日です`}</p>;
   }
   if (day.data === undefined) {
-    return (
-      <p className="text-small">
-        {day.isError ? '記録を読み込めませんでした' : '読み込んでいます…'}
+    return day.isError ? (
+      <p className="text-small" role="alert">
+        記録を読み込めませんでした
       </p>
+    ) : (
+      <Loading />
     );
   }
   const { summary, log, feedback, condition, job } = day.data;
@@ -353,6 +356,7 @@ export function CalendarPage({ ym, day }: { ym: string; day: string | undefined 
             月の記録を読み込めませんでした。サーバーが動いているか確かめてください
           </p>
         )}
+        {month.isPending && <Loading />}
         {data !== undefined && (
           <section className="calendar-grid glass-2" aria-label={formatMonthHeading(ym)}>
             {WEEKDAY_HEADERS.map((w) => (
