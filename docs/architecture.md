@@ -223,7 +223,9 @@ CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 | キャンセル | `POST /api/jobs/:id/cancel` | |
 | FBの取得 | `GET /api/feedbacks?scope=&period=` | 履歴を新しい順に返す。`scope` は `daily`（業務日）か `monthly`（月） |
 | 設定 | `GET /api/settings`、`PATCH /api/settings` | 依頼の前に毎回確認する（`confirmBeforeRequest`、FR-A12）、既定のエージェント（`defaultAgent`、FR-A07）、棚卸しの対象にする日数（`reviewAfterDays`、0〜365、初期値30、FR-R06） |
-| 状態 | `GET /api/health` | `status`（`ok` / `degraded`）、DB（問い合わせの可否とファイルの合計サイズ）、エージェント（使えるか、実行ファイルの有無とバージョン、理由）、最後のバックアップ、直近の FB 生成の失敗。DB に問い合わせられなければ 503（NFR-21） |
+| 状態 | `GET /api/health` | `status`（`ok` / `degraded`）、DB（問い合わせの可否とファイルの合計サイズ）、エージェント（使えるか、実行ファイルの有無とバージョン、理由）、最後のバックアップ、通知を出す手段、直近の FB 生成の失敗。DB に問い合わせられなければ 503（NFR-21） |
+| 通知のバナー | `GET /api/notifications/pending`、`DELETE /api/notifications/pending/:kind` | 画面のバナーに出す通知の一覧と、閉じる操作（FR-N05、9.2） |
+| ブラウザの通知の許可 | `PUT /api/notifications/browser` | 画面が `Notification.permission` を知らせる（FR-N05、9.2） |
 
 ## 7. エージェント連携
 
@@ -328,6 +330,16 @@ PCがスリープしていて時刻を過ぎた場合は、復帰後2時間以�
 ### 9.2 アダプタ
 
 通知をクリックして該当画面を開く（FR-N05）ために、URLを開けるmacOSの通知ツール（`terminal-notifier` など）を使うアダプタを第一候補にします。ツールが見つからない場合は、ブラウザでアプリを開いているときに限り、ブラウザの通知APIで代替します。どちらも使えない場合は通知を出さず、画面上のバナーだけにします。
+
+実装（`apps/server/src/notificationAdapters.ts`）は、3つの手段を順に試すアダプタです。使える手段のうち最初のもので出し、出せなかったら次の手段で出します。
+
+| 手段 | 使えるとき | 出し方 |
+|---|---|---|
+| macOS の通知 | `terminal-notifier` が PATH か Homebrew の場所（`/opt/homebrew/bin`、`/usr/local/bin`）にある。通知のたびに探す | シェルを通さずに引数の配列で起動し、`-open` にその種類の画面の URL（朝は `/morning`、夜は `/reflection`、棚卸しは `/backlog`）、`-group` に種類を渡す |
+| ブラウザの通知 | SSE でつないでいる画面があり、画面が知らせたブラウザの通知の許可が `granted` | SSE の `notification.show` で画面に知らせ、画面が Notification API で出す（`tag` は種類ごと）。クリックでタブを前に出して画面を開く |
+| 画面のバナー | いつでも | サーバーのメモリに種類ごとの最新の1件を持ち（`GET /api/notifications/pending`）、SSE の `notifications.changed` で開いている画面に知らせる。閉じると消える（`DELETE /api/notifications/pending/:kind`）。サーバーを止めると消える |
+
+画面は開いたときに、ブラウザの通知の許可の状態を `PUT /api/notifications/browser` で知らせます。許可を求めるのは、利用者が設定の画面で「ブラウザの通知を許可する」を押したときだけです。今使う手段、`terminal-notifier` の有無、ブラウザの通知の許可は `GET /api/health` の `notifications` で返し、設定の状態に出します（NFR-21）。通知のコマンドの失敗の理由には、通知文（タスク名を含む）を入れません（ログに残るため）。
 
 ## 10. 運用
 

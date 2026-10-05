@@ -91,7 +91,7 @@ function setup(
 }
 
 const statuses = (jobId: string) =>
-  published.filter((e) => e.job.id === jobId).map((e) => e.job.status);
+  published.flatMap((e) => (e.type === 'job.updated' && e.job.id === jobId ? [e.job.status] : []));
 
 describe('FR-A01 FB の依頼と生成', () => {
   it('依頼すると待機中で登録され、生成中を経て完了し、FB と調子を保存する', async () => {

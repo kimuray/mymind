@@ -44,6 +44,8 @@ import {
 } from './dayRecords';
 import { createHealthApi, type HealthDeps } from './health';
 import { createJobsApi, type JobsApiDeps } from './jobsApi';
+import { createBrowserPermissionState, createPendingNotifications } from './notificationAdapters';
+import { createNotificationsApi, type NotificationsApiDeps } from './notificationsApi';
 import { calendarDayParam, monthParam } from './params';
 import {
   type AppSettings,
@@ -72,6 +74,8 @@ export type ApiDeps = {
   settingsRuntime?: SettingsRuntime;
   /** 業務日ごとの振り返り（FR-D06） */
   logs: DailyLogRepository;
+  /** 画面のバナーに出す通知と、ブラウザの通知の許可の状態（FR-N05）。省くと空の状態で始める */
+  notifications?: NotificationsApiDeps;
   /** 設定を保存したあとに呼ぶ（通知の予定の組み直し、FR-N04） */
   onSettingsChange?: () => void;
 };
@@ -254,6 +258,11 @@ export function createApi({
   settingsDefaults = {},
   settingsRuntime = { fakeAgent: false, defaultBackupDir: '' },
   logs,
+  notifications = {
+    pending: createPendingNotifications(now),
+    permission: createBrowserPermissionState(),
+    events: jobs.events,
+  },
   onSettingsChange,
 }: ApiDeps) {
   /**
@@ -854,7 +863,8 @@ export function createApi({
   return taskRoutes
     .route('/', createJobsApi(jobs))
     .route('/', createHealthApi(health))
-    .route('/', createSettingsApi(settings, settingsDefaults, settingsRuntime, onSettingsChange));
+    .route('/', createSettingsApi(settings, settingsDefaults, settingsRuntime, onSettingsChange))
+    .route('/', createNotificationsApi(notifications));
 }
 
 export type Api = ReturnType<typeof createApi>;

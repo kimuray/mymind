@@ -1,6 +1,7 @@
 import { toBusinessDay } from '@mymind/domain';
-import { Link, Outlet, useNavigate } from '@tanstack/react-router';
-import { useRef, useState } from 'react';
+import { Link, Outlet, useNavigate, useRouter } from '@tanstack/react-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { reportBrowserPermission } from '../api/notifications';
 import { availableActions, runAction, useKeyBindings } from '../keyboard';
 import {
   commandsFor,
@@ -14,6 +15,7 @@ import { useRealtimeSync } from '../realtime';
 import { CommandPalette } from './CommandPalette';
 import { Kbd } from './Kbd';
 import { Mame } from './Mame';
+import { NotificationBanner } from './NotificationBanner';
 import { ShortcutHelp } from './ShortcutHelp';
 
 // 業務日の切り替え（FR-D01）。設定を読む API ができるまでは初期値を使う
@@ -109,8 +111,17 @@ const PALETTE_EXCLUDED: readonly KeyAction[] = ['palette.open', 'list.next', 'li
 /** 3ペインの枠（DESIGN.md 3章）。メインと詳細ペインは、各画面が PageLayout で置く */
 export function AppShell() {
   const navigate = useNavigate();
+  const router = useRouter();
+  // ブラウザの通知をクリックしたときに開く画面（FR-N05）。パスはサーバーが決めた画面のもの
+  const openPath = useCallback((path: string) => router.history.push(path), [router]);
   // 他のタブとサーバーからの変更を受け取る（ADR-0008）
-  useRealtimeSync();
+  useRealtimeSync(openPath);
+  // ブラウザの通知の許可の状態を、サーバーに知らせる（サーバーが通知の出し方を選ぶため、FR-N05）
+  useEffect(() => {
+    reportBrowserPermission().catch((e: unknown) => {
+      console.warn('ブラウザの通知の許可の状態を、サーバーに知らせられませんでした', e);
+    });
+  }, []);
   const go = (to: () => Promise<void>) => {
     to();
     return true;
@@ -197,6 +208,7 @@ export function AppShell() {
         </ul>
       </nav>
       <Outlet />
+      <NotificationBanner />
       {overlay?.kind === 'palette' && (
         <CommandPalette commands={overlay.commands} onRun={run} onClose={close} />
       )}
