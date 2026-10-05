@@ -2,6 +2,7 @@ import { existsSync, readdirSync, statSync } from 'node:fs';
 import type { AgentStatus } from '@mymind/agent';
 import type { JobRepository } from '@mymind/db';
 import { Hono } from 'hono';
+import type { BrowserPermission, NotificationChannelName } from './notificationAdapters';
 
 export type HealthDeps = {
   /** DB に問い合わせられるか（SELECT 1） */
@@ -15,6 +16,18 @@ export type HealthDeps = {
   jobs: Pick<JobRepository, 'latestFailure'>;
   /** 使うエージェントの状態（実行ファイルの有無とバージョン） */
   agentStatus: () => Promise<AgentStatus>;
+  /** 通知を出す手段の状態（FR-N05）。省くと null を返す */
+  notificationStatus?: () => NotificationStatus;
+};
+
+/** 通知を出す手段の状態（FR-N05、architecture.md 9.2） */
+export type NotificationStatus = {
+  /** 今通知を出すときに使う手段 */
+  channel: NotificationChannelName | null;
+  /** 通知のコマンド（terminal-notifier）のパス。見つからなければ null */
+  command: string | null;
+  /** 画面が知らせたブラウザの通知の許可。まだ知らされていなければ null */
+  browser: BrowserPermission | null;
 };
 
 export type LatestBackup = {
@@ -84,6 +97,7 @@ export function createHealthApi(deps: HealthDeps) {
       },
       agent,
       backup: latestBackupOf(deps),
+      notifications: deps.notificationStatus?.() ?? null,
       recentFailure:
         failure === undefined
           ? null
