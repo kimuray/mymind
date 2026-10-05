@@ -150,6 +150,66 @@ describe('FR-R06 棚卸しの「残す」', () => {
   });
 });
 
+describe('FR-M02 タスク名の検索', () => {
+  const titled = (id: string, title: string, minute: number) =>
+    repo.create({
+      created: { type: 'created', taskId: id, at: at(minute), day: DAY },
+      parentId: null,
+      title,
+      noteMd: null,
+    });
+
+  it('名前の部分一致で、新しく作った順に返す', () => {
+    titled('a', '企画書ドラフトを書く', 1);
+    titled('b', '週報', 2);
+    titled('c', '企画のレビュー', 3);
+    expect(repo.searchByTitle('企画').map((t) => t.id)).toEqual(['c', 'a']);
+    expect(repo.searchByTitle('存在しない')).toEqual([]);
+  });
+
+  it('% や _ は、文字そのものとして探す', () => {
+    titled('a', '達成率 100% を目指す', 1);
+    titled('b', 'snake_case に直す', 2);
+    titled('c', 'ふつうのタスク', 3);
+    expect(repo.searchByTitle('%').map((t) => t.id)).toEqual(['a']);
+    expect(repo.searchByTitle('_').map((t) => t.id)).toEqual(['b']);
+  });
+
+  it('メモの本文は探さない', () => {
+    createTask('a', '本文にだけ企画と書いた');
+    expect(repo.searchByTitle('本文にだけ')).toEqual([]);
+  });
+
+  it('返すのは最大50件', () => {
+    for (let i = 0; i < 51; i++) titled(`t${i}`, `タスク${i}`, i % 60);
+    expect(repo.searchByTitle('タスク')).toHaveLength(50);
+  });
+});
+
+describe('NFR-18 複数の親の子をまとめて読む', () => {
+  it('親ごとに、1件ずつ読んだときと同じ子を同じ順で返し、子のない親には空を返す', () => {
+    createTask('p1');
+    createTask('p2');
+    for (const [id, parent] of [
+      ['c1', 'p1'],
+      ['c2', 'p1'],
+      ['c3', 'p2'],
+    ] as const) {
+      repo.create({
+        created: { type: 'created', taskId: id, at: at(1), day: DAY },
+        parentId: parent,
+        title: id,
+        noteMd: null,
+      });
+    }
+    createTask('lonely');
+    const children = repo.listChildrenOfMany(['p1', 'p2', 'lonely']);
+    expect(children.get('p1')).toEqual(repo.listChildren('p1'));
+    expect(children.get('p2')?.map((t) => t.id)).toEqual(['c3']);
+    expect(children.get('lonely')).toEqual([]);
+  });
+});
+
 describe('ADR-0004 tasks.status とイベントの整合', () => {
   it('ステータスの変更で、tasks.status・version・最終操作時刻をイベントに合わせて更新する', () => {
     createTask();

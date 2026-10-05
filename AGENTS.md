@@ -47,7 +47,7 @@ apps/web        画面、キーボード操作、Mame コンポーネント
 packages/domain 状態遷移、業務日、自動ルール、集計（純粋関数）
 packages/db     Drizzle スキーマ、マイグレーション、リポジトリ
 packages/agent  エージェント起動アダプタ、入力の組み立て、出力の検証
-packages/mcp    対話用 MCP サーバー
+packages/mcp    対話用 MCP サーバー（読み取りだけ、サーバーの API を呼ぶ）
 prompts/        FB と総括のプロンプト（バージョン付き）
 e2e/            Playwright の E2E テスト
 ```
@@ -68,6 +68,7 @@ e2e/            Playwright の E2E テスト
 | `pnpm docs:check` / `pnpm docs:build` | 設計文書のリンク・参照の検査 / 人が読むための HTML の生成 |
 | `pnpm check` | 上記のうち E2E 以外をすべて実行 |
 | `pnpm progress` | 直近の作業記録（`docs/progress/`）を新しい順に表示（件数は `pnpm progress 20` のように指定） |
+| `pnpm --silent mcp` | MCP サーバー（stdio、読み取りだけ）を起動する。登録の手順は `packages/mcp/README.md` |
 | `pnpm run doctor` | 開発環境の前提を確認（`run` は省略しない。`pnpm doctor` は pnpm 自身の診断コマンドになる） |
 | `node scripts/codex-review.mjs` | PR を作る前に、Codex に `origin/main` との差分を、正しさ・セキュリティ・非機能の観点でレビューしてもらう（ADR-0013。手順は `.claude/rules/workflow.md` の「Codex のレビュー」） |
 | `pnpm docker:dev` / `docker:check` / `docker:e2e` | Docker で開発サーバー / チェック / E2E を実行（ADR-0010。実行には承認が必要） |

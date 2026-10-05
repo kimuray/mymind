@@ -65,6 +65,15 @@ test.describe('NFR-21 設定画面の状態', () => {
   });
 });
 
+test.describe('NFR-05 FR-M01 MCP で送られるデータの知らせ', () => {
+  test('設定の画面に、MCP で読んだ記録が提供元に送られることを書く', async ({ page }) => {
+    await page.goto('/settings');
+    const mcp = page.getByRole('region', { name: 'MCP' });
+    await expect(mcp).toContainText('AI の提供元に送られます');
+    await expect(mcp).toContainText('読み取りだけ');
+  });
+});
+
 /** 画面の中から設定を変える（状態を変える API にはトークンが要る） */
 function patchSettings(page: Page, patch: Record<string, unknown>) {
   return page.evaluate(async (patch) => {
