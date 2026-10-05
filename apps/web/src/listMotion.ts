@@ -3,12 +3,18 @@ import { type RefObject, useLayoutEffect, useRef } from 'react';
 /** 行の位置。リストを包む要素の左上からの距離（スクロールしても変わらない） */
 export type RowPosition = { x: number; y: number };
 
+/**
+ * 動かす要素の位置と、入れ子の親（同じく data-motion-key の付いた、いちばん近い祖先）。
+ * リストの面とその中の行のように入れ子にしたとき、子は親が動いた分を差し引いて動かす
+ */
+export type MotionItem = RowPosition & { parent?: string | null };
+
 export type ListMotionPlan = {
-  /** 位置が変わった行と、新しい位置から見た元の位置へのずれ */
+  /** 位置が変わった行と、新しい位置から見た元の位置へのずれ（入れ子なら親のずれを差し引いた分） */
   moves: { key: string; dx: number; dy: number }[];
-  /** 新しく現れた行 */
+  /** 新しく現れた行（親と一緒に現れた子は含めない） */
   enters: string[];
-  /** なくなった行 */
+  /** なくなった行（親と一緒に消えた子は含めない） */
   exits: string[];
 };
 
@@ -18,27 +24,64 @@ const MOVE_THRESHOLD_PX = 0.5;
 /**
  * 前と今の行の位置から、どの行をどう動かすかを決める（DESIGN.md 4.18）。
  * 欄をまたいで移った行（完了の欄へ、など）も、同じ key なら位置の移動として扱う。
+ * 入れ子の子は、親の動き（親が描き直されるときに一緒に動く）を差し引いて二重に動かさない
  */
 export function planListMotion(
-  previous: ReadonlyMap<string, RowPosition>,
-  next: ReadonlyMap<string, RowPosition>,
+  previous: ReadonlyMap<string, MotionItem>,
+  next: ReadonlyMap<string, MotionItem>,
 ): ListMotionPlan {
+  const totalShift = (key: string | null | undefined) => {
+    if (key === null || key === undefined) return { dx: 0, dy: 0 };
+    const from = previous.get(key);
+    const to = next.get(key);
+    if (from === undefined || to === undefined) return { dx: 0, dy: 0 };
+    return { dx: from.x - to.x, dy: from.y - to.y };
+  };
   const moves: ListMotionPlan['moves'] = [];
   const enters: string[] = [];
   for (const [key, to] of next) {
-    const from = previous.get(key);
-    if (from === undefined) {
-      enters.push(key);
+    if (!previous.has(key)) {
+      const parent = to.parent;
+      if (parent === null || parent === undefined || previous.has(parent)) enters.push(key);
       continue;
     }
-    const dx = from.x - to.x;
-    const dy = from.y - to.y;
+    const own = totalShift(key);
+    const parent = totalShift(to.parent);
+    const dx = own.dx - parent.dx;
+    const dy = own.dy - parent.dy;
     if (Math.abs(dx) >= MOVE_THRESHOLD_PX || Math.abs(dy) >= MOVE_THRESHOLD_PX) {
       moves.push({ key, dx, dy });
     }
   }
-  const exits = [...previous.keys()].filter((key) => !next.has(key));
+  const exits = [...previous]
+    .filter(([key, item]) => {
+      if (next.has(key)) return false;
+      const parent = item.parent;
+      return parent === null || parent === undefined || next.has(parent);
+    })
+    .map(([key]) => key);
   return { moves, enters, exits };
+}
+
+/**
+ * 消える要素（exitKey）の中にあって、次の描画にも残る子孫の key。
+ * 最後の完了タスクを未完了へ戻すと「完了」の面は消えるが、その行は別の面へ移って残るので、
+ * 面の写しからその行を隠し、同じタスクが二重に見えないようにする
+ */
+export function survivingDescendants(
+  previous: ReadonlyMap<string, MotionItem>,
+  next: ReadonlyMap<string, MotionItem>,
+  exitKey: string,
+): string[] {
+  const isInside = (key: string) => {
+    let parent = previous.get(key)?.parent;
+    while (parent !== null && parent !== undefined) {
+      if (parent === exitKey) return true;
+      parent = previous.get(parent)?.parent;
+    }
+    return false;
+  };
+  return [...previous.keys()].filter((key) => next.has(key) && isInside(key));
 }
 
 /** CSS 変数の時間（"200ms"、"0.2s"）をミリ秒にする */
@@ -76,14 +119,40 @@ export function offsetPosition(el: HTMLElement): RowPosition {
   return { x, y };
 }
 
-type Snapshot = { position: RowPosition; node: HTMLElement; size: { w: number; h: number } };
+type Snapshot = {
+  position: RowPosition;
+  /** 入れ子の親の key（なければ null） */
+  parent: string | null;
+  node: HTMLElement;
+  size: { w: number; h: number };
+};
+
+/** いちばん近い、data-motion-key の付いた祖先（container の中だけ） */
+function motionParent(el: HTMLElement, container: HTMLElement): string | null {
+  const parent = el.parentElement?.closest<HTMLElement>('[data-motion-key]');
+  if (parent === null || parent === undefined || !container.contains(parent)) return null;
+  return parent.dataset['motionKey'] ?? null;
+}
 
 const isVisible = (top: number, height: number) => top + height > 0 && top < window.innerHeight;
 
-/** なくなった行の写しを、元の場所に重ねて消す。React が外した要素を、画面の外側の層に移して使う */
-function playExit(node: HTMLElement, left: number, top: number, size: Snapshot['size']) {
+/**
+ * なくなった行の写しを、元の場所に重ねて消す。React が外した要素を、画面の外側の層に移して使う。
+ * hidden は写しの中で隠す子孫の key（別の場所へ移って残る行）
+ */
+function playExit(
+  node: HTMLElement,
+  left: number,
+  top: number,
+  size: Snapshot['size'],
+  hidden: readonly string[],
+) {
   const t = readMotionTokens();
   const ghost = node;
+  for (const el of ghost.querySelectorAll<HTMLElement>('[data-motion-key]')) {
+    const key = el.dataset['motionKey'];
+    if (key !== undefined && hidden.includes(key)) el.style.visibility = 'hidden';
+  }
   ghost.setAttribute('aria-hidden', 'true');
   ghost.inert = true;
   ghost.classList.add('list-motion-ghost');
@@ -136,6 +205,7 @@ export function useListMotion(
       const o = offsetPosition(el);
       next.set(key, {
         position: { x: o.x - base.x, y: o.y - base.y },
+        parent: motionParent(el, container),
         node: el,
         size: { w: el.offsetWidth, h: el.offsetHeight },
       });
@@ -149,7 +219,14 @@ export function useListMotion(
     if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     const positions = (snapshots: Map<string, Snapshot>) =>
-      new Map([...snapshots].map(([key, snap]) => [key, snap.position]));
+      new Map<string, MotionItem>(
+        [...snapshots].map(([key, snap]) => [key, { ...snap.position, parent: snap.parent }]),
+      );
+    // 今見えている位置と本来の位置のずれ（動きの途中なら transform の分）
+    const visualOffset = (snap: Snapshot): RowPosition => {
+      const r = snap.node.getBoundingClientRect();
+      return { x: r.left - origin.left - snap.position.x, y: r.top - origin.top - snap.position.y };
+    };
     // 本来の位置が変わらない行は、動きの途中でもそのままにする（再描画のたびに動かし直さない）
     const plan = planListMotion(positions(before), positions(next));
     if (plan.moves.length === 0 && plan.enters.length === 0 && plan.exits.length === 0) return;
@@ -165,8 +242,11 @@ export function useListMotion(
       const running = snap.node.getAnimations().filter((a) => a.id === ANIMATION_ID);
       let shift = { dx, dy };
       if (running.length > 0) {
-        const r = snap.node.getBoundingClientRect();
-        shift = { dx: r.left - origin.left - snap.position.x, dy: r.top - top };
+        // 入れ子なら、親が今ずれて見えている分は親の動きに任せる
+        const own = visualOffset(snap);
+        const parent = snap.parent === null ? undefined : next.get(snap.parent);
+        const inherited = parent === undefined ? { x: 0, y: 0 } : visualOffset(parent);
+        shift = { dx: own.x - inherited.x, dy: own.y - inherited.y };
         for (const a of running) a.cancel();
       }
       snap.node.animate(
@@ -192,7 +272,13 @@ export function useListMotion(
       const left = origin.left + snap.position.x;
       const top = origin.top + snap.position.y;
       if (!isVisible(top, snap.size.h)) continue;
-      playExit(snap.node, left, top, snap.size);
+      playExit(
+        snap.node,
+        left,
+        top,
+        snap.size,
+        survivingDescendants(positions(before), positions(next), key),
+      );
     }
   });
 }

@@ -154,8 +154,9 @@ export function TodayPage() {
           onSubmit={(title) => create.mutate({ title, planFor: 'today', ...screen })}
         />
 
+        {/* 通知・提案・リストの面・空の案内も出入りと押し下げを動かす（DESIGN.md 4.18、FR-T06）。key はタスクの ID とぶつからない名前にする */}
         {notice !== null && (
-          <p className="suggestions" aria-live="polite">
+          <p className="suggestions" aria-live="polite" data-motion-key="ui:notice">
             {notice}
             <Button kind="text" onClick={() => setNotice(null)}>
               閉じる
@@ -171,7 +172,7 @@ export function TodayPage() {
         />
 
         {open.length > 0 && (
-          <ul className="task-list glass-2" aria-label="今日やること">
+          <ul className="task-list glass-2" aria-label="今日やること" data-motion-key="ui:open">
             {openRows.map(({ task, depth }) => (
               <TaskRow
                 key={task.id}
@@ -188,11 +189,17 @@ export function TodayPage() {
           </ul>
         )}
         {plan.isSuccess && tasks.length === 0 && (
-          <p className="empty-note">今日の計画はまだありません。上の欄からタスクを追加できます</p>
+          <p className="empty-note" data-motion-key="ui:empty">
+            今日の計画はまだありません。上の欄からタスクを追加できます
+          </p>
         )}
 
         {closed.length > 0 && (
-          <section className="task-list task-list-closed glass-2" aria-label="完了">
+          <section
+            className="task-list task-list-closed glass-2"
+            aria-label="完了"
+            data-motion-key="ui:closed"
+          >
             <h2 className="text-label">完了</h2>
             <ul>
               {closed.map((task) => (
@@ -212,7 +219,7 @@ export function TodayPage() {
           </section>
         )}
 
-        <p className="key-hints">
+        <p className="key-hints" data-motion-key="ui:hints">
           {LIST_HINTS.map((h) => (
             <span key={h}>{h}</span>
           ))}
@@ -262,7 +269,7 @@ function SuggestionBar({
   });
   if (items.length === 0) return null;
   return (
-    <div className="suggestions" aria-live="polite">
+    <div className="suggestions" aria-live="polite" data-motion-key="ui:suggestions">
       {items.map((item) => (
         <p key={item.key} className="suggestion">
           <span>{item.text}</span>
