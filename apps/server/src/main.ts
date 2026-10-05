@@ -1,10 +1,13 @@
+import { homedir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  buildAgentPath,
   createClaudeRunner,
   createCodexRunner,
   createFakeAgentRunner,
   detectAgent,
+  readLoginShellPath,
 } from '@mymind/agent';
 import {
   createDailyLogRepository,
@@ -30,6 +33,7 @@ import {
 import { type ConfigError, loadConfig } from './config';
 import { createDailyBackupJob, dailyBackupDir } from './dailyBackup';
 import { acquireLock, ensureDataDir, issueSessionToken } from './dataDir';
+import { desktopParentPort } from './desktopBridge';
 import { createEventBus } from './events';
 import { createJobRunner } from './jobRunner';
 import { listen } from './listen';
@@ -79,21 +83,35 @@ async function main(): Promise<number> {
     console.error(describeConfigError(config.error));
     return 1;
   }
-  const { dataDir, host, port, devPorts, agent } = config.value;
+  const { dataDir, host, port, devPorts, agent, paths, desktop } = config.value;
+  const parent = desktop ? desktopParentPort() : null;
+  /** 起動できなかった理由を表示する。デスクトップアプリには、起動し直しても直らないことを知らせる */
+  const fail = (reason: string): number => {
+    console.error(reason);
+    parent?.postMessage({ type: 'fatal', reason });
+    return 1;
+  };
+  if (desktop) {
+    // Finder や Dock から開いたアプリの PATH には、エージェントの CLI の場所が入っていない（ADR-0016）
+    process.env['PATH'] = buildAgentPath({
+      current: process.env['PATH'],
+      loginShell: await readLoginShellPath(process.env['SHELL']),
+      home: homedir(),
+    });
+  }
 
   ensureDataDir(dataDir);
   const lock = acquireLock(dataDir, process.pid);
   if (!lock.ok) {
-    console.error(
+    return fail(
       `同じデータディレクトリ（${dataDir}）を使うサーバーが既に動いています（PID ${lock.error.pid}）`,
     );
-    return 1;
   }
 
   const sessionToken = issueSessionToken(dataDir);
   const db = openDatabase({
     path: databasePath(dataDir),
-    migrationsFolder: MIGRATIONS_FOLDER,
+    migrationsFolder: paths.migrations ?? MIGRATIONS_FOLDER,
     // 未適用のマイグレーションがあれば、適用の前にスナップショットを取る（NFR-04。戻し方は docs/operations.md）
     beforeMigrate: ({ client, pending }) => {
       const path = snapshotBeforeMigration(dataDir, client, new Date());
@@ -107,8 +125,9 @@ async function main(): Promise<number> {
   const jobs = createJobRepository({ db, codec: plainCodec });
   const logs = createDailyLogRepository({ db, codec: plainCodec });
   const events = createEventBus();
-  const prompt = loadDailyPrompt();
-  const monthlyPrompt = loadMonthlyPrompt();
+  const prompt = paths.prompts === null ? loadDailyPrompt() : loadDailyPrompt(paths.prompts);
+  const monthlyPrompt =
+    paths.prompts === null ? loadMonthlyPrompt() : loadMonthlyPrompt(paths.prompts);
   // 実物のエージェントは、空の作業ディレクトリで、ツールを止めて起動する（ADR-0003、ADR-0005）
   // モデルの指定は CLI ごとに名前が違うので、MYMIND_AGENT で選んだエージェントにだけ渡す
   const modelFor = (name: string) =>
@@ -240,7 +259,7 @@ async function main(): Promise<number> {
   const vitePort = devPorts[0];
   const web =
     vitePort === undefined
-      ? createWebRoutes({ distDir: WEB_DIST, sessionToken })
+      ? createWebRoutes({ distDir: paths.webDist ?? WEB_DIST, sessionToken })
       : createDevRedirect(vitePort);
   const app = createApp({ ports: [port, ...devPorts], sessionToken }, api, web);
   const server = await listen(app, host, port);
@@ -248,10 +267,9 @@ async function main(): Promise<number> {
     scheduler.stop();
     db.$client.close();
     lock.release();
-    console.error(
+    return fail(
       `ポート ${port} は使用中です。使っているプロセスを止めるか、MYMIND_PORT で別のポートを指定してください`,
     );
-    return 1;
   }
 
   const shutdown = async () => {
@@ -267,6 +285,8 @@ async function main(): Promise<number> {
   process.once('SIGTERM', shutdown);
   // 標準出力は起動の確認に使う（console.log はロガーに置き換えるまで使わない）
   process.stdout.write(`mymind を http://127.0.0.1:${port} で起動しました\n`);
+  // デスクトップアプリは、この知らせを受けてからウィンドウを開く（ADR-0015）
+  parent?.postMessage({ type: 'ready', url: `http://127.0.0.1:${port}` });
   return 0;
 }
 

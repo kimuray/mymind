@@ -1,3 +1,4 @@
+export * from './agentPath';
 export * from './claude';
 export * from './codex';
 export * from './detect';

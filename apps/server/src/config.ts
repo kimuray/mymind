@@ -1,10 +1,12 @@
 import { homedir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { isAbsolute, join, resolve } from 'node:path';
 import { z } from 'zod';
 
 const LOOPBACK = '127.0.0.1';
 const ALL_INTERFACES = '0.0.0.0';
 const DEFAULT_PORT = 4820;
+
+const absolutePath = z.string().refine(isAbsolute, { message: '絶対パスで指定してください' });
 
 const envSchema = z.object({
   MYMIND_DATA_DIR: z.string().min(1).optional(),
@@ -25,6 +27,15 @@ const envSchema = z.object({
   /** 偽のアダプタの振る舞いと、答えるまでの時間（生成中の表示やキャンセルを確かめるため） */
   MYMIND_FAKE_AGENT_MODE: z.enum(['success', 'invalid', 'invalid-once', 'hang']).default('success'),
   MYMIND_FAKE_AGENT_DELAY_MS: z.coerce.number().int().min(0).max(60_000).default(800),
+  /**
+   * 成果物の場所（画面のビルド、プロンプト、マイグレーション）。束ねたサーバーをデスクトップアプリから動かすときに渡す。
+   * 省くとソースからの相対の場所を使う（ADR-0016）
+   */
+  MYMIND_WEB_DIST: absolutePath.optional(),
+  MYMIND_PROMPTS_DIR: absolutePath.optional(),
+  MYMIND_MIGRATIONS_DIR: absolutePath.optional(),
+  /** デスクトップアプリ（apps/desktop）の子プロセスとして動いている（ADR-0015） */
+  MYMIND_DESKTOP: z.enum(['0', '1']).default('0'),
 });
 
 export type ServerConfig = {
@@ -42,6 +53,10 @@ export type ServerConfig = {
     fakeMode: 'success' | 'invalid' | 'invalid-once' | 'hang';
     fakeDelayMs: number;
   };
+  /** 成果物の場所。null ならソースからの相対の場所を使う */
+  paths: { webDist: string | null; prompts: string | null; migrations: string | null };
+  /** デスクトップアプリの子プロセスとして動いている */
+  desktop: boolean;
 };
 
 export type ConfigError =
@@ -66,7 +81,11 @@ export function loadConfig(
     };
   }
   const e = parsed.data;
-  if (e.MYMIND_HOST === ALL_INTERFACES && e.MYMIND_IN_CONTAINER !== '1') {
+  // デスクトップアプリはコンテナの中で動かないので、0.0.0.0 は常に拒否する（NFR-02）
+  if (
+    e.MYMIND_HOST === ALL_INTERFACES &&
+    (e.MYMIND_IN_CONTAINER !== '1' || e.MYMIND_DESKTOP === '1')
+  ) {
     return { ok: false, error: { kind: 'all_interfaces_outside_container' } };
   }
   return {
@@ -83,6 +102,12 @@ export function loadConfig(
         fakeMode: e.MYMIND_FAKE_AGENT_MODE,
         fakeDelayMs: e.MYMIND_FAKE_AGENT_DELAY_MS,
       },
+      paths: {
+        webDist: e.MYMIND_WEB_DIST ?? null,
+        prompts: e.MYMIND_PROMPTS_DIR ?? null,
+        migrations: e.MYMIND_MIGRATIONS_DIR ?? null,
+      },
+      desktop: e.MYMIND_DESKTOP === '1',
     },
   };
 }
