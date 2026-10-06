@@ -8,6 +8,7 @@
 //   Contents/Resources/prompts/      プロンプトと方針（評価用の eval/ は入れない）
 //   Contents/Resources/migrations/   マイグレーション
 //   Contents/Resources/assets/       アイコン
+import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -46,9 +47,24 @@ const desktopPackage = JSON.parse(readFileSync(join(desktopDir, 'package.json'),
 const electronVersion = JSON.parse(
   readFileSync(join(desktopDir, 'node_modules', 'electron', 'package.json'), 'utf8'),
 ).version;
+// アプリの版は、ルートの package.json の version（まだ決めていなければ 0.0.0）。ビルド番号にはコミットを入れ、
+// 作り直すたびに「この .app をどのコミットから作ったか」を、Finder の情報（CFBundleVersion）で見分けられるようにする
+const rootPackage = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+const appVersion = typeof rootPackage.version === 'string' ? rootPackage.version : '0.0.0';
+const commit = (() => {
+  try {
+    return execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
+      cwd: root,
+      encoding: 'utf8',
+    }).trim();
+  } catch {
+    // git がない環境（展開したソースなど）でも作れるようにする
+    return 'unknown';
+  }
+})();
 writeFileSync(
   join(stageApp, 'package.json'),
-  `${JSON.stringify({ name: 'mymind', productName: 'mymind', version: '0.1.0', type: 'module', main: desktopPackage.main }, null, 2)}\n`,
+  `${JSON.stringify({ name: 'mymind', productName: 'mymind', version: appVersion, type: 'module', main: desktopPackage.main }, null, 2)}\n`,
 );
 
 // Resources に入れるもの。名前は起動したアプリが探す名前（packageLayout.ts）と同じにする
@@ -74,15 +90,20 @@ const extraResource = Object.entries(resources).map(([name, from]) => {
   return to;
 });
 
+const platformArch =
+  process.env.MYMIND_PACKAGE_ARCH ?? (process.arch === 'arm64' ? 'arm64' : 'x64');
 const [appPath] = await packager({
   dir: stageApp,
   out: join(desktopDir, 'out'),
   overwrite: true,
   platform: 'darwin',
-  arch: process.arch === 'arm64' ? 'arm64' : 'x64',
+  // CI（Linux）でも中身を確かめられるよう、mac 用の .app を作る。arch は MYMIND_PACKAGE_ARCH で変えられる
+  arch: platformArch,
   name: 'mymind',
   electronVersion,
   appBundleId: 'local.mymind.desktop',
+  appVersion,
+  buildVersion: `${appVersion}+${commit}`,
   appCategoryType: 'public.app-category.productivity',
   icon: join(desktopDir, 'assets', 'icon.icns'),
   extraResource,

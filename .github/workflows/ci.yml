@@ -96,6 +96,10 @@ jobs:
       - if: steps.gate.outputs.enabled == 'true'
         name: デスクトップアプリの E2E
         run: xvfb-run --auto-servernum pnpm test:desktop
+      # 自分用の mymind.app（mac 用）を作り、中身と、中の成果物だけでサーバーが動くことを確かめる（#211、NFR-25）
+      - if: steps.gate.outputs.enabled == 'true'
+        name: デスクトップアプリの .app を作って確かめる
+        run: pnpm --filter @mymind/desktop package && pnpm --filter @mymind/desktop package:check
       - uses: actions/upload-artifact@v7
         if: failure() && steps.gate.outputs.enabled == 'true'
         with:
