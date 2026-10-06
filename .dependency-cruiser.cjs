@@ -31,9 +31,10 @@ module.exports = {
     },
     {
       name: 'no-child-process-outside-agent',
-      comment: 'エージェントの起動は packages/agent の AgentRunner を経由する',
+      comment:
+        'エージェントの起動は packages/agent の AgentRunner を経由する。ビルド用のスクリプト（apps/*/scripts、ルートの scripts と同じ扱い）は対象外',
       severity: 'error',
-      from: { pathNot: '^packages/agent/' },
+      from: { pathNot: '^(packages/agent/|apps/[^/]+/scripts/)' },
       to: { path: '^(node:)?child_process$', dependencyTypes: ['core'] },
     },
     {
@@ -68,7 +69,8 @@ module.exports = {
   ],
   options: {
     doNotFollow: { path: 'node_modules' },
-    exclude: { path: '(^|/)(dist|coverage)/' },
+    // ビルドの出力（apps/desktop/out は .app を作ったときの出力）は調べない
+    exclude: { path: '(^|/)(dist|coverage)/|^apps/desktop/out/' },
     tsPreCompilationDeps: true,
     tsConfig: { fileName: 'tsconfig.base.json' },
     enhancedResolveOptions: { exportsFields: ['exports'], conditionNames: ['import', 'types'] },
