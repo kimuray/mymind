@@ -95,4 +95,36 @@ test.describe('NFR-01 デスクトップアプリ', () => {
     await expect(row).toContainText('デスクトップアプリの通知');
     await expect(row).toContainText('使えます');
   });
+
+  test('FR-U01 アプリのメニューは mymind・編集・表示・ウィンドウ', async () => {
+    await app.firstWindow();
+    const labels = await app.evaluate(({ Menu }) =>
+      (Menu.getApplicationMenu()?.items ?? []).map((item) => item.label),
+    );
+    expect(labels).toEqual(['mymind', '編集', '表示', 'ウィンドウ']);
+  });
+
+  test('FR-U01 閉じる前の大きさと位置で、ウィンドウを開き直す', async () => {
+    const window = await app.firstWindow();
+    await expect(window.getByLabel('今日のタスクを追加')).toBeVisible({ timeout: 30_000 });
+    const bounds = { x: 40, y: 60, width: 1100, height: 760 };
+    await app.evaluate(
+      ({ BrowserWindow }, b) => BrowserWindow.getAllWindows()[0]?.setBounds(b),
+      bounds,
+    );
+    // 利用者が閉じるとき（⌘W、閉じるボタン）と同じく、ウィンドウを閉じる
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0]?.close());
+    await expect
+      .poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length))
+      .toBe(0);
+    // Dock のアイコンを押したときと同じ
+    await app.evaluate(({ app: electronApp }) => electronApp.emit('activate'));
+    await expect
+      .poll(() => app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows().length))
+      .toBe(1);
+    const reopened = await app.evaluate(({ BrowserWindow }) =>
+      BrowserWindow.getAllWindows()[0]?.getBounds(),
+    );
+    expect(reopened).toMatchObject({ width: 1100, height: 760 });
+  });
 });

@@ -11,10 +11,12 @@ import {
   Menu,
   Notification,
   nativeImage,
+  screen,
   shell,
   Tray,
   utilityProcess,
 } from 'electron';
+import { buildAppMenu } from './appMenu';
 import { initLoginItemOnce, readDesktopState, writeDesktopState } from './desktopState';
 import { IPC, type LoginItemState } from './ipc';
 import { isAppUrl, isExpectedServerUrl, isExternalWebUrl, serverPort } from './navigation';
@@ -22,6 +24,7 @@ import { handleNotifyRequest } from './notifications';
 import { resolveResources, serverEnv } from './resources';
 import { createSupervisor, type ServerProcess } from './supervisor';
 import { buildTrayMenu } from './tray';
+import { fitWindowBounds, MIN_WINDOW, readWindowBounds, writeWindowBounds } from './windowState';
 
 /**
  * デスクトップアプリのメインプロセス（ADR-0015）。
@@ -64,11 +67,16 @@ function openWindow(path?: string) {
     mainWindow.focus();
     return;
   }
+  // 前に閉じたときの大きさと位置で開く。外したディスプレイの上にあったときは、いちばん目の画面に戻す（DESIGN.md 3.1）
+  const boundsPath = join(app.getPath('userData'), 'window-state.json');
+  const bounds = fitWindowBounds(
+    readWindowBounds(boundsPath),
+    screen.getAllDisplays().map((d) => d.workArea),
+  );
   const window = new BrowserWindow({
-    width: 1440,
-    height: 900,
-    minWidth: 960,
-    minHeight: 640,
+    ...bounds,
+    minWidth: MIN_WINDOW.width,
+    minHeight: MIN_WINDOW.height,
     title: 'mymind',
     show: false,
     webPreferences: {
@@ -92,6 +100,26 @@ function openWindow(path?: string) {
     return { action: 'deny' };
   });
   window.once('ready-to-show', () => window.show());
+  // 大きさと位置を覚える（フルスクリーンやしまったときは、元の大きさ）。閉じる直前だけでなく、
+  // 変えたときにも少し待ってから覚える（アプリが強制終了しても、最後の大きさで開けるように）
+  const saveBounds = () => {
+    try {
+      writeWindowBounds(boundsPath, window.getNormalBounds());
+    } catch (e) {
+      console.warn('ウィンドウの大きさと位置を覚えられませんでした', e);
+    }
+  };
+  let saveTimer: NodeJS.Timeout | null = null;
+  const saveSoon = () => {
+    if (saveTimer !== null) clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveBounds, 500);
+  };
+  window.on('resize', saveSoon);
+  window.on('move', saveSoon);
+  window.on('close', () => {
+    if (saveTimer !== null) clearTimeout(saveTimer);
+    saveBounds();
+  });
   window.on('closed', () => {
     mainWindow = null;
     // ウィンドウを閉じてもアプリとサーバーは動き続ける。Dock からは消し、メニューバーから開き直す
@@ -245,7 +273,12 @@ if (!app.requestSingleInstanceLock()) {
   app.quit();
 } else {
   app.on('second-instance', () => openWindow());
+  app.setName('mymind');
   app.whenReady().then(() => {
+    // 画面のショートカットと重ならないメニュー（DESIGN.md 3.1、FR-U01）
+    Menu.setApplicationMenu(Menu.buildFromTemplate(buildAppMenu({ isDev: !app.isPackaged })));
+    // .app では Info.plist のアイコンを使う。開発時の Dock にもマメを出す
+    if (!app.isPackaged) app.dock?.setIcon(join(resources.assets, 'icon.png'));
     registerIpc();
     initLoginItem();
     createTray();

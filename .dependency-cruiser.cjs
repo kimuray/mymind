@@ -48,7 +48,8 @@ module.exports = {
       comment:
         'apps/desktop はサーバーを起動するために apps/server だけを読み込み、DB やエージェントを直接使わない（ADR-0015）',
       severity: 'error',
-      from: { path: '^apps/desktop/' },
+      // テストだけは、メニューのキーが画面のキーと重ならないかを確かめるため、画面のキーマップを読む
+      from: { path: '^apps/desktop/', pathNot: '\\.test\\.ts$' },
       to: { path: '^(apps/web/|packages/)' },
     },
     {
