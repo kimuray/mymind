@@ -1,5 +1,7 @@
 node_modules/
 dist/
+# デスクトップアプリの .app（pnpm desktop:package の出力）
+apps/desktop/out/
 coverage/
 playwright-report/
 test-results/

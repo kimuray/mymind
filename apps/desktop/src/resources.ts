@@ -1,4 +1,5 @@
 import { join, resolve } from 'node:path';
+import { PACKAGED_RESOURCES, SERVER_ENTRY } from './packageLayout';
 
 /** サーバーに渡す成果物の場所（ADR-0016） */
 export type Resources = {
@@ -21,17 +22,18 @@ export function resolveResources(input: {
   appDir: string;
 }): Resources {
   if (input.isPackaged) {
+    const at = (name: string) => join(input.resourcesPath, name);
     return {
-      serverEntry: join(input.resourcesPath, 'server', 'server.mjs'),
-      webDist: join(input.resourcesPath, 'web'),
-      prompts: join(input.resourcesPath, 'prompts'),
-      migrations: join(input.resourcesPath, 'migrations'),
-      assets: join(input.resourcesPath, 'assets'),
+      serverEntry: join(at(PACKAGED_RESOURCES.server), SERVER_ENTRY),
+      webDist: at(PACKAGED_RESOURCES.web),
+      prompts: at(PACKAGED_RESOURCES.prompts),
+      migrations: at(PACKAGED_RESOURCES.migrations),
+      assets: at(PACKAGED_RESOURCES.assets),
     };
   }
   const root = resolve(input.appDir, '../..');
   return {
-    serverEntry: join(input.appDir, 'dist', 'server.mjs'),
+    serverEntry: join(input.appDir, 'dist', SERVER_ENTRY),
     webDist: join(root, 'apps', 'web', 'dist'),
     prompts: join(root, 'prompts'),
     migrations: join(root, 'packages', 'db', 'migrations'),
