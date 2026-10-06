@@ -9,6 +9,7 @@ import {
   type IpcMainInvokeEvent,
   ipcMain,
   Menu,
+  Notification,
   nativeImage,
   shell,
   Tray,
@@ -17,7 +18,7 @@ import {
 import { initLoginItemOnce, readDesktopState, writeDesktopState } from './desktopState';
 import { IPC, type LoginItemState } from './ipc';
 import { isAppUrl, isExpectedServerUrl, isExternalWebUrl, serverPort } from './navigation';
-
+import { handleNotifyRequest } from './notifications';
 import { resolveResources, serverEnv } from './resources';
 import { createSupervisor, type ServerProcess } from './supervisor';
 import { buildTrayMenu } from './tray';
@@ -179,6 +180,22 @@ const startServer = (): ServerProcess => {
     env: serverEnv(process.env, resources),
     stdio: 'inherit',
   });
+  // サーバーからの通知の依頼に答える（FR-N05）。待ち受けの知らせ（ready・fatal）は見守り役が扱う
+  child.on('message', (raw) => {
+    const parsed = desktopMessageSchema.safeParse(raw);
+    if (!parsed.success || parsed.data.type !== 'notify') return;
+    child.postMessage(
+      handleNotifyRequest(parsed.data, {
+        isSupported: () => Notification.isSupported(),
+        show: (content, onClick) => {
+          const notice = new Notification({ title: content.title, body: content.body });
+          notice.on('click', onClick);
+          notice.show();
+        },
+        openPath: (path) => openWindow(path),
+      }),
+    );
+  });
   return {
     onExit: (listener) => child.on('exit', listener),
     onMessage: (listener) => child.on('message', listener),
@@ -192,7 +209,7 @@ const supervisor = createSupervisor({
   start: startServer,
   parseMessage: (raw) => {
     const parsed = desktopMessageSchema.safeParse(raw);
-    if (!parsed.success) return null;
+    if (!parsed.success || parsed.data.type === 'notify') return null;
     // 起動したときに決めた 127.0.0.1 のポートでなければ開かず、起動できなかったことにする（ADR-0007）
     if (
       parsed.data.type === 'ready' &&

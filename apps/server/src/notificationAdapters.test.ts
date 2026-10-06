@@ -7,6 +7,7 @@ import {
   createBannerChannel,
   createBrowserChannel,
   createBrowserPermissionState,
+  createDesktopChannel,
   createMacosChannel,
   createNotificationRouter,
   createPendingNotifications,
@@ -231,5 +232,28 @@ describe('FR-N05 画面のバナーとブラウザの通知の API', () => {
     });
     expect(bad.status).toBe(400);
     expect(permission.get()).toBe('granted');
+  });
+});
+
+describe('FR-N05 デスクトップアプリの通知', () => {
+  it('デスクトップアプリでは OS の通知で出し、出せなければ画面のバナーに回す', async () => {
+    const pending = createPendingNotifications(() => NOW);
+    const events = createEventBus();
+    let desktopOk = true;
+    const router = createNotificationRouter(
+      [
+        createDesktopChannel({
+          notify: async () =>
+            desktopOk ? { ok: true } : { ok: false, message: 'この環境では OS の通知を使えません' },
+        }),
+        createBannerChannel({ pending, events }),
+      ],
+      createLogger({ write: () => {} }),
+    );
+    expect(await router.notify(morning)).toEqual({ ok: true });
+    expect(pending.list()).toEqual([]);
+    desktopOk = false;
+    expect(await router.notify(morning)).toEqual({ ok: true });
+    expect(pending.list()).toHaveLength(1);
   });
 });
