@@ -6,3 +6,10 @@ packages:
 # ほかの依存関係（esbuild など）の扱いは issue 015 で決める
 onlyBuiltDependencies:
   - electron
+
+# 推移的な依存関係の脆弱性の修正版に上げる（NFR-26）。親（vitest、@vitest/coverage-v8）が修正版に追いついたら外す
+overrides:
+  # GHSA-5gmw-xhrv-c9v3、GHSA-85c8-ppgw-ccpr（critical）。vitest 3 は ^1.1.1 を求めるが、修正版は 2.1.2 から
+  tinypool: ^2.1.2
+  # GHSA-68fv-2mgg-jv7q（high）
+  source-map-js: ^1.2.2
