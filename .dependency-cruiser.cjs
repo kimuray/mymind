@@ -68,7 +68,8 @@ module.exports = {
   ],
   options: {
     doNotFollow: { path: 'node_modules' },
-    exclude: { path: '(^|/)(dist|coverage)/' },
+    // ビルドの出力（apps/desktop/out は .app を作ったときの出力）は調べない
+    exclude: { path: '(^|/)(dist|coverage)/|^apps/desktop/out/' },
     tsPreCompilationDeps: true,
     tsConfig: { fileName: 'tsconfig.base.json' },
     enhancedResolveOptions: { exportsFields: ['exports'], conditionNames: ['import', 'types'] },

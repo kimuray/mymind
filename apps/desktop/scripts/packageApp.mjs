@@ -27,7 +27,9 @@ const required = [
 ];
 const missing = required.filter((p) => !existsSync(p));
 if (missing.length > 0) {
-  console.error(`先に pnpm build を実行してください。見つからないファイル:\n  ${missing.join('\n  ')}`);
+  console.error(
+    `先に pnpm build を実行してください。見つからないファイル:\n  ${missing.join('\n  ')}`,
+  );
   process.exit(1);
 }
 
@@ -92,4 +94,4 @@ const [appPath] = await packager({
     ? {}
     : { download: { cacheRoot: process.env.electron_config_cache } }),
 });
-console.log(`mymind.app を作りました: ${join(appPath, 'mymind.app')}`);
+process.stdout.write(`mymind.app を作りました: ${join(appPath, 'mymind.app')}\n`);
