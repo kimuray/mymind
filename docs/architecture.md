@@ -127,6 +127,22 @@ CREATE TABLE tasks (
   version INTEGER NOT NULL DEFAULT 1 -- 古い画面からの更新を検出する（NFR-13）
 );
 
+-- タグ（FR-T13）。color は DESIGN.md のタグの色のトークンの名前
+CREATE TABLE tags (
+  id TEXT PRIMARY KEY,               -- ULID
+  name TEXT NOT NULL,
+  name_key TEXT NOT NULL UNIQUE,     -- 重複の判定に使う（前後の空白を除いて小文字にした名前）
+  color TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+-- タスクに付いたタグ。付け外しはイベントに残さない（requirements.md 5章）
+CREATE TABLE task_tags (
+  task_id TEXT NOT NULL REFERENCES tasks(id),
+  tag_id TEXT NOT NULL REFERENCES tags(id),
+  PRIMARY KEY (task_id, tag_id)
+);
+
 CREATE TABLE day_plans (
   day TEXT NOT NULL,
   task_id TEXT NOT NULL REFERENCES tasks(id),
@@ -393,7 +409,7 @@ PCがスリープしていて時刻を過ぎた場合は、復帰後2時間以�
 
 エージェントへの入力は `packages/agent` の入力組み立て関数だけが作り、次の方針に従います。
 
-- **最小化**：タスクの ID、内部のタイムスタンプ、設定値は送らない。タスクは名前、親の名前、状態、日数だけを送る
+- **最小化**：タスクの ID、内部のタイムスタンプ、設定値は送らない。タスクは名前、親の名前、状態、日数、タグの名前（FR-A13）だけを送る。メモ（FR-T09）は送らない
 - **上限**：日次 FB の入力は、振り返りの本文を合わせて最大 12,000 文字とする。超えた場合は古い情報（直近7日の情報）から削り、それでも超える場合は振り返りの末尾を切り詰め、切り詰めたことを入力に明示する
 - **直近の情報は要点だけ**：直近7日については、振り返りの全文ではなく、調子と「明日の一手」と空白日かどうかだけを送る
 - **月次は段階的にまとめる**：月次総括には、日ごとの FB の要点（よかったこと、気づき、明日の一手）、調子の推移、月の集計値を送り、振り返りの全文は送らない。日次 FB がない日は、その日の振り返りの冒頭だけを送る。上限（20,000 文字）を超える場合は、古い日から振り返りの冒頭を省き、それでも超えれば古い日のよかったことと気づきを省く（調子と明日の一手は残す）。それでも足りない月が出てきたら、週ごとの要約を先に作ってから月次をまとめる段階を加える
