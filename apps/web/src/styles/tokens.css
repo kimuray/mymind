@@ -145,7 +145,6 @@
   --mame-highlight: #ffffff;
 
   /* 4.2 ステータスアイコンと行 */
-  --row-selected-bg: rgba(255, 255, 255, 0.5);
   --row-selected-border: 1.5px solid rgba(47, 75, 124, 0.5);
 
   /* 4.4 ボタン */
