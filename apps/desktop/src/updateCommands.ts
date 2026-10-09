@@ -1,5 +1,5 @@
 import { execFile, spawn } from 'node:child_process';
-import { closeSync, openSync } from 'node:fs';
+import { closeSync, openSync, readdirSync, rmSync } from 'node:fs';
 import { delimiter, join } from 'node:path';
 import type { RunGit, RunningUpdate } from './updater';
 
@@ -22,6 +22,35 @@ export const UPDATE_PATH_CANDIDATES = (home: string): string[] => [
   join(home, '.volta/bin'),
   join(home, '.local/bin'),
 ];
+
+/** 更新のログを残す日数。サーバーのログと同じ（NFR-24） */
+export const UPDATE_LOG_RETENTION_DAYS = 14;
+
+/** 更新のログのファイル名（`update-20261009T064500123Z.log`、時刻は UTC） */
+export function updateLogName(now: Date): string {
+  return `update-${now.toISOString().replace(/[-:.]/g, '')}.log`;
+}
+
+/** 残す日数を過ぎた更新のログのファイル名。名前の形が違うファイルには触れない */
+export function expiredUpdateLogs(names: readonly string[], now: Date): string[] {
+  const limit = now.getTime() - UPDATE_LOG_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+  return names.filter((name) => {
+    const m = /^update-(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(\d{3})Z\.log$/.exec(name);
+    if (m === null) return false;
+    const [, y, mo, d, h, mi, s, ms] = m.map(Number);
+    return Date.UTC(y ?? 0, (mo ?? 1) - 1, d, h, mi, s, ms) < limit;
+  });
+}
+
+/** 古い更新のログを消す。消せなくても更新は止めない */
+export function pruneUpdateLogs(dir: string, now: Date): void {
+  try {
+    for (const name of expiredUpdateLogs(readdirSync(dir), now))
+      rmSync(join(dir, name), { force: true });
+  } catch (e) {
+    console.warn('古い更新のログを消せませんでした', e);
+  }
+}
 
 /** 今の PATH のあとに、よく使われる場所を重複を除いて足す（利用者が決めた順を崩さない） */
 export function buildUpdatePath(current: string | undefined, home: string): string {

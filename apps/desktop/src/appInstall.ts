@@ -41,22 +41,41 @@ export function parseBuildCommit(bundleVersion: string): string | null {
   return match?.[1] ?? null;
 }
 
+/**
+ * 入れ替える先として受け付けるパスか。MYMIND_APP_PATH は外から変えられるので、
+ * 別のアプリを消して写してしまわないよう、絶対パスで、名前が mymind.app のものだけを受け付ける
+ */
+export function isAcceptableAppPath(path: string): boolean {
+  return path.startsWith('/') && !path.split('/').includes('..') && path.endsWith('/mymind.app');
+}
+
+/** 入っている .app の Info.plist から読んだもの。読めなかった値は null */
+export type InstalledApp = { bundleId: string | null; bundleVersion: string | null };
+
 export type AppUpdatePlan =
   | { action: 'install' }
-  | { action: 'skip'; reason: 'not-installed' | 'up-to-date' | 'disabled' };
+  | { action: 'skip'; reason: 'not-installed' | 'up-to-date' | 'disabled' }
+  /** 入れ替えてはいけない（mymind ではない .app が置かれている） */
+  | { action: 'refuse'; reason: string };
 
 export function planAppUpdate(input: {
   options: UpdateAppOptions;
-  /** 入っている .app の CFBundleVersion。入っていなければ null */
-  installedBundleVersion: string | null;
+  /** 入っている .app。入っていなければ null */
+  installed: InstalledApp | null;
   /** 今のコミット（完全なハッシュ） */
   headCommit: string;
 }): AppUpdatePlan {
   if (input.options.skipApp) return { action: 'skip', reason: 'disabled' };
   // 初めて入れるときは、手順（署名していない .app を開く操作）を読んでもらうため、自動では入れない
-  if (input.installedBundleVersion === null) return { action: 'skip', reason: 'not-installed' };
+  if (input.installed === null) return { action: 'skip', reason: 'not-installed' };
+  if (input.installed.bundleId !== APP_BUNDLE_ID) {
+    return {
+      action: 'refuse',
+      reason: `バンドル ID が ${APP_BUNDLE_ID} ではありません（${input.installed.bundleId ?? '読めない'}）`,
+    };
+  }
   if (input.options.force) return { action: 'install' };
-  const built = parseBuildCommit(input.installedBundleVersion);
+  const built = parseBuildCommit(input.installed.bundleVersion ?? '');
   // 短いハッシュの長さは作った時のリポジトリで変わりうるので、前方一致で比べる
   if (built !== null && input.headCommit.startsWith(built)) {
     return { action: 'skip', reason: 'up-to-date' };

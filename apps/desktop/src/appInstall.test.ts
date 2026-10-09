@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
+  APP_BUNDLE_ID,
   appProcessPattern,
+  isAcceptableAppPath,
   parseBuildCommit,
   parseUpdateAppArgs,
   planAppUpdate,
@@ -8,6 +10,7 @@ import {
 
 const HEAD = 'abc1234def5678abc1234def5678abc1234def56';
 const defaults = { force: false, skipApp: false };
+const mymind = (bundleVersion: string) => ({ bundleId: APP_BUNDLE_ID, bundleVersion });
 
 describe('NFR-25 pnpm update-app の引数', () => {
   it('何も付けなければ、作り直しを強制せずアプリも入れ替える', () => {
@@ -45,7 +48,7 @@ describe('NFR-25 mymind.app を入れ替えるかの判断', () => {
     expect(
       planAppUpdate({
         options: defaults,
-        installedBundleVersion: '0.0.0+abc1234',
+        installed: mymind('0.0.0+abc1234'),
         headCommit: HEAD,
       }),
     ).toEqual({ action: 'skip', reason: 'up-to-date' });
@@ -55,7 +58,7 @@ describe('NFR-25 mymind.app を入れ替えるかの判断', () => {
     expect(
       planAppUpdate({
         options: defaults,
-        installedBundleVersion: '0.0.0+0000000',
+        installed: mymind('0.0.0+0000000'),
         headCommit: HEAD,
       }),
     ).toEqual({ action: 'install' });
@@ -65,7 +68,7 @@ describe('NFR-25 mymind.app を入れ替えるかの判断', () => {
     expect(
       planAppUpdate({
         options: defaults,
-        installedBundleVersion: '0.0.0+unknown',
+        installed: mymind('0.0.0+unknown'),
         headCommit: HEAD,
       }),
     ).toEqual({ action: 'install' });
@@ -75,7 +78,7 @@ describe('NFR-25 mymind.app を入れ替えるかの判断', () => {
     expect(
       planAppUpdate({
         options: { ...defaults, force: true },
-        installedBundleVersion: '0.0.0+abc1234',
+        installed: mymind('0.0.0+abc1234'),
         headCommit: HEAD,
       }),
     ).toEqual({ action: 'install' });
@@ -85,7 +88,7 @@ describe('NFR-25 mymind.app を入れ替えるかの判断', () => {
     expect(
       planAppUpdate({
         options: { ...defaults, force: true },
-        installedBundleVersion: null,
+        installed: null,
         headCommit: HEAD,
       }),
     ).toEqual({ action: 'skip', reason: 'not-installed' });
@@ -95,10 +98,38 @@ describe('NFR-25 mymind.app を入れ替えるかの判断', () => {
     expect(
       planAppUpdate({
         options: { force: true, skipApp: true },
-        installedBundleVersion: '0.0.0+0000000',
+        installed: mymind('0.0.0+0000000'),
         headCommit: HEAD,
       }),
     ).toEqual({ action: 'skip', reason: 'disabled' });
+  });
+});
+
+describe('NFR-25 入れ替える先の確かめ', () => {
+  it('置かれている .app のバンドル ID が mymind でなければ、--force でも入れ替えない', () => {
+    const plan = planAppUpdate({
+      options: { ...defaults, force: true },
+      installed: { bundleId: 'com.example.other', bundleVersion: '1.0' },
+      headCommit: HEAD,
+    });
+    expect(plan.action).toBe('refuse');
+  });
+
+  it('バンドル ID を読めない .app も、入れ替えない', () => {
+    const plan = planAppUpdate({
+      options: defaults,
+      installed: { bundleId: null, bundleVersion: null },
+      headCommit: HEAD,
+    });
+    expect(plan.action).toBe('refuse');
+  });
+
+  it('入れ替える先は、絶対パスで名前が mymind.app のものだけを受け付ける', () => {
+    expect(isAcceptableAppPath('/Applications/mymind.app')).toBe(true);
+    expect(isAcceptableAppPath('/Users/me/Applications/mymind.app')).toBe(true);
+    expect(isAcceptableAppPath('/Applications/Safari.app')).toBe(false);
+    expect(isAcceptableAppPath('Applications/mymind.app')).toBe(false);
+    expect(isAcceptableAppPath('/Applications/../System/mymind.app')).toBe(false);
   });
 });
 

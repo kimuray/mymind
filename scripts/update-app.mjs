@@ -12,6 +12,7 @@ import {
   APP_BUNDLE_ID,
   appProcessPattern,
   DEFAULT_APP_PATH,
+  isAcceptableAppPath,
   parseUpdateAppArgs,
   planAppUpdate,
 } from '../apps/desktop/src/appInstall.ts';
@@ -46,11 +47,19 @@ run('pnpm', ['install', '--frozen-lockfile']);
 run('pnpm', ['build']);
 
 const appPath = process.env.MYMIND_APP_PATH ?? DEFAULT_APP_PATH;
+if (!isAcceptableAppPath(appPath)) {
+  console.error(`入れ替える先は、絶対パスで名前が mymind.app のものにしてください: ${appPath}`);
+  process.exit(1);
+}
 const plan = planAppUpdate({
   options,
-  installedBundleVersion: readBundleVersion(appPath),
+  installed: readInstalledApp(appPath),
   headCommit: read('git', ['rev-parse', 'HEAD']),
 });
+if (plan.action === 'refuse') {
+  console.error(`${appPath} は入れ替えません。${plan.reason}`);
+  process.exit(1);
+}
 if (plan.action === 'skip') {
   const why = {
     disabled: 'デスクトップアプリは入れ替えません（--no-app）。',
@@ -88,15 +97,17 @@ console.error(
   '起動時に未適用のマイグレーションがあれば、先に backups/ へスナップショットを取ってから適用します。',
 );
 
-/** 入っている .app の CFBundleVersion。入っていなければ null */
-function readBundleVersion(path) {
+/** 入っている .app の Info.plist の、バンドル ID と版。入っていなければ null */
+function readInstalledApp(path) {
   const plist = join(path, 'Contents', 'Info.plist');
   if (!existsSync(plist)) return null;
-  const result = spawnSync('plutil', ['-extract', 'CFBundleVersion', 'raw', '-o', '-', plist], {
-    encoding: 'utf8',
-  });
-  // 読めない .app は「作ったコミットが分からない」として入れ替える
-  return result.status === 0 ? result.stdout.trim() : '';
+  const value = (key) => {
+    const result = spawnSync('plutil', ['-extract', key, 'raw', '-o', '-', plist], {
+      encoding: 'utf8',
+    });
+    return result.status === 0 ? result.stdout.trim() : null;
+  };
+  return { bundleId: value('CFBundleIdentifier'), bundleVersion: value('CFBundleVersion') };
 }
 
 function isAppRunning(path) {

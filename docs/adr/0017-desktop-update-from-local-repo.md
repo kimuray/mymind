@@ -20,7 +20,7 @@
 
 **確かめるのは、起動して1分後と、6時間おき。** メニューの「アップデートを確認」からも確かめられます。取得できないとき（オフラインなど）は、定期の確認では何も知らせません。更新の確認は、エージェント以外で外部と通信する唯一の機能です（NFR-11 の例外として requirements.md に書く）。通信先は、リポジトリの `origin`（GitHub）だけです。git にはパスワードやパスフレーズを尋ねさせず（`GIT_TERMINAL_PROMPT=0`、`ssh -o BatchMode=yes`）、入力を待って止まらないようにします。
 
-**適用は `pnpm update-app` に任せる。** `pnpm update-app` を広げ、`/Applications/mymind.app` が入っていれば、`.app` の作成、動いているアプリの終了（Apple Event の quit。メニューの「mymind を終了」と同じくサーバーを止めてから終わる）、入れ替え（古い `.app` を脇に退け、写せなければ戻す）、開き直しまでを行います。アプリの「再起動して更新」は、確かめのダイアログのあと、このスクリプトを別のプロセスグループで動かすだけです。ターミナルからの更新とアプリからの更新が同じ手順になります。出力は `~/Library/Logs/mymind/update-<時刻>.log` に書き、失敗したらメニューからログを開けます。
+**適用は `pnpm update-app` に任せる。** `pnpm update-app` を広げ、`/Applications/mymind.app` が入っていれば、`.app` の作成、動いているアプリの終了（Apple Event の quit。メニューの「mymind を終了」と同じくサーバーを止めてから終わる）、入れ替え（古い `.app` を脇に退け、写せなければ戻す）、開き直しまでを行います。アプリの「再起動して更新」は、確かめのダイアログのあと、このスクリプトを別のプロセスグループで動かすだけです。ターミナルからの更新とアプリからの更新が同じ手順になります。出力は `~/Library/Logs/mymind/update-<時刻>.log` に書き、失敗したらメニューからログを開けます。ログは人が失敗の原因を読むための git と pnpm の出力そのままなので JSON にはせず、サーバーのログと同じく14日で消します（NFR-24）。入れ替える先は環境変数（`MYMIND_APP_PATH`）で変えられるので、絶対パスで名前が `mymind.app` のものだけを受け付け、置かれている `.app` のバンドル ID が `local.mymind.desktop` でなければ、移動も削除もせずに止めます（別のアプリを壊さないため）。
 
 **`apps/desktop` で `child_process` を使うのは、更新のコマンドを動かす1ファイルだけにする。** 依存方向の規則（`no-child-process-outside-agent`）は、エージェントの起動を `packages/agent` に閉じ込めるためのものです。git と pnpm はエージェントではなく、`apps/desktop` は `packages/agent` を読み込めない（ADR-0015）ので、`apps/desktop/src/updateCommands.ts` だけを例外にします。PATH は ADR-0016 と同じ理由で、今の PATH によく使われる場所（`/opt/homebrew/bin`、`~/Library/pnpm` など）を足して作ります。
 

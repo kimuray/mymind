@@ -54,7 +54,7 @@ pnpm desktop:package
 
 - 確かめるのは、起動の1分後と6時間おきです。メニューの「アップデートを確認」で今すぐ確かめられます
 - `.app` は、ふだん使うリポジトリ（main にいるチェックアウト）で作ってください。アプリはそのリポジトリの場所を覚えていて、そこで更新します。リポジトリを動かしたときは、作り直して入れ直します
-- 失敗すると、メニューに「アップデートに失敗しました（ログを開く）」が出ます。ログは `~/Library/Logs/mymind/update-<時刻>.log` です。よくある原因は、リポジトリが main にいない、コミットしていない変更がある、GitHub に SSH で接続できない（パスフレーズを尋ねる鍵は使えないので、キーチェーンか ssh-agent に入れておく）です
+- 失敗すると、メニューに「アップデートに失敗しました（ログを開く）」が出ます。ログは `~/Library/Logs/mymind/update-<時刻>.log` で、14日を過ぎたら消えます。よくある原因は、リポジトリが main にいない、コミットしていない変更がある、GitHub に SSH で接続できない（パスフレーズを尋ねる鍵は使えないので、キーチェーンか ssh-agent に入れておく）です
 
 ### ターミナルから更新する
 
@@ -64,7 +64,7 @@ pnpm update-app --force    # .app を必ず作り直す
 pnpm update-app --no-app   # ブラウザ版だけ使う（.app を入れ替えない）
 ```
 
-`main` にいてコミットしていない変更がないことを確かめてから、`git pull --ff-only`、`pnpm install --frozen-lockfile`、`pnpm build` を順に実行します。`/Applications/mymind.app` が入っていれば（場所は `MYMIND_APP_PATH` で変えられる）、続けて次を自動で行います。
+`main` にいてコミットしていない変更がないことを確かめてから、`git pull --ff-only`、`pnpm install --frozen-lockfile`、`pnpm build` を順に実行します。`/Applications/mymind.app` が入っていれば（場所は `MYMIND_APP_PATH` で変えられる。名前が `mymind.app` の絶対パスに限り、置かれている `.app` が mymind でなければ止まる）、続けて次を自動で行います。
 
 1. `.app` を作り直す（`pnpm desktop:package` と同じ）
 2. 動いていれば、mymind を終了させ、サーバーが止まるまで待つ（初めてのとき、macOS がターミナルに mymind の操作を許可するか尋ねる）

@@ -26,7 +26,13 @@ import { handleNotifyRequest } from './notifications';
 import { resolveResources, serverEnv } from './resources';
 import { createSupervisor, type ServerProcess } from './supervisor';
 import { buildTrayMenu } from './tray';
-import { buildUpdateEnv, createGitRunner, startUpdateScript } from './updateCommands';
+import {
+  buildUpdateEnv,
+  createGitRunner,
+  pruneUpdateLogs,
+  startUpdateScript,
+  updateLogName,
+} from './updateCommands';
 import { checkForUpdate, createUpdater, type Updater } from './updater';
 import { fitWindowBounds, MIN_WINDOW, readWindowBounds, writeWindowBounds } from './windowState';
 
@@ -192,10 +198,10 @@ function initUpdater() {
   updater = createUpdater({
     check: () => checkForUpdate(runGit, commit),
     startUpdate: () => {
-      updateLogPath = join(
-        app.getPath('logs'),
-        `update-${new Date().toISOString().replace(/[-:.]/g, '')}.log`,
-      );
+      const logDir = app.getPath('logs');
+      const now = new Date();
+      pruneUpdateLogs(logDir, now);
+      updateLogPath = join(logDir, updateLogName(now));
       return startUpdateScript({ repoPath, env, logPath: updateLogPath });
     },
     notify: ({ title, body }) => {
