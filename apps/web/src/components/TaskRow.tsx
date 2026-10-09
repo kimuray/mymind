@@ -94,6 +94,12 @@ export function TaskRow({
           )}
         </button>
       )}
+      {/* メモがあることだけを示す。中身は詳細ペインで見る（FR-T09） */}
+      {task.noteMd !== null && task.noteMd.trim() !== '' && (
+        <span className="task-note-mark" title="メモあり">
+          メモ
+        </span>
+      )}
       {task.children.total > 0 && (
         <span className="task-children">
           子 <AnimatedNumber value={task.children.closed} />/

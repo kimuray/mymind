@@ -148,6 +148,8 @@ export function useEditTask() {
       input: ScreenState & {
         task: ListTask;
         title?: string;
+        /** メモ（FR-T09）。null で消す */
+        noteMd?: string | null;
         parentId?: string | null;
         order?: { in: 'plan' | 'backlog'; value: number };
       },
@@ -160,10 +162,15 @@ export function useEditTask() {
         }),
       );
     },
-    onMutate: async ({ task, title }) => {
-      if (title === undefined) return;
+    onMutate: async ({ task, title, noteMd }) => {
+      if (title === undefined && noteMd === undefined) return;
       await qc.cancelQueries({ queryKey: ['day'] });
-      patchCachedTask(qc, task.id, { title, version: task.version + 1 });
+      // 続けて保存しても古い版で拒否されないよう、版も先に進めておく（NFR-13）
+      patchCachedTask(qc, task.id, {
+        ...(title === undefined ? {} : { title }),
+        ...(noteMd === undefined ? {} : { noteMd }),
+        version: task.version + 1,
+      });
     },
     onSettled: () => invalidateTasks(qc),
   });

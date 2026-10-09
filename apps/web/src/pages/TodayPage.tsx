@@ -120,6 +120,9 @@ export function TodayPage() {
         onAddChild={(title) =>
           create.mutate({ title, parentId: selected.id, planFor: 'today', ...screen })
         }
+        onSaveNote={async (noteMd) => {
+          await edit.mutateAsync({ task: selected, noteMd, ...screen });
+        }}
       />
     );
 
