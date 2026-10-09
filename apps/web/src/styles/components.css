@@ -102,14 +102,15 @@
 }
 
 .button-primary {
-  background: var(--accent);
+  background: var(--button-primary-bg);
   color: var(--text-on-accent);
-  box-shadow: var(--accent-shadow);
+  box-shadow: var(--button-raised-on-dark);
 }
 
 .button-confirm {
   background: var(--button-confirm-bg);
   color: var(--text-on-accent);
+  box-shadow: var(--button-raised-on-dark);
 }
 
 .button:disabled {
@@ -176,15 +177,13 @@
   outline-offset: 2px;
 }
 
-/* タスクのリスト（ガラスの面は外側だけ。行には backdrop-filter を付けない） */
+/* タスクのリスト（影は外側の面だけに付け、行には付けない。面は neu-raised-2） */
 .task-list {
   display: flex;
   flex-direction: column;
   gap: 2px;
   padding: var(--space-2);
-  border: var(--glass-border);
   border-radius: var(--radius-xl);
-  box-shadow: var(--glass-shadow);
 }
 
 .task-list ul {
@@ -924,7 +923,6 @@
   flex-direction: column;
   gap: var(--space-4);
   padding: var(--space-5);
-  border: var(--glass-border);
   border-radius: var(--radius-xl);
 }
 
@@ -1028,7 +1026,6 @@
   flex-direction: column;
   gap: var(--space-3);
   padding: var(--space-4);
-  border: var(--glass-border);
   border-radius: var(--radius-l);
 }
 
@@ -1581,9 +1578,10 @@
 .feedback-mame {
   display: flex;
   padding: var(--space-2);
-  border: var(--button-secondary-border);
+  border: var(--neu-edge);
   border-radius: var(--radius-full);
-  background: var(--glass-1);
+  background: var(--surface);
+  box-shadow: var(--neu-raised-1);
 }
 
 .feedback-condition-text {
@@ -1806,9 +1804,7 @@
   grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: var(--space-2);
   padding: var(--space-3);
-  border: var(--glass-border);
   border-radius: var(--radius-xl);
-  box-shadow: var(--glass-shadow);
 }
 
 .calendar-weekday {
@@ -1958,9 +1954,7 @@
   flex-direction: column;
   gap: var(--space-4);
   padding: var(--space-5);
-  border: var(--glass-border);
   border-radius: var(--radius-xl);
-  box-shadow: var(--glass-shadow);
 }
 
 .stocktake-card h3 {
@@ -2243,9 +2237,7 @@
   flex-direction: column;
   gap: var(--space-1);
   padding: var(--space-4) 18px 18px;
-  border: var(--glass-border);
   border-radius: var(--radius-xl);
-  box-shadow: var(--glass-shadow);
 }
 
 .timeline-row {
@@ -2643,7 +2635,7 @@
 .loading-note {
   margin: 0;
   font-size: 13px;
-  /* 点滅のいちばん薄いところでも、振り返りの地（--ground-evening）の上で 4.5:1 を保つ（ui.md、NFR-06） */
+  /* 点滅のいちばん薄いところでも、地の上で 4.5:1 を保つ（ui.md、NFR-06） */
   color: var(--ink-2);
   animation: soft-pulse var(--motion-loop) var(--ease-in-out) infinite;
 }
@@ -2721,7 +2713,7 @@
 }
 
 .tag-settings-row + .tag-settings-row {
-  border-top: var(--glass-opaque-border);
+  border-top: var(--divider);
 }
 
 .tag-settings-row > .tag-chip {
@@ -2823,7 +2815,7 @@
 .tag-stats th,
 .tag-stats td {
   padding: var(--space-2) var(--space-3);
-  border-bottom: var(--glass-opaque-border);
+  border-bottom: var(--divider);
   text-align: right;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;

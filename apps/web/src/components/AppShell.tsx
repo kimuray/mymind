@@ -196,7 +196,7 @@ export function AppShell() {
   });
   return (
     <div className="shell">
-      <nav className="pane pane-sidebar glass-1" aria-label="画面">
+      <nav className="pane pane-sidebar neu-raised-2" aria-label="画面">
         <div className="brand">
           <Mame mood="good" size={26} label="mymind" />
           <span className="brand-name">mymind</span>

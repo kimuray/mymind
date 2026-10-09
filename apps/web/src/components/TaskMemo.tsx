@@ -130,7 +130,7 @@ export function TaskMemo({
   return (
     <div className="task-memo" ref={root}>
       {draft.offer !== null && (
-        <div className="draft-offer glass-2" role="status">
+        <div className="draft-offer neu-raised-1" role="status">
           <p>{`保存していないメモの下書きがあります（${formatDateTime(draft.offer.updatedAt)}）`}</p>
           <Button kind="text" onClick={restore}>
             復元する

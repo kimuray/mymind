@@ -2,7 +2,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 
 // トークンの値からコントラスト比を計算する（NFR-06、DESIGN.md 7章）。
-// ガラスの面の上の文字は、画面の E2E（axe）では背景色を決められないので、ここで確かめる
+// 画面の E2E（axe）より先に、トークンを変えた時点で文字が読めることを確かめる
 
 const css = readFileSync(new URL('./tokens.css', import.meta.url), 'utf8');
 const components = readFileSync(new URL('./components.css', import.meta.url), 'utf8');
@@ -51,13 +51,10 @@ const contrast = (a: Rgba, b: Rgba) => {
 };
 
 const ground = token('ground');
-/** 地色の上に重ねたガラスの面（背景のにじみがない場所） */
+/** ニューモフィズムの面は地と同じ色で塗る（DESIGN.md 2.3）。影は文字の後ろにかからない */
 const surfaces = {
   地色: ground,
-  サイドバー: over(token('glass-1'), ground),
-  リスト: over(token('glass-2'), ground),
-  詳細ペイン: over(token('glass-3'), ground),
-  不透明な面: token('glass-opaque'),
+  面: token('surface'),
 };
 
 describe('NFR-06 文字色のコントラスト', () => {
@@ -71,35 +68,38 @@ describe('NFR-06 文字色のコントラスト', () => {
 
   for (const status of ['todo', 'doing', 'paused', 'waiting', 'done', 'cancelled']) {
     it(`状態のバッジ（${status}）の文字は、リストの上のバッジの背景に対して 4.5:1 以上`, () => {
-      const badge = over(token(`status-${status}-bg`), surfaces.リスト);
+      const badge = over(token(`status-${status}-bg`), surfaces.面);
       expect(contrast(token(`status-${status}-text`), badge)).toBeGreaterThanOrEqual(4.5);
     });
   }
 
   for (const color of ['rose', 'amber', 'green', 'teal', 'indigo', 'plum']) {
     it(`FR-T13 タグのチップ（${color}）の文字は、リストの上のチップの背景に対して 4.5:1 以上`, () => {
-      const chip = over(token(`tag-${color}-bg`), surfaces.リスト);
+      const chip = over(token(`tag-${color}-bg`), surfaces.面);
       expect(contrast(token(`tag-${color}-text`), chip)).toBeGreaterThanOrEqual(4.5);
     });
   }
 
-  it('主ボタンの白い文字は、藍色の塗りに対して 4.5:1 以上', () => {
-    expect(contrast(token('text-on-accent'), token('accent'))).toBeGreaterThanOrEqual(4.5);
+  it('主ボタンの白い文字は、主ボタンの塗りに対して 4.5:1 以上', () => {
+    expect(contrast(token('text-on-accent'), token('button-primary-bg'))).toBeGreaterThanOrEqual(
+      4.5,
+    );
   });
 
-  it('確定ボタンの白い文字は、詳細ペインの上の塗りに対して 4.5:1 以上', () => {
-    const fill = over(token('button-confirm-bg'), surfaces.詳細ペイン);
-    expect(contrast(token('text-on-accent'), fill)).toBeGreaterThanOrEqual(4.5);
+  it('確定ボタンの白い文字は、確定ボタンの塗りに対して 4.5:1 以上', () => {
+    expect(contrast(token('text-on-accent'), token('button-confirm-bg'))).toBeGreaterThanOrEqual(
+      4.5,
+    );
   });
 
   it('送信内容の注記（FR-A12）の文字は、強調の背景に対して 4.5:1 以上', () => {
-    const highlight = over(token('status-paused-bg'), over(token('glass-2'), surfaces.詳細ペイン));
+    const highlight = over(token('status-paused-bg'), surfaces.面);
     expect(contrast(token('status-paused-text'), highlight)).toBeGreaterThanOrEqual(4.5);
     expect(contrast(token('ink-2'), highlight)).toBeGreaterThanOrEqual(4.5);
   });
 
   describe('点滅のいちばん薄いところ（DESIGN.md 4.19）', () => {
-    const grounds = { 地色: ground, 振り返りの地色: token('ground-evening') };
+    const grounds = { 地色: ground };
     /** 要素ごと不透明度を下げたときの色（下の地が透ける） */
     const faded = ([r, g, b]: Rgba, under: Rgba) => over([r, g, b, pulseOpacity], under);
 
@@ -114,7 +114,7 @@ describe('NFR-06 文字色のコントラスト', () => {
       });
 
       it(`処理中の主ボタンの白い文字は、${name}の上で点滅しても 4.5:1 以上`, () => {
-        const fill = faded(token('accent'), under);
+        const fill = faded(token('button-primary-bg'), under);
         expect(contrast(faded(token('text-on-accent'), under), fill)).toBeGreaterThanOrEqual(4.5);
       });
 

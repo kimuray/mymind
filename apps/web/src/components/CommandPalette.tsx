@@ -70,7 +70,7 @@ export function CommandPalette({
   return (
     <div ref={backdrop} className="dialog-backdrop">
       <div
-        className="dialog palette glass-4"
+        className="dialog palette neu-raised-3"
         role="dialog"
         aria-modal="true"
         aria-label="コマンドパレット"

@@ -365,7 +365,11 @@ export function CalendarPage({ ym, day }: { ym: string; day: string | undefined 
         )}
         {month.isPending && <Loading />}
         {data !== undefined && (
-          <section ref={grid} className="calendar-grid glass-2" aria-label={formatMonthHeading(ym)}>
+          <section
+            ref={grid}
+            className="calendar-grid neu-inset-2"
+            aria-label={formatMonthHeading(ym)}
+          >
             {WEEKDAY_HEADERS.map((w) => (
               <span key={w} className="calendar-weekday" aria-hidden="true">
                 {w}

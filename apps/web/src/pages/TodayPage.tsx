@@ -191,7 +191,11 @@ export function TodayPage() {
         />
 
         {open.length > 0 && (
-          <ul className="task-list glass-2" aria-label="今日やること" data-motion-key="ui:open">
+          <ul
+            className="task-list neu-raised-2"
+            aria-label="今日やること"
+            data-motion-key="ui:open"
+          >
             {openRows.map(({ task, depth }) => (
               <TaskRow
                 key={task.id}
@@ -221,7 +225,7 @@ export function TodayPage() {
 
         {closed.length > 0 && (
           <section
-            className="task-list task-list-closed glass-2"
+            className="task-list task-list-closed neu-raised-2"
             aria-label="完了"
             data-motion-key="ui:closed"
           >

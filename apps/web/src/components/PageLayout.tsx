@@ -32,7 +32,7 @@ export function PageLayout({
     <>
       <main className="pane pane-main">{children}</main>
       <aside
-        className="pane pane-detail glass-3"
+        className="pane pane-detail neu-raised-2"
         aria-label="詳細"
         data-open={detail === undefined ? 'false' : 'true'}
       >

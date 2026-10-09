@@ -205,7 +205,7 @@ export function BacklogPage() {
         {groups.map((group) => (
           <section
             key={group.key}
-            className="task-list glass-2"
+            className="task-list neu-raised-2"
             aria-label={group.title}
             data-motion-key={`ui:group:${group.key}`}
           >

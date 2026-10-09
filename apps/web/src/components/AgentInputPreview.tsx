@@ -194,7 +194,7 @@ export function AgentInputPreviewView({
         </p>
       </div>
       {other.length > 0 && (
-        <section className="input-section glass-2" aria-label="その他の加工">
+        <section className="input-section neu-raised-1" aria-label="その他の加工">
           {other.map((a) => (
             <AnnotationNote key={`${a.kind}:${a.path}`} annotation={a} />
           ))}
@@ -208,7 +208,7 @@ export function AgentInputPreviewView({
         return (
           <section
             key={s.key}
-            className="input-section glass-2"
+            className="input-section neu-raised-1"
             aria-label={s.title}
             data-annotated={annotations.length > 0}
           >

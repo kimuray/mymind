@@ -181,7 +181,7 @@ function AgentDetail({ agent }: { agent: Health['agent'] }) {
         <h2 className="text-title">エージェント</h2>
         <p className="text-small">FB を書くローカルのエージェント</p>
       </div>
-      <section className="settings-card glass-2" aria-label={agentName(agent.name)}>
+      <section className="settings-card neu-raised-1" aria-label={agentName(agent.name)}>
         <div className="settings-card-title">
           <h3>{agentName(agent.name)}</h3>
           <Chip
@@ -242,7 +242,7 @@ function NotificationDetail({
         <h2 className="text-title">通知</h2>
         <p className="text-small">朝・夜・棚卸しの通知を出す手段</p>
       </div>
-      <section className="settings-card glass-2" aria-label="通知を出す手段">
+      <section className="settings-card neu-raised-1" aria-label="通知を出す手段">
         <div className="settings-card-title">
           <h3>{row.value}</h3>
           <Chip chip={row.chip} />
@@ -283,7 +283,7 @@ function RowDetail({ row }: { row: Row }) {
       <div className="settings-detail-head">
         <h2 className="text-title">{row.label}</h2>
       </div>
-      <section className="settings-card glass-2" aria-label={row.label}>
+      <section className="settings-card neu-raised-1" aria-label={row.label}>
         <div className="settings-card-title">
           <h3>{row.value}</h3>
           <Chip chip={row.chip} />
@@ -304,7 +304,7 @@ function FeedbackSettings() {
   const checked = pending ?? settings.data?.settings.confirmBeforeRequest ?? false;
   const defaultAgent = pendingAgent ?? settings.data?.settings.defaultAgent ?? 'claude';
   return (
-    <section className="task-list settings-status glass-2" aria-label="FB の依頼">
+    <section className="task-list settings-status neu-raised-2" aria-label="FB の依頼">
       <div className="settings-status-head">
         <h2>FB の依頼</h2>
       </div>
@@ -376,7 +376,7 @@ function ReviewSettings() {
   const value = draft ?? String(settings.data?.settings.reviewAfterDays ?? '');
   const isValid = isReviewAfterDays(value);
   return (
-    <section className="task-list settings-status glass-2" aria-label="棚卸し">
+    <section className="task-list settings-status neu-raised-2" aria-label="棚卸し">
       <div className="settings-status-head">
         <h2>棚卸し</h2>
       </div>
@@ -471,7 +471,7 @@ function NotificationSettings() {
     );
   };
   return (
-    <section className="task-list settings-status glass-2" aria-label="通知の設定">
+    <section className="task-list settings-status neu-raised-2" aria-label="通知の設定">
       <div className="settings-status-head">
         <h2>通知</h2>
       </div>
@@ -546,7 +546,7 @@ function NotificationSettings() {
  */
 function McpNotice() {
   return (
-    <section className="task-list settings-status glass-2" aria-label="MCP">
+    <section className="task-list settings-status neu-raised-2" aria-label="MCP">
       <div className="settings-status-head">
         <h2>MCP（ターミナルからの参照）</h2>
       </div>
@@ -574,7 +574,7 @@ function DesktopSettings() {
   }, [bridge]);
   if (bridge === null) return null;
   return (
-    <section className="task-list settings-status glass-2" aria-label="デスクトップアプリ">
+    <section className="task-list settings-status neu-raised-2" aria-label="デスクトップアプリ">
       <div className="settings-status-head">
         <h2>デスクトップアプリ</h2>
       </div>
@@ -644,7 +644,7 @@ function BackupSettings() {
     update.mutate({ backupDir: value }, { onSuccess: () => setDirDraft(null) });
   };
   return (
-    <section className="task-list settings-status glass-2" aria-label="バックアップ">
+    <section className="task-list settings-status neu-raised-2" aria-label="バックアップ">
       <div className="settings-status-head">
         <h2>バックアップ</h2>
       </div>
@@ -750,7 +750,7 @@ export function SettingsPage() {
             アプリの状態、FB の依頼、棚卸し、タグ、通知、バックアップ、MCP
           </p>
         </header>
-        <section className="task-list settings-status glass-2" aria-label="状態">
+        <section className="task-list settings-status neu-raised-2" aria-label="状態">
           <div className="settings-status-head">
             <h2>状態</h2>
             <p className="text-small" aria-live="polite">

@@ -24,7 +24,7 @@ export function AddTaskInput({
   const [title, setTitle] = useState('');
   return (
     <form
-      className={isPrimary ? 'add-task glass-3' : 'add-task add-task-sub'}
+      className={isPrimary ? 'add-task neu-inset-1' : 'add-task add-task-sub'}
       {...(isPrimary ? { 'data-add-task': true } : {})}
       onSubmit={(e) => {
         e.preventDefault();

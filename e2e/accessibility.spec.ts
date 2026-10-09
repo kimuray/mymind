@@ -1,19 +1,25 @@
 import AxeBuilder from '@axe-core/playwright';
 import { type CDPSession, expect, type Page, test } from '@playwright/test';
 
-// 透明度・動きの設定への対応（NFR-22）とコントラストの検査（NFR-06）
+// コントラスト・動きの設定への対応（NFR-22）とコントラストの検査（NFR-06）
 
-/** OS の「透明度を下げる」「視差効果を減らす」を Chromium でエミュレートする */
-async function emulatePreferences(page: Page): Promise<CDPSession> {
+/** OS の「視差効果を減らす」と、必要なら「コントラストを上げる」を Chromium でエミュレートする */
+async function emulatePreferences(
+  page: Page,
+  { moreContrast = false }: { moreContrast?: boolean } = {},
+): Promise<CDPSession> {
   const cdp = await page.context().newCDPSession(page);
   await cdp.send('Emulation.setEmulatedMedia', {
     features: [
-      { name: 'prefers-reduced-transparency', value: 'reduce' },
       { name: 'prefers-reduced-motion', value: 'reduce' },
+      ...(moreContrast ? [{ name: 'prefers-contrast', value: 'more' }] : []),
     ],
   });
   return cdp;
 }
+
+/** 地と面の色（DESIGN.md 2.3 の --ground と --surface） */
+const groundColor = 'rgb(228, 233, 240)';
 
 // サンドボックスの中ではページを使い回す（playwright.config.ts の reuseContext）ので、
 // Playwright が把握していない CDP のエミュレーションを次のテストに残さない。
@@ -38,22 +44,35 @@ const currentMonth = () =>
     .format(new Date(Date.now() - 5 * 60 * 60 * 1000))
     .slice(0, 7);
 
-test.describe('NFR-22 透明度・動きの設定への対応', () => {
-  test('透明度を下げる設定では、ガラスの面を不透明にし、背景のにじみを消す', async ({ page }) => {
-    emulation = await emulatePreferences(page);
+test.describe('NFR-22 コントラスト・動きの設定への対応', () => {
+  test('面は地と同じ色で塗り、背景のにじみも backdrop-filter も使わない', async ({ page }) => {
     await page.goto('/');
     const sidebar = page.getByRole('navigation', { name: '画面' });
     await expect(sidebar).toHaveCSS('backdrop-filter', 'none');
-    await expect(sidebar).toHaveCSS('background-color', 'rgb(251, 249, 245)');
+    await expect(sidebar).toHaveCSS('background-color', groundColor);
+    await expect(page.locator('body')).toHaveCSS('background-color', groundColor);
     await expect(page.locator('body')).toHaveCSS('background-image', 'none');
   });
 
-  test('透明度を下げる設定では、カレンダーの表の面も不透明にする', async ({ page }) => {
-    emulation = await emulatePreferences(page);
+  test('カレンダーの表は、地と同じ色のくぼんだ面にする', async ({ page }) => {
     await page.goto(`/calendar/${currentMonth()}`);
     const grid = page.locator('.calendar-grid');
     await expect(grid).toHaveCSS('backdrop-filter', 'none');
-    await expect(grid).toHaveCSS('background-color', 'rgb(251, 249, 245)');
+    await expect(grid).toHaveCSS('background-color', groundColor);
+    await expect(grid).toHaveCSS('box-shadow', /inset/);
+  });
+
+  test('振り返りの画面も、ほかの画面と同じ地にする', async ({ page }) => {
+    await page.goto('/reflection');
+    await expect(page.locator('body')).toHaveCSS('background-color', groundColor);
+  });
+
+  test('コントラストを上げる設定では、浮き出た面の縁を濃い線にする', async ({ page }) => {
+    const sidebar = page.getByRole('navigation', { name: '画面' });
+    await page.goto('/');
+    await expect(sidebar).toHaveCSS('border-top-color', 'rgba(255, 255, 255, 0.5)');
+    emulation = await emulatePreferences(page, { moreContrast: true });
+    await expect(sidebar).toHaveCSS('border-top-color', 'rgba(26, 31, 41, 0.24)');
   });
 
   test('視差効果を減らす設定では、マメの考え中の泡を動かさない', async ({ page }) => {
@@ -62,15 +81,11 @@ test.describe('NFR-22 透明度・動きの設定への対応', () => {
     await expect(page.locator('.mame-bubbles').first()).toHaveCSS('animation-name', 'none');
   });
 
-  test('設定がなければ、ガラスの面とマメの泡の動きはそのまま', async ({ page }) => {
+  test('設定がなければ、マメの泡の動きはそのまま', async ({ page }) => {
     // E2E は既定で「視差効果を減らす」で動かす（playwright.config.ts）ので、このテストだけ戻す
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     try {
       await page.goto('/dev/mame');
-      await expect(page.getByRole('navigation', { name: '画面' })).not.toHaveCSS(
-        'backdrop-filter',
-        'none',
-      );
       await expect(page.locator('.mame-bubbles').first()).toHaveCSS('animation-name', 'mame-think');
       // 動きの時間と緩急は、DESIGN.md 2.7 のトークンを使う
       await expect(page.locator('.mame-bubbles').first()).toHaveCSS('animation-duration', '1.6s');
@@ -101,8 +116,7 @@ test.describe('NFR-06 コントラスト', () => {
     ['タイムライン', '/timeline'],
   ] as const) {
     test(`${name}の画面に、WCAG 2 AA のコントラストの違反がない`, async ({ page }) => {
-      // ガラスの面とにじみの背景では、axe が文字の背景色を決められず判定できない（incomplete）ので、
-      // 不透明な面にした状態で検査する。ガラスの面の文字色の確認は、トークンの値の検査で補う
+      // 面は地と同じ不透明な色なので、ふだんの画面のまま検査できる（ADR-0018）
       emulation = await emulatePreferences(page);
       await page.goto('/');
       await addTask(page, `コントラスト確認（${name}）`);

@@ -156,7 +156,7 @@ export function TagSettings() {
   const tags = useTags();
   const list = tags.data?.tags ?? [];
   return (
-    <section className="task-list settings-status glass-2" aria-label="タグ">
+    <section className="task-list settings-status neu-raised-2" aria-label="タグ">
       <div className="settings-status-head">
         <h2>タグ</h2>
       </div>

@@ -14,7 +14,7 @@ export function NotificationBanner() {
   return (
     <section className="notification-banners" aria-label="通知" aria-live="polite">
       {notifications.map((n) => (
-        <div key={n.kind} className="notification-banner glass-4" role="status">
+        <div key={n.kind} className="notification-banner neu-raised-3" role="status">
           <h2 className="notification-banner-title">{n.title}</h2>
           <p>{n.body}</p>
           <div className="dialog-actions">

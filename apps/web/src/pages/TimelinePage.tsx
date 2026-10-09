@@ -277,7 +277,7 @@ export function TimelinePage() {
         {data !== undefined && (
           <section
             ref={table}
-            className="timeline-table glass-2"
+            className="timeline-table neu-inset-2"
             aria-label={`${formatRange(data.from, data.to)}のタイムライン`}
             aria-busy={timeline.isPlaceholderData}
             data-updating={timeline.isPlaceholderData}

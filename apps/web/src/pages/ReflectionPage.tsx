@@ -54,23 +54,12 @@ const focusedField = (): FieldKey | null => {
 
 const errorText = (e: unknown) => (e instanceof ApiError ? e.message : '通信に失敗しました');
 
-/** 夕方の地色（DESIGN.md 2.1 の --ground-evening）は、振り返りの画面を開いているあいだだけ使う */
-function useEveningGround() {
-  useEffect(() => {
-    document.body.dataset['ground'] = 'evening';
-    return () => {
-      delete document.body.dataset['ground'];
-    };
-  }, []);
-}
-
 /**
  * 振り返りの画面（Figma「PC/振り返り」、FR-D06・FR-D08）。
  * :day を省けば今の業務日を開き、業務日が変わったら今日へ移るか前の日として続けるかを選ばせる（NFR-14）。
  * :day を指定すれば、過去の日の振り返りを書き足せる
  */
 export function ReflectionPage({ day: dayParam }: { day: string | undefined }) {
-  useEveningGround();
   const guard = useDayGuard(dayParam === undefined);
   const day = dayParam ?? guard.day;
   const log = useDayPlan(day);
@@ -282,7 +271,7 @@ function ReflectionEditor({
         <DaySummary summary={summary} />
 
         {drafts.offer !== null && (
-          <div className="draft-offer glass-2" role="status" data-motion-key="ui:draft-offer">
+          <div className="draft-offer neu-raised-1" role="status" data-motion-key="ui:draft-offer">
             <p>{`保存していない下書きがあります（${formatDateTime(drafts.offer.updatedAt)}）`}</p>
             <Button kind="text" onClick={restoreDrafts}>
               復元する
