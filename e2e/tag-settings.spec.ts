@@ -98,4 +98,24 @@ test.describe('FR-T13 設定の画面でのタグの管理', () => {
     await expect(taskRow(page, title)).toBeVisible();
     await expect(taskRow(page, title).locator('.tag-chip')).toHaveCount(0);
   });
+
+  test('NFR-13 別のタブでタグの名前を変えると、開いている設定の画面にも反映される', async ({
+    page,
+    context,
+  }) => {
+    const tag = unique('タブ');
+    const renamed = unique('別のタブで変えた');
+    await addTaskWithTag(page, unique('タブのタスク'), tag);
+    await page.goto('/settings');
+    await expect(nameInput(page, tag)).toBeVisible();
+
+    const other = await context.newPage();
+    await other.goto('/settings');
+    await nameInput(other, tag).fill(renamed);
+    await nameInput(other, tag).press('Enter');
+    await expect(nameInput(other, renamed)).toBeVisible();
+
+    await expect(nameInput(page, renamed)).toBeVisible();
+    await other.close();
+  });
 });
