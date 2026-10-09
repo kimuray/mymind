@@ -45,7 +45,7 @@ test.describe('NFR-29 ホバーと押下の反応', () => {
     await page.goto('/');
     const primary = page.getByRole('link', { name: /振り返りを書く/ });
     expect(await primary.evaluate((el) => getComputedStyle(el, '::before').backgroundColor)).toBe(
-      'rgba(255, 255, 255, 0.12)',
+      'rgba(255, 255, 255, 0.08)',
     );
   });
 
