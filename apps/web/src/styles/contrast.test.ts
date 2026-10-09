@@ -92,6 +92,17 @@ describe('NFR-06 文字色のコントラスト', () => {
     );
   });
 
+  for (const fill of ['button-primary-bg', 'button-confirm-bg']) {
+    it(`濃いボタン（--${fill}）の中の kbd の白い文字は、ホバーの層が重なっても 4.5:1 以上`, () => {
+      const hovered = over(token('hover-fill-on-accent'), token(fill));
+      for (const under of [token(fill), hovered]) {
+        const kbd = over(token('kbd-bg-on-dark'), under);
+        expect(contrast(token('text-on-accent'), kbd)).toBeGreaterThanOrEqual(4.5);
+      }
+      expect(contrast(token('text-on-accent'), hovered)).toBeGreaterThanOrEqual(4.5);
+    });
+  }
+
   it('送信内容の注記（FR-A12）の文字は、強調の背景に対して 4.5:1 以上', () => {
     const highlight = over(token('status-paused-bg'), surfaces.面);
     expect(contrast(token('status-paused-text'), highlight)).toBeGreaterThanOrEqual(4.5);

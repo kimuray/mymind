@@ -100,7 +100,7 @@
   --motion-loop: 1600ms;
   /* 2.7 動き（ホバーと押下） */
   --hover-fill: rgba(26, 31, 41, 0.05);
-  --hover-fill-on-accent: rgba(255, 255, 255, 0.12);
+  --hover-fill-on-accent: rgba(255, 255, 255, 0.08);
   --press-scale: 0.97;
   --press-scale-icon: 0.88;
   /* 2.7 動き（緩急） */
@@ -182,7 +182,7 @@
   --overlay: rgba(26, 31, 41, 0.18);
 
   /* 4.5 kbd */
-  --kbd-bg-on-dark: rgba(255, 255, 255, 0.18);
+  --kbd-bg-on-dark: rgba(255, 255, 255, 0.1);
 }
 
 /* 「コントラストを上げる」設定では、面の縁を濃い線にし、影を弱める（ADR-0018、NFR-06） */
