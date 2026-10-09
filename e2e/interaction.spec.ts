@@ -179,10 +179,67 @@ test.describe('FR-U01 リストの行の動き', () => {
   test('画面を開いたときは、行を動かさない', async ({ page }) => {
     await page.goto('/');
     await addTask(page, '開いたときの行');
+    // 読み込みの前から記録する。reload の後で記録を始めると、計画が届く速さで記録できる動きが変わる（#247）
+    await page.addInitScript(() => {
+      const log: { id: string; key: string }[] = [];
+      (window as unknown as { __openAnimations: typeof log }).__openAnimations = log;
+      const original = Element.prototype.animate;
+      Element.prototype.animate = function (this: Element, keyframes, options) {
+        if (typeof options === 'object' && typeof options.id === 'string') {
+          log.push({ id: options.id, key: (this as HTMLElement).dataset['motionKey'] ?? '' });
+        }
+        return original.call(this, keyframes, options);
+      };
+    });
     await page.reload();
-    await recordRowAnimations(page);
     await expect(page.locator('.task-row', { hasText: '開いたときの行' })).toBeVisible();
-    expect(await rowAnimations(page)).toEqual([]);
+    // 動きが付くなら、計画が届いて描いた直後に付く。描き終わるのを待ってから見る
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => resolve(null))));
+    const log = await page.evaluate(
+      () =>
+        (window as unknown as { __openAnimations: { id: string; key: string }[] }).__openAnimations,
+    );
+    // 行の移動は1つもない
+    expect(log.filter((a) => a.id === 'list-motion')).toEqual([]);
+    // 読み込み中を経たときのフェードインは、外側の面（ui:）だけで、行には付かない（DESIGN.md 4.19）
+    expect(log.filter((a) => a.id === 'list-fade-in').every((a) => a.key.startsWith('ui:'))).toBe(
+      true,
+    );
+  });
+
+  test('計画が届くのが遅くても、開いたときは行を動かさず、外側の面だけをフェードインする', async ({
+    page,
+  }) => {
+    await page.goto('/');
+    await addTask(page, '遅く届く計画の行');
+    // CI のように計画の応答が遅いときを再現する（#247）
+    await page.route('**/api/days/*', async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      await route.continue();
+    });
+    await page.addInitScript(() => {
+      const log: { id: string; key: string }[] = [];
+      (window as unknown as { __openAnimations: typeof log }).__openAnimations = log;
+      const original = Element.prototype.animate;
+      Element.prototype.animate = function (this: Element, keyframes, options) {
+        if (typeof options === 'object' && typeof options.id === 'string') {
+          log.push({ id: options.id, key: (this as HTMLElement).dataset['motionKey'] ?? '' });
+        }
+        return original.call(this, keyframes, options);
+      };
+    });
+    await page.reload();
+    await expect(page.locator('.task-row', { hasText: '遅く届く計画の行' })).toBeVisible();
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => resolve(null))));
+    const log = await page.evaluate(
+      () =>
+        (window as unknown as { __openAnimations: { id: string; key: string }[] }).__openAnimations,
+    );
+    expect(log.filter((a) => a.id === 'list-motion')).toEqual([]);
+    const fades = log.filter((a) => a.id === 'list-fade-in');
+    expect(fades.length).toBeGreaterThan(0);
+    expect(fades.every((a) => a.key.startsWith('ui:'))).toBe(true);
+    await page.unroute('**/api/days/*');
   });
 
   test('並べ替えると、入れ替わった行が元の位置から滑って移る', async ({ page }) => {
