@@ -27,6 +27,8 @@ import {
   STATUSES,
   type Status,
   statusSinceDay,
+  type TaskEvent,
+  tagStats,
   timelineBreakdown,
   timelineSegments,
   toBusinessDay,
@@ -228,6 +230,31 @@ export function createApi({
    * - parentTitle：親の名前（親が同じ一覧にないときにラベルとして出す）
    * - children：子の数と、そのうち完了・中止の数（「子 1/3」）
    */
+  /**
+   * 期間のタグごとの集計（FR-R08）。件数と日数は domain の tagStats で数え、画面や AI には数えさせない（FR-A10）。
+   * 集計は今付いているタグで行い、タグは名前の順、「タグなし」（tag が null）は最後
+   */
+  const tagStatsOf = (
+    list: readonly Task[],
+    events: ReadonlyMap<string, TaskEvent[]>,
+    range: { from: string; to: string },
+  ) => {
+    const tagsOf = tags.tagsOfTasks(list.map((t) => t.id));
+    const all = tags.list();
+    const byId = new Map(all.map((t) => [t.id, { id: t.id, name: t.name, color: t.color }]));
+    return tagStats(
+      list.map((t) => ({
+        tagIds: (tagsOf.get(t.id) ?? []).map((g) => g.id),
+        events: events.get(t.id) ?? [],
+      })),
+      range,
+      all.map((t) => t.id),
+    ).map(({ tagId, ...counts }) => ({
+      tag: tagId === null ? null : (byId.get(tagId) ?? null),
+      ...counts,
+    }));
+  };
+
   const withListInfo = <T extends Task>(list: T[]) => {
     const parentIds = [...new Set(list.flatMap((t) => (t.parentId === null ? [] : [t.parentId])))];
     const parents = new Map(tasks.findMany(parentIds).map((p) => [p.id, p.title]));
@@ -411,6 +438,16 @@ export function createApi({
       const records = createDayRecordReader({ tasks, logs });
       const days = daysOfMonth(ym.data);
       const completed = records.completedCounts(days.filter((day) => day <= today));
+      // 月のタグごとの集計（FR-R08）。まだ来ていない日は数えない
+      const statsFrom = days[0] ?? today;
+      const lastDay = days.at(-1) ?? today;
+      const statsTo = lastDay < today ? lastDay : today;
+      const statsTasks = statsFrom <= statsTo ? tasks.listTimelineTasks(statsFrom, statsTo) : [];
+      const monthTagStats = tagStatsOf(
+        statsTasks,
+        tasks.listEventsOfTasks(statsTasks.map((t) => t.id)),
+        { from: statsFrom, to: statsTo },
+      );
       // まだ来ていない月も返す（カレンダーで先の月へ移れるように）。日ごとに isFuture で示す
       return c.json({
         ym: ym.data,
@@ -419,6 +456,7 @@ export function createApi({
         summary: toMonthlySummary(jobs.jobs.latestFeedback('monthly', ym.data)),
         summaryJob: jobs.jobs.latestJob('monthly_summary', ym.data) ?? null,
         days: days.map((day) => monthDay(day, today, records, completed)),
+        tagStats: monthTagStats,
       });
     })
 
@@ -470,6 +508,8 @@ export function createApi({
                 : { aiLevel: condition.aiLevel, userLevel: condition.userLevel },
           };
         }),
+        // 表示期間（まだ来ていない日を除く）のタグごとの集計（FR-R08）
+        tagStats: tagStatsOf(list, events, { from, to: drawTo }),
         // 期間の中で先に描き始めるタスクを上に置く
         tasks: rows
           .filter((r) => r.segments.length > 0)

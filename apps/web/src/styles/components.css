@@ -2704,3 +2704,67 @@
     transform: translateY(-0.5em);
   }
 }
+
+/* タグごとの集計（FR-R08、DESIGN.md 4.24）。数は等幅の数字で右にそろえる */
+.tag-stats {
+  width: 100%;
+  max-width: 480px;
+  border-collapse: collapse;
+  font-size: 13px;
+  color: var(--ink-1);
+}
+
+.tag-stats caption {
+  margin-bottom: var(--space-2);
+  text-align: left;
+}
+
+.tag-stats th,
+.tag-stats td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: var(--glass-opaque-border);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tag-stats thead th {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+
+.tag-stats th[scope="row"],
+.tag-stats thead th:first-child {
+  text-align: left;
+}
+
+.tag-stats th[scope="row"] {
+  font-weight: 400;
+}
+
+.tag-stats-none {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.tag-completed {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag-completed li {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tag-completed-count {
+  font-size: 12px;
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
