@@ -21,6 +21,20 @@ describe('NFR-22 ニューモフィズムの面', () => {
     expect(tokens).not.toMatch(/--ground-evening/);
   });
 
+  it('面の塗りに白の半透明を使わない（白は影の明るい側、縁、濃いボタンの上の層だけ）', () => {
+    const allowed = new Set([
+      'neu-light',
+      'neu-edge',
+      'hover-fill-on-accent',
+      'button-raised-on-dark',
+      'button-raised',
+      'kbd-bg-on-dark',
+    ]);
+    const root = tokens.split('@media')[0] ?? '';
+    const whites = [...root.matchAll(/--([\w-]+):[^;]*rgba\(255, 255, 255/g)].map((m) => m[1]);
+    expect(whites.filter((name) => !allowed.has(name ?? ''))).toEqual([]);
+  });
+
   for (const name of cssFiles) {
     it(`${name} は backdrop-filter を使わない`, () => {
       const css = readFileSync(new URL(name, dir), 'utf8');

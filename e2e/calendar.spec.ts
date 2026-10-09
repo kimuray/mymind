@@ -46,6 +46,23 @@ function saveReflection(page: Page, day: string, thoughtsMd: string) {
 const ym = monthBefore(2);
 const dayNumber = (day: string) => Number(day.slice(8));
 
+test.describe('NFR-06 カレンダーの面', () => {
+  test('日のマスは地の色のくぼみで、選んだ日だけ藍色の枠を付け、枠の幅は変えない', async ({
+    page,
+  }) => {
+    await page.goto(`/calendar/${ym}/${ym}-10`);
+    const selected = page.getByRole('link', { name: new RegExp(`月10日（.）`) });
+    const other = page.getByRole('link', { name: new RegExp(`月11日（.）`) });
+    // マスは --surface の面に --neu-inset-1 のくぼみ（DESIGN.md 4.14、ADR-0018）
+    await expect(other).toHaveCSS('background-color', 'rgb(228, 233, 240)');
+    await expect(other).toHaveCSS('box-shadow', /3px 3px 6px 0px inset/);
+    await expect(other).toHaveCSS('border-top-width', '2px');
+    await expect(other).toHaveCSS('border-top-color', 'rgba(0, 0, 0, 0)');
+    await expect(selected).toHaveCSS('border-top-width', '2px');
+    await expect(selected).toHaveCSS('border-top-color', 'rgb(47, 75, 124)');
+  });
+});
+
 test.describe('FR-R04 FR-A05 FR-A09 カレンダー', () => {
   test('振り返りはあるが FB のない日を選ぶと記録が出て、後から FB を依頼できる', async ({
     page,

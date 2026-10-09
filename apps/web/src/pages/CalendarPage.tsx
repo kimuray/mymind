@@ -79,7 +79,7 @@ function DayCell({
     <Link
       to="/calendar/$ym/{-$day}"
       params={{ ym, day: d.day }}
-      className="calendar-cell"
+      className="calendar-cell neu-inset-1"
       data-future={d.isFuture}
       data-today={d.day === today}
       // 選んだ日は URL に入るので、ルーターがそのリンクに aria-current="page" を付ける
