@@ -2103,6 +2103,9 @@
   flex-direction: column;
   gap: 2px;
   max-height: 50vh;
+  /* スクロールする一覧は中の影を切り取るので、kbd と選択の面の影が収まる余白を取り、外へ広げて位置は保つ */
+  margin: 0 calc(var(--space-3) * -1);
+  padding: var(--space-2) var(--space-3);
   overflow-y: auto;
 }
 
@@ -2134,7 +2137,9 @@
   flex-direction: column;
   gap: var(--space-2);
   max-height: 60vh;
-  margin: 0;
+  /* .palette-list と同じく、kbd の影が切れない余白を取る */
+  margin: 0 calc(var(--space-3) * -1);
+  padding: var(--space-2) var(--space-3);
   overflow-y: auto;
 }
 
