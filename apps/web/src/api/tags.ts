@@ -122,3 +122,31 @@ export function useDetachTag() {
     },
   });
 }
+
+/** タグの名前か色を変える（FR-T13、設定の画面）。行のチップも変わるので、タスクの一覧も読み直す */
+export function useUpdateTag() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { id: string; name?: string; color?: TagColor }) =>
+      unwrap(
+        await api.tags[':id'].$patch({
+          param: { id: input.id },
+          json: {
+            ...(input.name === undefined ? {} : { name: input.name }),
+            ...(input.color === undefined ? {} : { color: input.color }),
+          },
+        }),
+      ),
+    onSettled: () => invalidateTasks(qc),
+  });
+}
+
+/** タグを消す。付いていたタスクからも外れる（FR-T13） */
+export function useDeleteTag() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => unwrap(await api.tags[':id'].$delete({ param: { id } })),
+    onSuccess: (data) => qc.setQueryData(tagsKey, data),
+    onSettled: () => invalidateTasks(qc),
+  });
+}
