@@ -4,6 +4,21 @@ import { expect, test } from '@playwright/test';
 
 const uniqueTitle = (base: string) => `${base}-${Date.now().toString(36)}`;
 
+test.describe('NFR-06 タイムラインの面', () => {
+  test('調子のレーンは地の色のくぼみで、タスクの行には縞模様を付けない', async ({ page }) => {
+    await page.goto('/timeline');
+    const lane = page.locator('.timeline-lane');
+    // 調子のレーンは --neu-inset-1 のくぼみ（DESIGN.md 4.8、ADR-0018）
+    await expect(lane).toHaveCSS('background-color', 'rgb(228, 233, 240)');
+    await expect(lane).toHaveCSS('box-shadow', /3px 3px 6px 0px inset/);
+    const rows = page.locator('.timeline-task');
+    const count = await rows.count();
+    for (let i = 0; i < Math.min(count, 4); i++) {
+      await expect(rows.nth(i)).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    }
+  });
+});
+
 test.describe('FR-R01 FR-R02 FR-R03 タイムライン', () => {
   test('着手したタスクが横棒で出て、行を選ぶと内訳が出る', async ({ page }) => {
     const title = uniqueTitle('タイムラインで見る');

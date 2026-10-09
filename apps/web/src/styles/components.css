@@ -1839,20 +1839,15 @@
   align-items: center;
   gap: 2px;
   padding: var(--space-2) 6px;
-  border: var(--calendar-cell-border);
+  /* 選んだ日の枠と同じ幅を取っておき、選んでも中身が動かないようにする */
+  border: 2px solid transparent;
   border-radius: var(--radius-l);
-  background: var(--calendar-cell-bg);
   color: var(--ink-2);
   text-decoration: none;
 }
 
-.calendar-cell[data-future="true"] {
-  background: var(--calendar-cell-future-bg);
-}
-
 .calendar-cell[data-selected="true"] {
-  border: 2px solid var(--accent);
-  background: var(--calendar-cell-selected-bg);
+  border-color: var(--accent);
 }
 
 .calendar-date {
@@ -2318,7 +2313,6 @@
 
 .timeline-lane {
   height: 48px;
-  background: var(--timeline-lane);
 }
 
 .timeline-lane-label {
@@ -2329,10 +2323,6 @@
 
 .timeline-task {
   height: 46px;
-}
-
-.timeline-task:nth-of-type(even) {
-  background: var(--timeline-stripe);
 }
 
 .timeline-cell {
@@ -2348,6 +2338,11 @@
 
 .timeline-cell[data-column="today"] {
   background: var(--timeline-today-col);
+}
+
+/* 調子のレーンはくぼみの面なので、列の塗りでくぼみの影を隠さない（Figma の 調子） */
+.timeline-lane .timeline-cell[data-column] {
+  background: none;
 }
 
 .timeline-name {

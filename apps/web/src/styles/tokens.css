@@ -162,12 +162,6 @@
   /* 4.7 Markdown のプレビューと、書く／プレビューの切り替え */
   --code-bg: rgba(26, 31, 41, 0.06);
 
-  /* 4.14 カレンダー */
-  --calendar-cell-bg: rgba(255, 255, 255, 0.32);
-  --calendar-cell-future-bg: rgba(255, 255, 255, 0.16);
-  --calendar-cell-border: 1px solid rgba(255, 255, 255, 0.75);
-  --calendar-cell-selected-bg: rgba(255, 255, 255, 0.72);
-
   /* 4.8 タイムラインの横棒と列（2.2 の状態の表現） */
   --timeline-paused-fill: #eadfc6;
   --timeline-waiting-fill: rgba(154, 79, 50, 0.5);
@@ -175,8 +169,6 @@
   --timeline-today-col: rgba(47, 75, 124, 0.07);
   --timeline-weekend-head: rgba(26, 31, 41, 0.04);
   --timeline-weekend-col: rgba(26, 31, 41, 0.03);
-  --timeline-stripe: rgba(255, 255, 255, 0.14);
-  --timeline-lane: rgba(255, 255, 255, 0.26);
 
   /* 4.9 ダイアログ */
   --overlay: rgba(26, 31, 41, 0.18);
