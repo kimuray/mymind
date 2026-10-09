@@ -63,6 +63,12 @@ ul {
 .neu-raised-3,
 .neu-inset-1,
 .neu-inset-2 {
+  /*
+   * 面をいつも中の要素の位置の基準（offsetParent）にする。ガラスのときは backdrop-filter がそうしていた。
+   * 基準でないと、面に transform の動きが走っている間だけ基準が変わり、行の位置の測り方が丸めの分ぶれて、
+   * 動いていない行に動きを付けてしまう（DESIGN.md 4.18、apps/web/src/listMotion.ts）
+   */
+  position: relative;
   background: var(--surface);
 }
 
