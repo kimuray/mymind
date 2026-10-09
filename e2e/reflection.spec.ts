@@ -214,22 +214,26 @@ test.describe('NFR-12 下書きの保護', () => {
 
 test.describe('FR-D07 振り返りの冒頭の記録のまとめ', () => {
   test('今日の画面でタスクを完了にすると、振り返りの冒頭の完了に出る', async ({ page }) => {
+    // 再試行や繰り返しの実行で前のタスクと重ならないよう、名前を毎回変える
+    const title = `まとめに出るタスク-${Date.now().toString(36)}`;
     await page.goto('/');
     const input = page.getByLabel('今日のタスクを追加');
-    await input.fill('まとめに出るタスク');
+    await input.fill(title);
     await input.press('Enter');
-    const row = page.getByRole('button', { name: /^まとめに出るタスク：/ });
-    await expect(row).toBeVisible();
+    const status = (label: string) =>
+      page.getByRole('button', { name: new RegExp(`^${title}：${label}`) });
+    await expect(status('未着手')).toBeVisible();
+    // 状態のアイコンにフォーカスだけを当てる（押すとそれだけで状態が進み、着手中を見逃す。FR-T01 の E2E と同じ）
+    await status('未着手').focus();
     // 未着手 → 着手中 → 完了
-    await row.click();
     await page.keyboard.press(' ');
-    await expect(page.getByRole('button', { name: /^まとめに出るタスク：着手中/ })).toBeVisible();
+    await expect(status('着手中')).toBeVisible();
     await page.keyboard.press(' ');
-    await expect(page.getByRole('button', { name: /^まとめに出るタスク：完了/ })).toBeVisible();
+    await expect(status('完了')).toBeVisible();
 
     await page.goto('/reflection');
     const summary = page.getByRole('region', { name: 'この日の記録' });
-    await expect(summary).toContainText('まとめに出るタスク');
+    await expect(summary).toContainText(title);
     await expect(summary.getByRole('heading', { name: /^完了/ })).toBeVisible();
   });
 });
