@@ -147,39 +147,46 @@ test.describe('NFR-06 コントラスト', () => {
     test(`「コントラストを上げる」設定でも、${name}の画面に違反がない`, async ({ page }) => {
       // 縁を濃い線にし、影を弱めた画面（ADR-0018、DESIGN.md 2.3）
       emulation = await emulatePreferences(page, { moreContrast: true });
+      await page.goto('/');
+      await addTask(page, `コントラスト確認（${name}・高コントラスト）`);
       await page.goto(path);
       await page.waitForLoadState('networkidle');
       await expectNoContrastViolations(page);
     });
   }
 
-  test('タスクを選んで詳細ペインを開いた画面に、違反がない', async ({ page }) => {
-    emulation = await emulatePreferences(page);
-    const title = `コントラスト確認（詳細）-${Date.now().toString(36)}`;
-    await page.goto('/');
-    await addTask(page, title);
-    await page.getByRole('button', { name: title, exact: true }).click();
-    await expect(page.getByRole('complementary', { name: '詳細' })).toContainText(title);
-    await expectNoContrastViolations(page);
-  });
+  for (const moreContrast of [false, true]) {
+    const setting = moreContrast ? '「コントラストを上げる」設定で、' : '';
+    test(`${setting}タスクを選んで詳細ペインを開いた画面に、違反がない`, async ({ page }) => {
+      emulation = await emulatePreferences(page, { moreContrast });
+      const title = `コントラスト確認（詳細）-${Date.now().toString(36)}`;
+      await page.goto('/');
+      await addTask(page, title);
+      await page.getByRole('button', { name: title, exact: true }).click();
+      await expect(page.getByRole('complementary', { name: '詳細' })).toContainText(title);
+      await expectNoContrastViolations(page);
+    });
 
-  test('コマンドパレットを開いた画面に、違反がない', async ({ page }) => {
-    emulation = await emulatePreferences(page);
-    await page.goto('/');
-    await page.locator('body').click();
-    await page.keyboard.press('ControlOrMeta+k');
-    await expect(page.getByRole('dialog', { name: 'コマンドパレット' })).toBeVisible();
-    await expectNoContrastViolations(page);
-    await page.keyboard.press('Escape');
-  });
+    test(`${setting}コマンドパレットを開いた画面に、違反がない`, async ({ page }) => {
+      emulation = await emulatePreferences(page, { moreContrast });
+      await page.goto('/');
+      await page.locator('body').click();
+      await page.keyboard.press('ControlOrMeta+k');
+      await expect(page.getByRole('dialog', { name: 'コマンドパレット' })).toBeVisible();
+      await expectNoContrastViolations(page);
+      await page.keyboard.press('Escape');
+    });
 
-  test('ショートカットの一覧（ダイアログ）を開いた画面に、違反がない', async ({ page }) => {
-    emulation = await emulatePreferences(page);
-    await page.goto('/');
-    await page.locator('body').click();
-    await page.keyboard.press('?');
-    await expect(page.getByRole('dialog', { name: 'ショートカットの一覧' })).toBeVisible();
-    await expectNoContrastViolations(page);
-    await page.keyboard.press('Escape');
-  });
+    test(`${setting}ショートカットの一覧（ダイアログ）を開いた画面に、違反がない`, async ({
+      page,
+    }) => {
+      emulation = await emulatePreferences(page, { moreContrast });
+      await page.goto('/');
+      await page.locator('body').click();
+      await page.keyboard.press('?');
+      await expect(page.getByRole('dialog', { name: 'ショートカットの一覧' })).toBeVisible();
+      await expectNoContrastViolations(page);
+      await page.keyboard.press('Escape');
+    });
+  }
 });
