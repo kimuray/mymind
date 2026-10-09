@@ -3,6 +3,19 @@ import { expect, test } from '@playwright/test';
 // コマンドパレット（FR-U02）とショートカットの一覧（FR-U03）。どちらもキーマップの定義から作る
 
 test.describe('FR-U02 コマンドパレット', () => {
+  test('パレットは、地と同じ色の大きく浮き出た面で出す', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('body').click();
+    await page.keyboard.press('ControlOrMeta+k');
+    const palette = page.getByRole('dialog', { name: 'コマンドパレット' });
+    await expect(palette).toBeVisible();
+    // 画面の上に重なる面は --neu-raised-3（DESIGN.md 2.3、ADR-0018）。半透明にも、ぼかしにもしない
+    await expect(palette).toHaveCSS('background-color', 'rgb(228, 233, 240)');
+    await expect(palette).toHaveCSS('backdrop-filter', 'none');
+    await expect(palette).toHaveCSS('box-shadow', /14px 14px 32px/);
+    await page.keyboard.press('Escape');
+  });
+
   test('⌘K で開き、検索して Enter で画面を移動する', async ({ page }) => {
     await page.goto('/');
     await page.locator('body').click();
