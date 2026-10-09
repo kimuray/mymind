@@ -155,6 +155,9 @@ export function BacklogPage() {
       onMove={(to) => moveTask(selected, to)}
       childTasks={tasks.filter((t) => t.parentId === selected.id)}
       onAddChild={(title) => create.mutate({ title, parentId: selected.id, ...screen })}
+      onSaveNote={async (noteMd) => {
+        await edit.mutateAsync({ task: selected, noteMd, ...screen });
+      }}
     />
   );
 

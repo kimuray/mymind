@@ -15,6 +15,9 @@ export type ReflectionField = 'thoughts' | 'learning';
 export const reflectionDraftKey = (day: string, field: ReflectionField) =>
   `reflection:${day}:${field}`;
 
+/** タスクのメモの下書きのキー（architecture.md 12.2、FR-T09） */
+export const taskNoteDraftKey = (taskId: string) => `task-note:${taskId}`;
+
 /**
  * 画面を開いたときに、復元を尋ねる下書きか。
  * サーバーに保存した後に書き足した（保存した時刻より新しい）下書きで、中身が保存した内容と違うものだけを尋ねる

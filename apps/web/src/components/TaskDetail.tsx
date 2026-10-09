@@ -12,6 +12,7 @@ import { useListMotion } from '../listMotion';
 import { AddTaskInput } from './AddTaskInput';
 import { Button } from './Button';
 import { StatusBadge } from './StatusBadge';
+import { TaskMemo } from './TaskMemo';
 
 /** 詳細ペインの主な操作。状態ごとに、次にとる自然な操作を1つ選ぶ */
 const PRIMARY: Readonly<Record<Status, { to: Status; label: string }>> = {
@@ -51,6 +52,8 @@ type TaskDetailProps = {
   childTasks: readonly ListTask[];
   /** 子タスクを追加する（FR-T02）。追加先は画面で決まる（FR-T01） */
   onAddChild: (title: string) => void;
+  /** メモを保存する（FR-T09）。失敗したら理由を投げる */
+  onSaveNote: (noteMd: string | null) => Promise<void>;
 };
 
 /**
@@ -69,6 +72,7 @@ export function TaskDetail({
   onMove,
   childTasks,
   onAddChild,
+  onSaveNote,
 }: TaskDetailProps) {
   const [showOthers, setShowOthers] = useState(false);
   const events = useTaskEvents(task.id);
@@ -120,6 +124,9 @@ export function TaskDetail({
         <Button onClick={() => onMove('tomorrow')}>明日へ</Button>
         {place === 'today' && <Button onClick={() => onMove('backlog')}>バックログへ</Button>}
       </div>
+
+      {/* タスクごとに作り直す（書きかけと下書きをタスクごとに分け、選び直したときに前のタスクのメモを保存する） */}
+      <TaskMemo key={task.id} task={task} onSave={onSaveNote} />
 
       {canHaveChildren(task) && (
         <section className="task-children-detail" aria-label="子タスク">

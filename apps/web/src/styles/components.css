@@ -249,6 +249,16 @@
   white-space: nowrap;
 }
 
+.task-note-mark {
+  flex-shrink: 0;
+  padding: 1px var(--space-2);
+  border: var(--button-secondary-border);
+  border-radius: var(--radius-full);
+  font-size: 11px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
 .task-children {
   font-size: 12px;
   color: var(--ink-3);
@@ -487,6 +497,22 @@
 }
 
 /* 詳細ペインの子タスク（FR-T02、DESIGN.md 4.12） */
+.task-memo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+/* 詳細ペインの幅に合わせて、メモの欄は振り返りの欄より低くする */
+.task-memo .markdown-editor {
+  min-height: 160px;
+}
+
+.task-memo-status {
+  margin: 0;
+  min-height: 1.2em;
+}
+
 .task-children-detail {
   display: flex;
   flex-direction: column;
