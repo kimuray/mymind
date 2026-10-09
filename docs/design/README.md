@@ -42,9 +42,9 @@ https://www.figma.com/design/VLCoEFLm1ujvYPq8xyEQFg/mymind-view-design
 
 ### 変数とスタイル
 
-- **色の変数**：コレクション `mymind` に24個。名前は DESIGN.md のトークンと同じ（`ink-1`〜`ink-4`、`ground`、`surface`、`line`、`accent`、`accent-strong`、`accent-soft`、`neu-light`、`neu-dark`、`status-*` 6色、`mame-*` 6色）。`surface` は `ground` の別名で、面と地は同じ色です。振り返りの画面も同じ地です（ADR-0019）
+- **色の変数**：コレクション `mymind` に26個。名前は DESIGN.md のトークンと同じ（`ink-1`〜`ink-4`、`ground`、`surface`、`line`、`accent`、`accent-strong`、`accent-soft`、`button-primary`、`button-confirm`、`neu-light`、`neu-dark`、`status-*` 6色、`mame-*` 6色）。`surface` は `ground` の別名で、面と地は同じ色です。振り返りの画面も同じ地です（ADR-0019）
 - **テキストスタイル**：`Display / 30`、`Title / 22`、`Heading / 15`、`Label / 11`、`Body / 14`、`Body Medium / 14`、`Small / 12`、`Caption / 11`
-- **エフェクトスタイル**：`ニューモ / 凸 1`〜`凸 3`、`ニューモ / 凹 1`〜`凹 2`。影の色は変数 `neu-light`・`neu-dark` につないであります
+- **エフェクトスタイル**：`ニューモ / 凸 1`〜`凸 3`、`ニューモ / 凹 1`〜`凹 2`、`ニューモ / ボタン（濃い塗り）`、`ニューモ / ボタン（地の塗り）`。影の色は変数 `neu-light`・`neu-dark` につないであります
 
 ## エージェントが画面を実装するときの手順
 
@@ -59,15 +59,16 @@ Figma に接続できない環境では、`docs/design/mockup-source/` のモッ
 
 面は地と同じ色で塗り、左上に明るい影、右下に暗い影を付けて浮き出させたり、内側に付けてへこませたりします（ADR-0018）。**レイアウト用の入れ物には塗りも影も付けない**（Figma のオートレイアウトは初期値が不透明な白なので、必ず塗りを外す）点と、**影を持つ要素の親では「コンテンツを切り取る」を外す**（外さないと影が途中で切れる）点が、見た目を崩さないための要です。
 
-**実装（CSS）の列のトークンは、まだ定義していません。** `--surface`、`--neu-edge`、`--neu-raised-*`、`--neu-inset-*` は #237 で DESIGN.md と `tokens.css` に足します。それまでは DESIGN.md 2.3（ガラス）が実装の正本で、この列は #237 以降の対応を示す予定の値です。
+**実装（CSS）の列のトークンは、まだ定義していません。** `--surface`、`--neu-edge`、`--neu-raised-*`、`--neu-inset-*`、`--button-*` は #237 で DESIGN.md と `tokens.css` に足します。それまでは DESIGN.md 2.3（ガラス）が実装の正本で、この列は #237 以降の対応を示す予定の値です。
 
 | 要素 | Figma | 実装（CSS、#237 以降） |
 |---|---|---|
 | 地 | フレームの塗り＝変数 `ground`（全画面で同じ）。背景のにじみはない | `background: var(--ground)` |
-| 浮き出た面 | 塗り＝`surface`、線＝白50%・1px、`ニューモ / 凸 2`（ペイン、リスト）、`凸 1`（カード、ボタン、`kbd`、セグメントの外枠）、`凸 3`（ダイアログ、パレット、バナー） | `var(--surface)` ＋ `var(--neu-edge)` ＋ `box-shadow: var(--neu-raised-*)` |
+| 浮き出た面 | 塗り＝`surface`、線＝白50%・1px、`ニューモ / 凸 2`（ペイン、リスト）、`凸 1`（カード、`kbd`、セグメントの外枠）、`凸 3`（ダイアログ、パレット、バナー） | `var(--surface)` ＋ `var(--neu-edge)` ＋ `box-shadow: var(--neu-raised-*)` |
 | くぼんだ面 | 塗り＝`surface`、`ニューモ / 凹 1`（入力欄、選んだ行、選んだセグメント、選んだナビ）、`凹 2`（エディタ、カレンダーとタイムラインの表） | `box-shadow: var(--neu-inset-*)` |
 | 選んだ行 | `凹 1` ＋ 藍50%の枠 1.5px | `var(--neu-inset-1)` ＋ `var(--row-selected-border)` |
-| 主ボタン・確定ボタン | 塗りを残し、`凸 1` | 同じ |
+| 主ボタン・確定ボタン | 塗り＝`button-primary`・`button-confirm`、`ニューモ / ボタン（濃い塗り）` | `var(--button-primary-bg)` ＋ `box-shadow: var(--button-raised-on-dark)` |
+| 副ボタン | 塗り＝`surface`、線＝白50%、`ニューモ / ボタン（地の塗り）` | `var(--surface)` ＋ `box-shadow: var(--button-raised)` |
 | チップ | 状態色を14〜16%で重ねる | `rgba(<状態色>, 0.14)` |
 
 ## 既知の差分
