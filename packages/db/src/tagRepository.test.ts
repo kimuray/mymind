@@ -106,6 +106,16 @@ describe('FR-T13 タグのリポジトリ', () => {
     expect(tags.findByKey('本業')?.id).toBe('g1');
   });
 
+  it('タグを消すと、付いていたタスクの版だけが進む', () => {
+    makeTag('g1', '仕事');
+    attach('t1', 'g1');
+    const t1 = tasks.find('t1')?.version ?? 0;
+    const t2 = tasks.find('t2')?.version ?? 0;
+    tags.delete('g1');
+    expect(tasks.find('t1')?.version).toBe(t1 + 1);
+    expect(tasks.find('t2')?.version).toBe(t2);
+  });
+
   it('タグを消すと、付いていたタスクからも外れる', () => {
     makeTag('g1', '仕事');
     attach('t1', 'g1');

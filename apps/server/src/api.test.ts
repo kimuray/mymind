@@ -1274,6 +1274,17 @@ describe('FR-T13 タグの API', () => {
     expect((await send('DELETE', `/tags/${tagId}`, {})).status).toBe(404);
   });
 
+  it('NFR-13 タグを消すと、付いていたタスクを古い版のまま変えようとする画面は拒否される', async () => {
+    const attached = await attachOk(await addTask(), '仕事');
+    await send('DELETE', `/tags/${(attached.tags[0] as TagJson).id}`, {});
+    const res = await send('PATCH', `/tasks/${attached.task.id}`, {
+      title: '古い画面から',
+      expectedVersion: attached.task.version,
+      expectedDay: TODAY,
+    });
+    expect(res.status).toBe(409);
+  });
+
   it('トークンのない要求ではタグを作れない（403）', async () => {
     const { [TOKEN_HEADER]: _, ...withoutToken } = headers;
     const res = await app.request('/api/tags', {

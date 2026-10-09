@@ -2705,6 +2705,107 @@
   }
 }
 
+/* 設定の「タグ」（FR-T13、DESIGN.md 4.10）。行は チップ・名前・色・件数・削除 を1行に並べ、狭いときは折り返す */
+.tag-settings-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag-settings-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+}
+
+.tag-settings-row + .tag-settings-row {
+  border-top: var(--glass-opaque-border);
+}
+
+.tag-settings-row > .tag-chip {
+  width: 8em;
+}
+
+.tag-settings-name {
+  width: 200px;
+  min-height: 36px;
+  padding: 0 var(--space-3);
+  border: var(--button-secondary-border);
+  border-radius: var(--radius-m);
+  background: var(--button-secondary-bg);
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink-1);
+}
+
+.tag-settings-colors .tag-color-option {
+  width: 24px;
+  height: 24px;
+}
+
+.tag-settings-count {
+  font-size: 12px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.tag-settings-confirm {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 12px;
+  color: var(--status-waiting-text);
+}
+
+.tag-settings-message {
+  flex-basis: 100%;
+  min-height: 0;
+}
+
+.tag-settings-message:empty {
+  display: none;
+}
+
+.tag-settings-empty {
+  padding: var(--space-3) var(--space-4);
+}
+
+/* タグで絞り込む（FR-T14、DESIGN.md 4.23）。追加の欄とリストの間に置く */
+.tag-filter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3) var(--space-4);
+}
+
+.tag-filter-select {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.tag-filter-select select {
+  min-height: 32px;
+  padding: 0 var(--space-3);
+  border: var(--button-secondary-border);
+  border-radius: var(--radius-m);
+  background: var(--button-secondary-bg);
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink-1);
+}
+
+.tag-filter-status {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+}
+
 /* タグごとの集計（FR-R08、DESIGN.md 4.24）。数は等幅の数字で右にそろえる */
 .tag-stats {
   width: 100%;
