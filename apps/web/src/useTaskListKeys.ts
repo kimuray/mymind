@@ -1,6 +1,7 @@
 import { canBecomeChild, canTransition, nextOnAdvance, type Status } from '@mymind/domain';
 import { ApiError } from './api/client';
 import type { ListTask } from './api/tasks';
+import { TASK_TAG_INPUT_ID } from './components/TaskTags';
 import { useKeyBindings } from './keyboard';
 
 /** リストに表示している順の行。order は並べ替えに使う値（今日の計画は position、バックログは sortOrder） */
@@ -103,6 +104,12 @@ export function useTaskListKeys(o: Options) {
     'list.edit': () => {
       if (selected === undefined) return false;
       o.startEdit(selected.task.id);
+      return true;
+    },
+    'list.tag': () => {
+      if (selected === undefined) return false;
+      // 詳細ペインは選んだタスクのものを出している。上限に達していて入力欄がなければ何もしない
+      document.getElementById(TASK_TAG_INPUT_ID)?.focus();
       return true;
     },
     'list.indent': () => {

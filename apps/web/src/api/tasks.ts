@@ -67,6 +67,8 @@ const reloadTasks = (qc: QueryClient) =>
     // タイムラインの区間（api/timeline.ts、FR-R01）
     qc.invalidateQueries({ queryKey: ['timeline'] }),
     qc.invalidateQueries({ queryKey: ['events'] }),
+    // タグごとの件数（api/tags.ts、FR-T13）。付け外しで変わる
+    qc.invalidateQueries({ queryKey: ['tags'] }),
   ]);
 
 /** 一覧のキャッシュの中のタスクを書き換える（楽観的更新。ui.md「即時に画面へ反映」） */

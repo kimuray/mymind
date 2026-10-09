@@ -31,6 +31,7 @@ export type KeyAction =
   | 'list.dayKey'
   | 'list.toBacklog'
   | 'list.edit'
+  | 'list.tag'
   | 'list.indent'
   | 'list.outdent'
   | 'list.moveUp'
@@ -82,6 +83,7 @@ export const KEY_BINDINGS: readonly KeyBinding[] = [
   { action: 'list.dayKey', keys: ['t'], label: '今日のリストでは明日へ、バックログでは今日へ' },
   { action: 'list.toBacklog', keys: ['b'], label: 'バックログへ' },
   { action: 'list.edit', keys: ['e'], label: 'タイトルを編集' },
+  { action: 'list.tag', keys: ['#'], label: 'タグを付ける（詳細ペインのタグの入力欄へ）' },
   { action: 'list.indent', keys: ['Tab'], label: '子タスクにする' },
   { action: 'list.outdent', keys: ['Shift+Tab'], label: '親に戻す' },
   { action: 'list.moveUp', keys: ['Meta+ArrowUp'], label: '上へ並べ替え' },

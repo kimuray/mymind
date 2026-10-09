@@ -16,6 +16,7 @@ import { FeedbackPanel } from '../components/FeedbackPanel';
 import { Kbd } from '../components/Kbd';
 import { Loading } from '../components/Loading';
 import { PageLayout } from '../components/PageLayout';
+import { RowTags } from '../components/TagChip';
 import { dayOf, formatDayHeading, formatDaysAgo } from '../day';
 import { useDayGuard } from '../dayGuard';
 import { useKeyBindings } from '../keyboard';
@@ -232,6 +233,7 @@ export function MorningPage() {
                     {task.parentTitle !== null && (
                       <span className="morning-row-note">{task.parentTitle}</span>
                     )}
+                    <RowTags tags={task.tags} />
                   </span>
                   <span className="morning-row-meta">
                     <span className="chip" data-status={task.status}>
@@ -303,6 +305,7 @@ export function MorningPage() {
                           .filter((v) => v !== null)
                           .join('・')}
                       </span>
+                      <RowTags tags={task.tags} />
                     </span>
                   </button>
                   <Button

@@ -1,6 +1,7 @@
 import { canTransition, nextOnAdvance, type Status } from '@mymind/domain';
 import { Link } from '@tanstack/react-router';
 import { useRef, useState } from 'react';
+import { useAttachTag, useDetachTag } from '../api/tags';
 import {
   type ListTask,
   type Suggestion,
@@ -58,6 +59,8 @@ export function TodayPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const edit = useEditTask();
+  const attachTag = useAttachTag();
+  const detachTag = useDetachTag();
 
   const tasks = plan.data?.tasks ?? [];
   const open = tasks.filter((t) => !isClosed(t.status));
@@ -123,6 +126,10 @@ export function TodayPage() {
         onSaveNote={async (noteMd) => {
           await edit.mutateAsync({ task: selected, noteMd, ...screen });
         }}
+        onAttachTag={async (name, color) => {
+          await attachTag.mutateAsync({ task: selected, name, color, ...screen });
+        }}
+        onDetachTag={(tagId) => detachTag.mutate({ task: selected, tagId, ...screen })}
       />
     );
 
