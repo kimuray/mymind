@@ -782,7 +782,8 @@
   padding: 0 var(--space-2);
   border: var(--row-selected-border);
   border-radius: var(--radius-m);
-  background: var(--row-selected-bg);
+  background: var(--surface);
+  box-shadow: var(--neu-inset-1);
   font: inherit;
   font-size: 14px;
   font-weight: 500;
@@ -2658,7 +2659,8 @@
 /*
  * 選択の面（DESIGN.md 4.2、5.2）。行そのものではなく ::after に描き、選択が移ったときは
  * 新しい行の ::after を前の行の位置から滑らせる（apps/web/src/selectionMotion.ts）。
- * 行の枠（1.5px の透明な枠）の外側まで覆い、ホバーの層（::before）より上、行の中身より下に置く
+ * 行の枠（1.5px の透明な枠）の外側まで覆い、ホバーの層（::before）より上、行の中身より下に置く。
+ * 選んだ行はくぼませ、影だけに頼らないよう藍色の枠も付ける（ADR-0018）
  */
 :is(.task-row, .settings-row, .morning-row, .timeline-task)[data-selected="true"]::after,
 .palette-option[aria-selected="true"]::after {
@@ -2668,7 +2670,8 @@
   z-index: -1;
   border: var(--row-selected-border);
   border-radius: inherit;
-  background: var(--row-selected-bg);
+  background: var(--surface);
+  box-shadow: var(--neu-inset-1);
   pointer-events: none;
 }
 

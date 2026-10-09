@@ -130,6 +130,8 @@ ul {
 
   .pane-detail {
     position: fixed;
+    /* 画面の上に重なるので、ダイアログと同じ大きな影にする */
+    box-shadow: var(--neu-raised-3);
     top: var(--space-4);
     right: var(--space-4);
     bottom: var(--space-4);
@@ -196,13 +198,14 @@ ul {
   font-weight: 500;
 }
 
-/* 選択中の印（藍色の薄い塗り）。項目の後ろ、ホバーの層の上に置く */
+/* 選択中の印（くぼみ。文字の藍色と合わせて示す、ADR-0018）。項目の後ろ、ホバーの層の上に置く */
 .nav-highlight {
   position: absolute;
   inset: 0;
   z-index: -1;
   border-radius: inherit;
-  background: var(--accent-soft);
+  background: var(--surface);
+  box-shadow: var(--neu-inset-1);
   opacity: 0;
   pointer-events: none;
 }
