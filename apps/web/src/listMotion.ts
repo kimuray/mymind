@@ -132,6 +132,12 @@ export function readMotionTokens() {
 /** この部品が付けた動きの印。ほかの動き（CSS のもの）と区別して、測る前に止める */
 const ANIMATION_ID = 'list-motion';
 
+/**
+ * 読み込み中を経て中身が出たときのフェードインの印（DESIGN.md 4.19）。行の移動（ANIMATION_ID）とは分け、
+ * 開いたときの動きを行の移動と取り違えないようにする（issue 247）
+ */
+const FADE_IN_ID = 'list-fade-in';
+
 /** 文書の左上からの位置。offset の連なりで測るので、transform（動きの途中のずれ）を含まない */
 export function offsetPosition(el: HTMLElement): RowPosition {
   let x = 0;
@@ -254,7 +260,7 @@ export function useListMotion(
           snap.node.animate([{ opacity: 0 }, { opacity: 1 }], {
             duration: t.base,
             easing: t.easeOut,
-            id: ANIMATION_ID,
+            id: FADE_IN_ID,
           });
         }
       }
