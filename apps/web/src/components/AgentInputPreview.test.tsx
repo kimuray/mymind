@@ -12,7 +12,7 @@ const base: AgentInputPreview = {
       learning_md: '',
     },
     tasks: [
-      { title: '企画書を書く', status: 'doing', parent: 'Q4計画', days: 3 },
+      { title: '企画書を書く', status: 'doing', parent: 'Q4計画', days: 3, tags: ['仕事', '企画'] },
       { title: '週報', status: 'done', days: 1 },
     ],
     stats: { planned: 2, done: 1, doing: 1, paused: 0, waiting: 0 },
@@ -99,5 +99,11 @@ describe('FR-A12 送信内容のプレビューの表示', () => {
     const { reflection: _, ...payload } = base.payload;
     expect(render({ ...base, payload })).toContain('振り返りは送りません');
     expect(renderedPaths(payload)).toEqual(new Set(['tasks.0', 'tasks.1']));
+  });
+});
+
+describe('FR-A13 FR-A12 送信内容のタグ', () => {
+  it('タスクに送るタグの名前を並べて出す', () => {
+    expect(render(base)).toContain('・タグ：仕事、企画');
   });
 });

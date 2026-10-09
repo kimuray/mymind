@@ -47,14 +47,34 @@ export function MonthlyInputPreviewView({
       <section className="input-section glass-2" aria-label="集計値">
         <h3>集計値</h3>
         <dl className="input-stats">
-          {Object.entries(payload.stats).map(([key, value]) => (
-            <div key={key}>
-              <dt>{STAT_LABELS[key] ?? key}</dt>
-              <dd>{value}</dd>
-            </div>
-          ))}
+          {Object.entries(payload.stats).flatMap(([key, value]) =>
+            typeof value === 'number'
+              ? [
+                  <div key={key}>
+                    <dt>{STAT_LABELS[key] ?? key}</dt>
+                    <dd>{value}</dd>
+                  </div>,
+                ]
+              : [],
+          )}
         </dl>
       </section>
+      {payload.stats.by_tag.length > 0 && (
+        <section className="input-section glass-2" aria-label="タグごとの集計">
+          <h3>タグごとの集計</h3>
+          <p className="text-small">
+            タグの名前と、アプリが数えた値だけを送ります（メモは送りません）
+          </p>
+          <ul className="input-days">
+            {payload.stats.by_tag.map((t) => (
+              <li key={t.tag ?? 'none'}>
+                <span className="input-day">{t.tag ?? 'タグなし'}</span>
+                <span>{`完了 ${t.completed}件／着手中 ${t.doing_days}日／待ち ${t.waiting_days}日`}</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <section
         className="input-section glass-2"
         aria-label="日ごとの記録"

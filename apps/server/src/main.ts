@@ -168,6 +168,7 @@ async function main(): Promise<number> {
     jobs,
     tasks,
     logs,
+    tags: createTagRepository({ db }),
     runners,
     defaultAgent: () => currentSettings().defaultAgent,
     events,

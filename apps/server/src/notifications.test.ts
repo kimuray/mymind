@@ -65,6 +65,7 @@ beforeEach(() => {
     jobs,
     tasks,
     logs,
+    tags: createTagRepository({ db }),
     runners: { claude: createFakeAgentRunner(), codex: createFakeAgentRunner() },
     defaultAgent: () => 'claude',
     events,

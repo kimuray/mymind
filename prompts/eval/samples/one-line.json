@@ -7,12 +7,28 @@
         "title": "画面の下書き",
         "status": "doing",
         "parentTitle": "TODOツール MVP",
-        "statusDays": 4
+        "statusDays": 4,
+        "tags": ["家"]
       },
-      { "title": "買い物", "status": "done", "parentTitle": null, "statusDays": 1 }
+      {
+        "title": "買い物",
+        "status": "done",
+        "parentTitle": null,
+        "statusDays": 1,
+        "tags": []
+      }
     ],
-    "counts": { "planned": 2, "done": 1, "doing": 1, "paused": 0, "waiting": 0 },
-    "reflection": { "thoughtsMd": "疲れた。", "learningMd": "" },
+    "counts": {
+      "planned": 2,
+      "done": 1,
+      "doing": 1,
+      "paused": 0,
+      "waiting": 0
+    },
+    "reflection": {
+      "thoughtsMd": "疲れた。",
+      "learningMd": ""
+    },
     "recent": [
       {
         "day": "2026-09-26",

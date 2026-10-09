@@ -130,6 +130,7 @@ function SectionBody({
               <span className="input-list-note">
                 {STATUS_LABELS[t.status]}・{t.days}日目
                 {t.parent === undefined ? '' : `・親：${t.parent}`}
+                {t.tags === undefined ? '' : `・タグ：${t.tags.join('、')}`}
               </span>
               {annotations
                 .filter((a) => a.path === `tasks.${i}`)

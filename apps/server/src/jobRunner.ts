@@ -10,6 +10,7 @@ import type {
   Job,
   JobRepository,
   JobSuccess,
+  TagRepository,
   TaskRepository,
 } from '@mymind/db';
 import type { JobKind } from '@mymind/domain';
@@ -23,6 +24,8 @@ export type JobRunnerDeps = {
   jobs: JobRepository;
   tasks: TaskRepository;
   logs: DailyLogRepository;
+  /** タグ（入力にタグの名前を入れる、FR-A13） */
+  tags: TagRepository;
   /** 選べるエージェントごとのアダプタ（FR-A07） */
   runners: AgentRunners;
   /** 依頼でエージェントを指定しなかったときに使うもの（設定の既定のエージェント） */
@@ -57,6 +60,7 @@ export function createJobRunner(deps: JobRunnerDeps) {
     tasks: deps.tasks,
     jobs,
     logs: deps.logs,
+    tags: deps.tags,
     promptText: deps.prompt.text,
     monthlyPromptText: deps.monthlyPrompt.text,
     today: deps.today,

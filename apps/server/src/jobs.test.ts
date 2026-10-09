@@ -58,6 +58,7 @@ function setup(
     jobs,
     tasks,
     logs: createDailyLogRepository({ db, codec: plainCodec }),
+    tags: createTagRepository({ db }),
     runners: options.runners ?? { claude: agent, codex: agent },
     defaultAgent: options.defaultAgent ?? (() => 'claude'),
     events,
@@ -89,7 +90,7 @@ function setup(
       tags: createTagRepository({ db }),
     }),
   );
-  return { runner, agent, tasks, events, app };
+  return { runner, agent, tasks, events, app, db };
 }
 
 const statuses = (jobId: string) =>
@@ -425,6 +426,7 @@ describe('NFR-16 エージェントの入出力のログ', () => {
       jobs,
       tasks,
       logs: createDailyLogRepository({ db, codec: plainCodec }),
+      tags: createTagRepository({ db }),
       runners: { claude: invalid, codex: invalid },
       defaultAgent: () => 'claude',
       events: createEventBus(),
@@ -467,6 +469,7 @@ describe('NFR-16 エージェントの入出力のログ', () => {
       jobs,
       tasks: createTaskRepository({ db, codec: plainCodec, newEventId: newId }),
       logs: createDailyLogRepository({ db, codec: plainCodec }),
+      tags: createTagRepository({ db }),
       runners: { claude: failing, codex: failing },
       defaultAgent: () => 'claude',
       events: createEventBus(),
@@ -510,6 +513,7 @@ describe('NFR-15 日次 FB に送る入力', () => {
       jobs,
       tasks,
       logs: createDailyLogRepository({ db, codec: plainCodec }),
+      tags: createTagRepository({ db }),
       runners: { claude: recording, codex: recording },
       defaultAgent: () => 'claude',
       events: createEventBus(),
@@ -669,6 +673,84 @@ describe('FR-A12 送信内容のプレビュー', () => {
       body: JSON.stringify({ kind: 'daily_feedback', period: DAY }),
     });
     expect(res.status).toBe(403);
+  });
+});
+
+describe('FR-A13 FB の入力のタグ', () => {
+  const headers = {
+    Host: `127.0.0.1:${PORT}`,
+    'Sec-Fetch-Site': 'same-origin',
+    Origin: `http://127.0.0.1:${PORT}`,
+    [TOKEN_HEADER]: 'token',
+    'Content-Type': 'application/json',
+  };
+
+  it('日次 FB の入力に、計画のタスクのタグの名前を入れ、メモは入れない', async () => {
+    const { app, tasks, db } = setup();
+    tasks.create({
+      created: { type: 'created', taskId: 't1', at: now.toISOString(), day: DAY },
+      parentId: null,
+      title: '企画書を書く',
+      noteMd: '送ってはいけないメモ',
+      plan: { day: DAY, event: { type: 'planned', taskId: 't1', at: now.toISOString(), day: DAY } },
+    });
+    const tags = createTagRepository({ db });
+    tags.create({ id: 'g1', name: '仕事', key: '仕事', color: 'rose', at: now.toISOString() });
+    tasks.applyChanges([
+      { taskId: 't1', expectedVersion: null, events: [], tags: { attach: ['g1'] } },
+    ]);
+
+    const res = await app.request('/api/agent-input/preview', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ kind: 'daily_feedback', period: DAY }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { payload: { tasks: { title: string; tags?: string[] }[] } };
+    expect(body.payload.tasks).toEqual([
+      expect.objectContaining({ title: '企画書を書く', tags: ['仕事'] }),
+    ]);
+    expect(JSON.stringify(body)).not.toContain('送ってはいけないメモ');
+  });
+
+  it('月次総括の入力に、タグごとの集計を入れる', async () => {
+    const { app, tasks, db } = setup();
+    tasks.create({
+      created: { type: 'created', taskId: 't1', at: now.toISOString(), day: DAY },
+      parentId: null,
+      title: '企画書を書く',
+      noteMd: null,
+    });
+    const tags = createTagRepository({ db });
+    tags.create({ id: 'g1', name: '仕事', key: '仕事', color: 'rose', at: now.toISOString() });
+    tasks.applyChanges([
+      {
+        taskId: 't1',
+        expectedVersion: null,
+        events: [
+          {
+            type: 'status_changed',
+            taskId: 't1',
+            at: now.toISOString(),
+            day: DAY,
+            from: 'todo',
+            to: 'doing',
+          },
+        ],
+        tags: { attach: ['g1'] },
+      },
+    ]);
+
+    const res = await app.request('/api/agent-input/preview', {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ kind: 'monthly_summary', period: DAY.slice(0, 7) }),
+    });
+    expect(res.status).toBe(200);
+    const body = (await res.json()) as { payload: { stats: { by_tag: unknown[] } } };
+    expect(body.payload.stats.by_tag).toEqual([
+      { tag: '仕事', completed: 0, doing_days: 1, waiting_days: 0 },
+    ]);
   });
 });
 

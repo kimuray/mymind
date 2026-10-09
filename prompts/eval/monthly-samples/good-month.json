@@ -9,7 +9,21 @@
       "blankDays": 7,
       "feedbackDays": 24,
       "correctedDays": 0,
-      "completed": 42
+      "completed": 42,
+      "byTag": [
+        {
+          "tag": "仕事",
+          "completed": 28,
+          "doingDays": 24,
+          "waitingDays": 6
+        },
+        {
+          "tag": null,
+          "completed": 14,
+          "doingDays": 12,
+          "waitingDays": 0
+        }
+      ]
     },
     "days": [
       {

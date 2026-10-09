@@ -1,4 +1,4 @@
-import type { Status } from '@mymind/domain';
+import { MAX_TAG_NAME_LENGTH, MAX_TAGS_PER_TASK, type Status } from '@mymind/domain';
 import {
   type Annotation,
   hashPayload,
@@ -34,6 +34,8 @@ export type DailyFeedbackData = {
     parentTitle: string | null;
     /** 今のステータスになってから何日目か（dayOrdinalSince） */
     statusDays: number;
+    /** 付いているタグの名前（FR-A13）。メモ（FR-T09）は送らない */
+    tags: string[];
   }[];
   /** domain で計算した件数（FR-A10：AI には数えさせない） */
   counts: { planned: number; done: number; doing: number; paused: number; waiting: number };
@@ -47,7 +49,7 @@ export type DailyFeedbackData = {
 export type DailyPayload = {
   day: string;
   reflection?: { thoughts_md: string; learning_md: string };
-  tasks: { title: string; status: Status; parent?: string; days: number }[];
+  tasks: { title: string; status: Status; parent?: string; days: number; tags?: string[] }[];
   stats: DailyFeedbackData['counts'];
   recent: { day: string; condition: number | null; next_action: string | null; blank: boolean }[];
 };
@@ -56,6 +58,16 @@ export type DailyPayload = {
 export type DailyStageInput = DailyFeedbackData | DailyPayload;
 
 const isDailyPayload = (input: DailyStageInput): input is DailyPayload => 'stats' in input;
+
+/**
+ * タグの名前を、タグの上限（1タスクに10個、30文字）に収める（NFR-15）。
+ * 保存のときにも上限で検証しているが、入力の量を決めるのはここなので、受け取った値をそのまま信じない
+ */
+const limitTags = (names: readonly string[]): string[] =>
+  names.slice(0, MAX_TAGS_PER_TASK).map(limitTagName);
+
+/** タグの名前を上限の文字数に収める。domain と同じく、絵文字などを途中で切らないようコードポイントで数える */
+const limitTagName = (name: string): string => [...name].slice(0, MAX_TAG_NAME_LENGTH).join('');
 
 /** 必要な項目だけに絞る。タスクの ID、内部の時刻、設定値は送らない（architecture.md 12.5） */
 export const minimizeDaily: Stage<DailyStageInput> = {
@@ -77,6 +89,7 @@ export const minimizeDaily: Stage<DailyStageInput> = {
         status: t.status,
         ...(t.parentTitle === null ? {} : { parent: t.parentTitle }),
         days: t.statusDays,
+        ...(t.tags.length === 0 ? {} : { tags: limitTags(t.tags) }),
       })),
       stats: {
         planned: data.counts.planned,
@@ -254,6 +267,11 @@ export type MonthlySummaryData = {
     correctedDays: number;
     /** 完了したタスクの数（振り返りの「完了」と同じ定義の合計） */
     completed: number;
+    /**
+     * タグごとの集計（FR-R08、FR-A13）。domain の tagStats で数えた値。tag が null の行は「タグなし」。
+     * 完了の数と、着手中・待ちの日数（タスクごとに足したもの）
+     */
+    byTag: { tag: string | null; completed: number; doingDays: number; waitingDays: number }[];
   };
   days: {
     day: string;
@@ -278,6 +296,7 @@ export type MonthlyPayload = {
     feedback_days: number;
     corrected_days: number;
     completed: number;
+    by_tag: { tag: string | null; completed: number; doing_days: number; waiting_days: number }[];
   };
   days: {
     day: string;
@@ -324,6 +343,12 @@ export const minimizeMonthly: Stage<MonthlyStageInput> = {
         feedback_days: data.stats.feedbackDays,
         corrected_days: data.stats.correctedDays,
         completed: data.stats.completed,
+        by_tag: data.stats.byTag.map((t) => ({
+          tag: t.tag === null ? null : limitTagName(t.tag),
+          completed: t.completed,
+          doing_days: t.doingDays,
+          waiting_days: t.waitingDays,
+        })),
       },
       days: [...data.days]
         .sort((a, b) => (a.day < b.day ? -1 : 1))
@@ -375,6 +400,7 @@ const MONTHLY_TRIMS: readonly {
 /**
  * 量の上限に収める（architecture.md 12.5）。古い日から順に、振り返りの冒頭を省き、
  * それでも超えるなら日次 FB の「よかったこと」と「気づき」を省く（調子と明日の一手は残す）。
+ * さらに超えるなら、タグごとの集計を動きの少ないタグから省く。
  * 週ごとの要約を先に作る段階は、まだない（上限を超える月が出てきたら加える）
  */
 export const budgetMonthly: Stage<MonthlyStageInput> = {
@@ -396,6 +422,23 @@ export const budgetMonthly: Stage<MonthlyStageInput> = {
           reason: `${limit}を超えたため、古い日の${what}を省きました`,
         });
       }
+    }
+    // それでも超えるなら、タグごとの集計を、動きの少ないタグから省く（タグの数には上限がないため）
+    const activity = (t: MonthlyPayload['stats']['by_tag'][number]) =>
+      t.completed + t.doing_days + t.waiting_days;
+    while (monthlySize(payload) > ctx.maxChars && payload.stats.by_tag.length > 0) {
+      const least = payload.stats.by_tag.reduce((min, t) =>
+        activity(t) < activity(min) ? t : min,
+      );
+      payload = {
+        ...payload,
+        stats: { ...payload.stats, by_tag: payload.stats.by_tag.filter((t) => t !== least) },
+      };
+      annotations.push({
+        kind: 'omitted',
+        path: `stats.by_tag.${least.tag ?? 'タグなし'}`,
+        reason: `${limit}を超えたため、動きの少ないタグの集計を省きました`,
+      });
     }
     return { input: payload, annotations };
   },
