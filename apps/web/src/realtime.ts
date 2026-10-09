@@ -107,6 +107,8 @@ function invalidateFor(qc: QueryClient, message: RealtimeMessage) {
     // 棚卸しの日数（FR-R06）で対象が変わる
     qc.invalidateQueries({ queryKey: ['review'] });
   } else if (message.type === 'tasks.changed') {
+    // タグの一覧（付いているタスクの数、名前、色。FR-T13）も、別のタブでの付け外しや変更で変わる
+    qc.invalidateQueries({ queryKey: ['tags'] });
     qc.invalidateQueries({ queryKey: ['day'] });
     qc.invalidateQueries({ queryKey: ['backlog'] });
     qc.invalidateQueries({ queryKey: ['carryover'] });
