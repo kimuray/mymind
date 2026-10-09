@@ -272,9 +272,10 @@ ul {
 }
 
 .kbd-light {
-  background: var(--kbd-bg);
-  border: var(--kbd-border);
+  background: var(--surface);
+  border: var(--neu-edge);
   color: var(--ink-2);
+  box-shadow: var(--neu-raised-1);
 }
 
 /* 画面の中身 */
