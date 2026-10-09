@@ -10,7 +10,7 @@ description: デザイントークン、コンポーネント、キーボード�
 
 ## デザイントークン
 
-色、角の丸み、余白、書体、ガラスの表現、動きの時間と緩急は、`DESIGN.md` で定義したトークン（CSS 変数）だけを使います。コンポーネントの中に `#2F4B7C` や `rgba(...)` を直書きしません。トークンの定義は `apps/web/src/styles/tokens.css` に置き、`pnpm design:check` でそれ以外のファイルにある色の直書きと、`transition`・`animation` の時間と緩急の直書きを検出します。動かすのは `transform` と `opacity` だけにします（DESIGN.md 2.7）。新しい値が必要になったら、先に `DESIGN.md` と `tokens.css` に追加します。
+色、角の丸み、余白、書体、面の凸凹（影）、動きの時間と緩急は、`DESIGN.md` で定義したトークン（CSS 変数）だけを使います。コンポーネントの中に `#2F4B7C` や `rgba(...)` を直書きしません。トークンの定義は `apps/web/src/styles/tokens.css` に置き、`pnpm design:check` でそれ以外のファイルにある色の直書きと、`transition`・`animation` の時間と緩急の直書きを検出します。動かすのは `transform` と `opacity` だけにします（DESIGN.md 2.7）。新しい値が必要になったら、先に `DESIGN.md` と `tokens.css` に追加します。
 
 ## コンポーネント
 
@@ -26,4 +26,4 @@ description: デザイントークン、コンポーネント、キーボード�
 
 ## パフォーマンス
 
-`backdrop-filter` はリストの各行に使わず、行を包む外側の面にだけ使います。タスクの操作は TanStack Query の楽観的更新で即時に画面へ反映します。
+凸凹の影（`neu-*`）はリストの各行に付けず、行を包む外側の面にだけ付けます。`backdrop-filter` は使いません（ADR-0018）。タスクの操作は TanStack Query の楽観的更新で即時に画面へ反映します。

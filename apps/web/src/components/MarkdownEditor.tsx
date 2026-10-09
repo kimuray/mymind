@@ -27,7 +27,7 @@ const wrapSelectionInBold = (view: EditorView) => {
 };
 
 /**
- * Markdown の入力欄（DESIGN.md 4.7）。CodeMirror 6 の本体だけで、ガラスの面と書き方の案内は MarkdownField が置く。
+ * Markdown の入力欄（DESIGN.md 4.7）。CodeMirror 6 の本体だけで、くぼみの面と書き方の案内は MarkdownField が置く。
  * 値は最初の描画のときだけ受け取る（入力中に外から書き換えるとカーソルが飛ぶため）。
  * 別の内容で始め直すときは、呼び出す側で key を変える。
  * プレビューのあいだも入力欄は残して隠す（取り消しの履歴とカーソルの位置を保つため）。隠した状態から戻したら、入力欄にフォーカスを戻す

@@ -158,7 +158,7 @@ font-feature-settings: "cv11", "ss01";
 
 原則は次のとおりです。
 
-- 動かすのは `transform` と `opacity` だけにする。`backdrop-filter` の面の大きさや `height`、`width` は動かさない（レイアウトの計算とぼかしの描き直しで重くなるため、NFR-03）
+- 動かすのは `transform` と `opacity` だけにする。面の影（`box-shadow`）や `height`、`width` は動かさない（レイアウトの計算と影の描き直しで重くなるため、NFR-03）
 - 入りは出より少し長くする（例：入りは `--motion-base`、出は `--motion-fast`）
 - 操作を待たせない。動きの途中でも次のキー入力を受け付け、連打しても動きの終わりを待たない
 - 画面の切り替えは、ブラウザ標準の View Transitions API で付ける。対応していないブラウザでは、動きなしで同じ結果にする。動きのためのライブラリは足さない
