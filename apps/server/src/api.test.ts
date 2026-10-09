@@ -3,6 +3,7 @@ import {
   createDailyLogRepository,
   createJobRepository,
   createSettingsRepository,
+  createTagRepository,
   createTaskRepository,
   MIGRATIONS_FOLDER,
   openDatabase,
@@ -66,6 +67,7 @@ beforeEach(() => {
     },
     settings: createSettingsRepository({ db }),
     logs: createDailyLogRepository({ db, codec: plainCodec }),
+    tags: createTagRepository({ db }),
   });
   app = createApp({ ports: [PORT], sessionToken: TOKEN }, api);
 });
@@ -1107,5 +1109,166 @@ describe('FR-M02 タスク名の検索の API', () => {
     ['101文字', `/tasks/search?q=${'あ'.repeat(101)}`],
   ])('%s は 400', async (_, path) => {
     expect((await get(path)).status).toBe(400);
+  });
+});
+
+describe('FR-T13 タグの API', () => {
+  type TagJson = { id: string; name: string; color: string };
+  type TagsResult = { task: TaskJson; tags: TagJson[]; created?: boolean };
+  const listTags = async () =>
+    ((await (await get('/tags')).json()) as { tags: (TagJson & { taskCount: number })[] }).tags;
+  const backlogTask = async (id: string) =>
+    (
+      (await (await get('/backlog')).json()) as { tasks: (TaskJson & { tags: TagJson[] })[] }
+    ).tasks.find((t) => t.id === id);
+  /** 付けた後のタスク（版が進む）を返す。次の操作に使う */
+  const attach = (task: TaskJson, body: Record<string, unknown>) =>
+    send('POST', `/tasks/${task.id}/tags`, {
+      expectedVersion: task.version,
+      expectedDay: TODAY,
+      ...body,
+    });
+  const attachOk = async (task: TaskJson, name: string) => {
+    const res = await attach(task, { name });
+    expect(res.status).toBe(200);
+    return (await res.json()) as TagsResult;
+  };
+  const detach = (task: TaskJson, tagId: string, extra: Record<string, unknown> = {}) =>
+    send('DELETE', `/tasks/${task.id}/tags/${tagId}`, {
+      expectedVersion: task.version,
+      expectedDay: TODAY,
+      ...extra,
+    });
+
+  it('名前と色を指定してタグを作れる。名前の前後と連続する空白は整える', async () => {
+    const res = await send('POST', '/tags', { name: '  仕事   A ', color: 'teal' });
+    expect(res.status).toBe(201);
+    expect(((await res.json()) as { tag: TagJson }).tag).toMatchObject({
+      name: '仕事 A',
+      color: 'teal',
+    });
+    expect(await listTags()).toEqual([expect.objectContaining({ name: '仕事 A', taskCount: 0 })]);
+  });
+
+  it('大文字・小文字や全角・半角だけが違う名前のタグは作れない（409）', async () => {
+    await send('POST', '/tags', { name: 'Work', color: 'rose' });
+    const res = await send('POST', '/tags', { name: 'ｗｏｒｋ', color: 'plum' });
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe('DUPLICATE_TAG');
+  });
+
+  it('空の名前、長すぎる名前、決まった6色以外の色は 400', async () => {
+    expect((await send('POST', '/tags', { name: '   ', color: 'rose' })).status).toBe(400);
+    expect((await send('POST', '/tags', { name: 'あ'.repeat(31), color: 'rose' })).status).toBe(
+      400,
+    );
+    expect((await send('POST', '/tags', { name: '仕事', color: 'red' })).status).toBe(400);
+  });
+
+  it('タスクに名前で付けると、ないタグは最初の色で作られ、一覧の行に出る。タスクの版は進む', async () => {
+    const task = await addTask();
+    const result = await attachOk(task, '仕事');
+    expect(result).toMatchObject({ created: true, tags: [{ name: '仕事', color: 'rose' }] });
+    expect(result.task.version).toBe(task.version + 1);
+    expect(await backlogTask(task.id)).toMatchObject({
+      version: task.version + 1,
+      tags: [expect.objectContaining({ name: '仕事' })],
+    });
+  });
+
+  it('あるタグを名前で付けると、作らずにそのタグを付ける。同じタグを2回付けても1つ', async () => {
+    const task = await addTask();
+    await send('POST', '/tags', { name: 'Work', color: 'indigo' });
+    const first = await attachOk(task, 'work');
+    expect(first).toMatchObject({ created: false, tags: [{ name: 'Work', color: 'indigo' }] });
+    expect((await attachOk(first.task, 'WORK')).tags).toHaveLength(1);
+    expect(await listTags()).toEqual([expect.objectContaining({ name: 'Work', taskCount: 1 })]);
+  });
+
+  it('1つのタスクに付けられるタグは10個まで（11個目は 422）', async () => {
+    let task = await addTask();
+    for (let i = 1; i <= 10; i++) task = (await attachOk(task, `タグ${i}`)).task;
+    const res = await attach(task, { name: 'タグ11' });
+    expect(res.status).toBe(422);
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe('TOO_MANY_TAGS');
+    expect(await listTags()).toHaveLength(10);
+  });
+
+  it('タスクから外すと、タグは残り、そのタスクの行からは消える', async () => {
+    const attached = await attachOk(await addTask(), '仕事');
+    const res = await detach(attached.task, (attached.tags[0] as TagJson).id);
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({ tags: [] });
+    expect((await backlogTask(attached.task.id))?.tags).toEqual([]);
+    expect(await listTags()).toEqual([expect.objectContaining({ name: '仕事', taskCount: 0 })]);
+  });
+
+  it('ないタスクに付けようとすると 404', async () => {
+    const res = await send('POST', '/tasks/nope/tags', {
+      name: '仕事',
+      expectedVersion: 1,
+      expectedDay: TODAY,
+    });
+    expect(res.status).toBe(404);
+  });
+
+  it('NFR-13 古い版を見ている画面からは、付けることも外すこともできない（409）。タグも作らない', async () => {
+    const task = await addTask();
+    const attached = await attachOk(task, '仕事');
+    const stale = await attach(task, { name: '家' });
+    expect(stale.status).toBe(409);
+    expect(((await stale.json()) as { error: { code: string } }).error.code).toBe(
+      'VERSION_CONFLICT',
+    );
+    expect((await detach(task, (attached.tags[0] as TagJson).id)).status).toBe(409);
+    expect((await listTags()).map((t) => t.name)).toEqual(['仕事']);
+  });
+
+  it('NFR-14 業務日が変わった画面からは、明示の指定がない限り付け外しできない（409）', async () => {
+    const task = await addTask();
+    now = new Date('2026-09-23T21:00:00.000Z');
+    const res = await attach(task, { name: '仕事' });
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe('DAY_CHANGED');
+    expect((await attach(task, { name: '仕事', allowPastDay: true })).status).toBe(200);
+  });
+
+  it('名前と色を変えられる。大文字・小文字だけの変更は自分自身なので許す', async () => {
+    const created = await send('POST', '/tags', { name: 'work', color: 'rose' });
+    const tag = ((await created.json()) as { tag: TagJson }).tag;
+    const res = await send('PATCH', `/tags/${tag.id}`, { name: 'Work', color: 'green' });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { tag: TagJson }).tag).toMatchObject({
+      name: 'Work',
+      color: 'green',
+    });
+  });
+
+  it('ほかのタグと同じ名前には変えられない（409）。ないタグは 404', async () => {
+    await send('POST', '/tags', { name: '仕事', color: 'rose' });
+    const created = await send('POST', '/tags', { name: '家', color: 'rose' });
+    const tag = ((await created.json()) as { tag: TagJson }).tag;
+    expect((await send('PATCH', `/tags/${tag.id}`, { name: '仕事' })).status).toBe(409);
+    expect((await send('PATCH', '/tags/nope', { color: 'plum' })).status).toBe(404);
+  });
+
+  it('タグを消すと、付いていたタスクからも外れる', async () => {
+    const attached = await attachOk(await addTask(), '仕事');
+    const tagId = (attached.tags[0] as TagJson).id;
+    const res = await send('DELETE', `/tags/${tagId}`, {});
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ tags: [] });
+    expect((await backlogTask(attached.task.id))?.tags).toEqual([]);
+    expect((await send('DELETE', `/tags/${tagId}`, {})).status).toBe(404);
+  });
+
+  it('トークンのない要求ではタグを作れない（403）', async () => {
+    const { [TOKEN_HEADER]: _, ...withoutToken } = headers;
+    const res = await app.request('/api/tags', {
+      method: 'POST',
+      headers: withoutToken,
+      body: JSON.stringify({ name: '仕事', color: 'rose' }),
+    });
+    expect(res.status).toBe(403);
   });
 });

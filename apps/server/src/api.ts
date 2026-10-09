@@ -3,6 +3,7 @@ import type {
   DailyLogRepository,
   Feedback,
   SettingsRepository,
+  TagRepository,
   Task,
   TaskRepository,
 } from '@mymind/db';
@@ -30,9 +31,7 @@ import {
   timelineSegments,
   toBusinessDay,
 } from '@mymind/domain';
-import { type Context, Hono } from 'hono';
-import type { ContentfulStatusCode } from 'hono/utils/http-status';
-import { validator } from 'hono/validator';
+import { Hono } from 'hono';
 import { z } from 'zod';
 import {
   createDayRecordReader,
@@ -43,6 +42,7 @@ import {
   summarizeDayOf,
 } from './dayRecords';
 import { createHealthApi, type HealthDeps } from './health';
+import { createScreenGuards, dayParam, fail, jsonBody, screenState, withVersion } from './http';
 import { createJobsApi, type JobsApiDeps } from './jobsApi';
 import { createBrowserPermissionState, createPendingNotifications } from './notificationAdapters';
 import { createNotificationsApi, type NotificationsApiDeps } from './notificationsApi';
@@ -53,6 +53,7 @@ import {
   createSettingsReader,
   type SettingsRuntime,
 } from './settingsApi';
+import { createTagsApi } from './tagsApi';
 
 export type ApiDeps = {
   tasks: TaskRepository;
@@ -74,13 +75,13 @@ export type ApiDeps = {
   settingsRuntime?: SettingsRuntime;
   /** 業務日ごとの振り返り（FR-D06） */
   logs: DailyLogRepository;
+  /** タグ（FR-T13） */
+  tags: TagRepository;
   /** 画面のバナーに出す通知と、ブラウザの通知の許可の状態（FR-N05）。省くと空の状態で始める */
   notifications?: NotificationsApiDeps;
   /** 設定を保存したあとに呼ぶ（通知の予定の組み直し、FR-N04） */
   onSettingsChange?: () => void;
 };
-
-const dayParam = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'YYYY-MM-DD の形式で指定してください');
 
 /** タイムラインの表示期間の上限（FR-R01：1週間か2週間） */
 const TIMELINE_MAX_DAYS = 14;
@@ -111,13 +112,6 @@ const searchQuery = z.strictObject({
     .max(100, '検索の語は100文字までにしてください'),
 });
 
-/** 更新系の API に共通する、画面が想定している状態（NFR-13、NFR-14） */
-const screenState = {
-  /** 画面が表示している業務日。現在の業務日と違えば、allowPastDay がない限り拒否する */
-  expectedDay: dayParam,
-  allowPastDay: z.boolean().optional(),
-};
-
 /** FR-R06：棚卸しの判断。1件ずつ判断するので、1回に1件を送る */
 const reviewBody = z.strictObject({
   ...screenState,
@@ -125,7 +119,6 @@ const reviewBody = z.strictObject({
   expectedVersion: z.number().int().min(1),
   decision: z.enum(REVIEW_DECISIONS),
 });
-const withVersion = { ...screenState, expectedVersion: z.number().int().positive() };
 
 const createTaskBody = z.strictObject({
   ...screenState,
@@ -206,43 +199,6 @@ const transitionBody = z.strictObject({ ...withVersion, to: z.enum(STATUSES) });
 
 const moveBody = z.strictObject({ ...withVersion, to: z.enum(['today', 'tomorrow', 'backlog']) });
 
-type ErrorCode =
-  | 'INVALID_REQUEST'
-  | 'NOT_FOUND'
-  | 'VERSION_CONFLICT'
-  | 'DAY_CHANGED'
-  | 'INVALID_TRANSITION'
-  | 'DEPTH_EXCEEDED'
-  | 'PLAN_CONFIRMED'
-  | 'NOT_IN_BACKLOG'
-  | 'NOT_REVIEW_TARGET';
-
-/** エラーの応答。状態コードを型に残し、Hono RPC のクライアントが成功と失敗を区別できるようにする */
-function fail<S extends ContentfulStatusCode>(
-  c: Context,
-  status: S,
-  code: ErrorCode,
-  message: string,
-  extra = {},
-) {
-  return c.json({ error: { code, message, ...extra } }, status);
-}
-
-/**
- * JSON の本文を zod で検証するミドルウェア。形が違えば 400 を返す。
- * 入力の型は Hono RPC で画面と共有される（architecture.md 6章）。
- */
-const jsonBody = <T extends z.ZodType>(schema: T) =>
-  validator('json', (value, c) => {
-    const parsed = schema.safeParse(value);
-    if (!parsed.success) {
-      return fail(c, 400, 'INVALID_REQUEST', '入力が正しくありません', {
-        issues: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
-      });
-    }
-    return parsed.data as z.infer<T>;
-  });
-
 /**
  * 今日とバックログの API（architecture.md 6章）。
  * 状態の変更はすべて domain の関数でイベントにし、リポジトリが1つのトランザクションで保存する（ADR-0004）。
@@ -258,6 +214,7 @@ export function createApi({
   settingsDefaults = {},
   settingsRuntime = { fakeAgent: false, defaultBackupDir: '' },
   logs,
+  tags,
   notifications = {
     pending: createPendingNotifications(now),
     permission: createBrowserPermissionState(),
@@ -278,6 +235,7 @@ export function createApi({
     const ids = list.map((t) => t.id);
     const events = tasks.listEventsOfTasks(ids);
     const childrenOf = tasks.listChildrenOfMany(ids);
+    const tagsOf = tags.tagsOfTasks(ids);
     return list.map((t) => {
       const children = childrenOf.get(t.id) ?? [];
       return {
@@ -286,6 +244,8 @@ export function createApi({
           statusSinceDay(events.get(t.id) ?? []) ??
           toBusinessDay(new Date(t.createdAt), dayOptions),
         parentTitle: t.parentId === null ? null : (parents.get(t.parentId) ?? null),
+        // タスクに付いたタグ（FR-T13）。名前の順
+        tags: tagsOf.get(t.id) ?? [],
         children: {
           total: children.length,
           closed: children.filter((ch) => ch.status === 'done' || ch.status === 'cancelled').length,
@@ -421,28 +381,8 @@ export function createApi({
   };
 
   /** 画面が想定する業務日と、現在の業務日を比べる（NFR-14） */
-  const checkDay = (
-    c: Context,
-    body: { expectedDay: string; allowPastDay?: boolean | undefined },
-  ) => {
-    const current = toBusinessDay(now(), dayOptions);
-    if (body.expectedDay !== current && body.allowPastDay !== true) {
-      return fail(c, 409, 'DAY_CHANGED', '業務日が変わりました。今日の画面を開き直してください', {
-        currentDay: current,
-      });
-    }
-    return null;
-  };
 
-  const conflict = (
-    c: Context,
-    error: { kind: 'not_found' | 'version_conflict' | 'status_mismatch'; taskId: string },
-  ) =>
-    error.kind === 'not_found'
-      ? fail(c, 404, 'NOT_FOUND', 'タスクが見つかりません', { taskId: error.taskId })
-      : fail(c, 409, 'VERSION_CONFLICT', '別の画面で変更されています。読み直してください', {
-          taskId: error.taskId,
-        });
+  const { checkDay, conflict } = createScreenGuards({ now, dayOptions });
 
   const taskRoutes = new Hono()
     .get('/days/:day', (c) => {
@@ -864,7 +804,8 @@ export function createApi({
     .route('/', createJobsApi(jobs))
     .route('/', createHealthApi(health))
     .route('/', createSettingsApi(settings, settingsDefaults, settingsRuntime, onSettingsChange))
-    .route('/', createNotificationsApi(notifications));
+    .route('/', createNotificationsApi(notifications))
+    .route('/', createTagsApi({ tags, tasks, newId, now, checkDay, conflict }));
 }
 
 export type Api = ReturnType<typeof createApi>;

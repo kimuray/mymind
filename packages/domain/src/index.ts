@@ -9,6 +9,7 @@ export * from './review';
 export * from './rules';
 export * from './schedule';
 export * from './status';
+export * from './tags';
 export * from './taskDays';
 export * from './taskEvents';
 export * from './timeline';

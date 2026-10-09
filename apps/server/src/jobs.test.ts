@@ -9,6 +9,7 @@ import {
   createDailyLogRepository,
   createJobRepository,
   createSettingsRepository,
+  createTagRepository,
   createTaskRepository,
   type Database,
   type JobRepository,
@@ -85,6 +86,7 @@ function setup(
       },
       settings: createSettingsRepository({ db }),
       logs: createDailyLogRepository({ db, codec: plainCodec }),
+      tags: createTagRepository({ db }),
     }),
   );
   return { runner, agent, tasks, events, app };

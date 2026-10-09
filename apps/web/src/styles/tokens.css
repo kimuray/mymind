@@ -39,6 +39,26 @@
   --status-cancelled-bg: rgba(120, 112, 98, 0.14);
   --status-cancelled-text: #4a463f;
 
+  /* 2.2.1 タグの色（FR-T13）。決まった6色から選ぶ */
+  --tag-rose: #c0566e;
+  --tag-rose-bg: rgba(192, 86, 110, 0.14);
+  --tag-rose-text: #8a2f45;
+  --tag-amber: #b7791f;
+  --tag-amber-bg: rgba(183, 121, 31, 0.16);
+  --tag-amber-text: #7a4f12;
+  --tag-green: #4f8a3b;
+  --tag-green-bg: rgba(79, 138, 59, 0.14);
+  --tag-green-text: #345d26;
+  --tag-teal: #2f8a86;
+  --tag-teal-bg: rgba(47, 138, 134, 0.14);
+  --tag-teal-text: #1f5c59;
+  --tag-indigo: #5160b8;
+  --tag-indigo-bg: rgba(81, 96, 184, 0.14);
+  --tag-indigo-text: #333f86;
+  --tag-plum: #8a5aa8;
+  --tag-plum-bg: rgba(138, 90, 168, 0.14);
+  --tag-plum-text: #5f3878;
+
   /* 2.3 ガラス（背景とぼかしを別の変数に分ける） */
   --glass-1: rgba(255, 255, 255, 0.5);
   --glass-1-blur: blur(24px) saturate(170%);

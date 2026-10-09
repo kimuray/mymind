@@ -4,6 +4,7 @@ import {
   createJobRepository,
   createNotificationRepository,
   createSettingsRepository,
+  createTagRepository,
   createTaskRepository,
   type Feedback,
   MIGRATIONS_FOLDER,
@@ -90,6 +91,7 @@ beforeEach(() => {
     },
     settings: createSettingsRepository({ db }),
     logs,
+    tags: createTagRepository({ db }),
   });
   app = createApp({ ports: [PORT], sessionToken: TOKEN }, api);
   const adapter: NotificationAdapter = {
