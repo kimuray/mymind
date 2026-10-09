@@ -40,7 +40,7 @@ const isDrawn = (s: Status | null): s is TimelineStatus =>
  * 同じ日に何度変わっても、その日の最後の状態だけを使う（NFR-09：記録は業務日の単位）。
  * イベントは記録した順（ID の順）に並んでいること。作成より前の日は null
  */
-export function statusByDay(events: readonly TaskEvent[]): (day: string) => Status | null {
+function statusByDay(events: readonly TaskEvent[]): (day: string) => Status | null {
   const changes: { day: string; status: Status }[] = [];
   for (const e of events) {
     if (e.type === 'created') changes.push({ day: e.day, status: 'todo' });

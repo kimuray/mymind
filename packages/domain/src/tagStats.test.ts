@@ -52,6 +52,35 @@ describe('FR-R08 タグごとの集計', () => {
     expect(tagStats([{ tagIds: ['w'], events: endOfMonth }], october, ['w'])).toEqual([]);
   });
 
+  it('年末に着手して年始に完了したタスクは、着手中の日を年ごとに分け、完了は翌年に数える', () => {
+    const newYear = [
+      created('2026-12-30'),
+      change('2026-12-30', 'todo', 'doing'),
+      change('2027-01-02', 'doing', 'done'),
+    ];
+    const december = { from: '2026-12-01', to: '2026-12-31' };
+    const january = { from: '2027-01-01', to: '2027-01-31' };
+    expect(tagStats([{ tagIds: ['w'], events: newYear }], december, ['w'])).toEqual([
+      { tagId: 'w', completed: 0, doingDays: 2, waitingDays: 0 },
+    ]);
+    expect(tagStats([{ tagIds: ['w'], events: newYear }], january, ['w'])).toEqual([
+      { tagId: 'w', completed: 1, doingDays: 2, waitingDays: 0 },
+    ]);
+  });
+
+  it('同じ日に何度変わっても、その日の終わりの状態で数える', () => {
+    const sameDay = [
+      created('2026-09-01'),
+      change('2026-09-01', 'todo', 'doing'),
+      change('2026-09-01', 'doing', 'waiting'),
+    ];
+    expect(
+      tagStats([{ tagIds: ['w'], events: sameDay }], { from: '2026-09-01', to: '2026-09-01' }, [
+        'w',
+      ]),
+    ).toEqual([{ tagId: 'w', completed: 0, doingDays: 0, waitingDays: 1 }]);
+  });
+
   it('完了を取り消した日は完了に数えない', () => {
     const undone = [...finished, change('2026-09-06', 'done', 'doing')];
     expect(tagStats([{ tagIds: ['w'], events: undone }], september, ['w'])[0]?.completed).toBe(0);

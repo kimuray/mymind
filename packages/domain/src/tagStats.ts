@@ -1,6 +1,6 @@
+import type { Status } from './status';
 import { daysBetween } from './taskDays';
 import type { TaskEvent } from './taskEvents';
-import { statusByDay } from './timeline';
 
 /** 集計の材料。タスクに今付いているタグと、そのタスクのすべてのイベント（記録した順） */
 export type TagStatsSource = { tagIds: readonly string[]; events: readonly TaskEvent[] };
@@ -22,18 +22,35 @@ const DAY_MS = 86_400_000;
 const addDays = (day: string, n: number): string =>
   new Date(Date.parse(`${day}T00:00:00Z`) + n * DAY_MS).toISOString().slice(0, 10);
 
-const isStatusEvent = (e: TaskEvent) =>
+const isStatusEvent = (
+  e: TaskEvent,
+): e is Extract<TaskEvent, { type: 'status_changed' | 'completion_undone' }> =>
   e.type === 'status_changed' || e.type === 'completion_undone';
 
-/** 1つのタスクの、期間の中の完了の数と、着手中・待ちの日数 */
+/**
+ * 1つのタスクの、期間の中の完了の数と、着手中・待ちの日数。
+ * イベントと期間の日を1回ずつ前から進めて数える（月の応答でタスクごとに呼ぶので、日ごとに履歴を読み直さない、NFR-18）。
+ * 同じ日に何度変わっても、その日の最後の状態を使う（timeline の statusByDay と同じ）
+ */
 function countTask(events: readonly TaskEvent[], range: { from: string; to: string }) {
-  const at = statusByDay(events);
-  const changedOn = new Set(events.filter(isStatusEvent).map((e) => e.day));
+  const changes: { day: string; status: Status }[] = [];
+  const changedOn = new Set<string>();
+  for (const e of events) {
+    if (e.type === 'created') changes.push({ day: e.day, status: 'todo' });
+    else if (isStatusEvent(e)) {
+      changes.push({ day: e.day, status: e.to });
+      changedOn.add(e.day);
+    }
+  }
   const result = { completed: 0, doingDays: 0, waitingDays: 0 };
+  let status: Status | null = null;
+  let next = 0;
   const length = daysBetween(range.from, range.to) + 1;
   for (let i = 0; i < length; i++) {
     const day = addDays(range.from, i);
-    const status = at(day);
+    for (let c = changes[next]; c !== undefined && c.day <= day; c = changes[++next]) {
+      status = c.status;
+    }
     const completedToday = status === 'done' && changedOn.has(day);
     if (completedToday) result.completed++;
     if (status === 'doing' || completedToday) result.doingDays++;
