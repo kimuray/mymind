@@ -1294,3 +1294,69 @@ describe('FR-T13 タグの API', () => {
     expect(res.status).toBe(403);
   });
 });
+
+describe('FR-R08 タグごとの集計の API', () => {
+  type StatJson = {
+    tag: { id: string; name: string; color: string } | null;
+    completed: number;
+    doingDays: number;
+    waitingDays: number;
+  };
+  const attachTag = async (task: TaskJson, name: string) => {
+    const res = await send('POST', `/tasks/${task.id}/tags`, {
+      name,
+      expectedVersion: task.version,
+      expectedDay: TODAY,
+    });
+    expect(res.status).toBe(200);
+    return ((await res.json()) as { task: TaskJson }).task;
+  };
+  const advance = async (task: TaskJson, to: string) => {
+    const res = await transition(task, to);
+    expect(res.status).toBe(200);
+    return ((await res.json()) as { task: TaskJson }).task;
+  };
+
+  it('月の応答に、タグごとの完了の数と着手中・待ちの日数を、名前の順と「タグなし」の順で含める', async () => {
+    const work = await attachTag(
+      await addTask({ planFor: 'today', title: '仕事のタスク' }),
+      '仕事',
+    );
+    await advance(await advance(work, 'doing'), 'done');
+    const home = await attachTag(await addTask({ planFor: 'today', title: '家のタスク' }), '家');
+    await advance(await advance(home, 'doing'), 'waiting');
+    await advance(await addTask({ planFor: 'today', title: 'タグなし' }), 'doing');
+
+    const m = (await (await get('/months/2026-09')).json()) as { tagStats: StatJson[] };
+    expect(m.tagStats).toEqual([
+      {
+        tag: expect.objectContaining({ name: '仕事' }),
+        completed: 1,
+        doingDays: 1,
+        waitingDays: 0,
+      },
+      { tag: expect.objectContaining({ name: '家' }), completed: 0, doingDays: 0, waitingDays: 1 },
+      { tag: null, completed: 0, doingDays: 1, waitingDays: 0 },
+    ]);
+  });
+
+  it('タイムラインの応答に、表示期間のタグごとの集計を含め、まだ来ていない日は数えない', async () => {
+    const task = await attachTag(await addTask({ planFor: 'today' }), '仕事');
+    await advance(task, 'doing');
+    const res = await get(`/timeline?from=${TODAY}&to=2026-09-29`);
+    const body = (await res.json()) as { tagStats: StatJson[] };
+    expect(body.tagStats).toEqual([
+      {
+        tag: expect.objectContaining({ name: '仕事' }),
+        completed: 0,
+        doingDays: 1,
+        waitingDays: 0,
+      },
+    ]);
+  });
+
+  it('まだ始まっていない月は空', async () => {
+    const m = (await (await get('/months/2026-10')).json()) as { tagStats: StatJson[] };
+    expect(m.tagStats).toEqual([]);
+  });
+});

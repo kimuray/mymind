@@ -6,6 +6,7 @@ import { effectiveLevel, moodOfLevel } from '../components/FeedbackPanel';
 import { Loading } from '../components/Loading';
 import { Mame, MOOD_LABELS } from '../components/Mame';
 import { PageLayout } from '../components/PageLayout';
+import { TagStatsTable } from '../components/TagStats';
 import { currentDay, formatDayHeading } from '../day';
 import { useKeyBindings } from '../keyboard';
 import { useFadeInAfterLoading } from '../loadMotion';
@@ -346,6 +347,13 @@ export function TimelinePage() {
             </li>
           ))}
         </ul>
+        {/* 表示期間のタグごとの集計（FR-R08）。まだ来ていない日は数えない */}
+        {data !== undefined && (
+          <TagStatsTable
+            stats={data.tagStats}
+            caption={`タグごと（${formatRange(data.from, data.to)}）`}
+          />
+        )}
       </div>
     </PageLayout>
   );

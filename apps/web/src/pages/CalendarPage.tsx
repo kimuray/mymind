@@ -21,6 +21,7 @@ import { MarkdownPreview } from '../components/MarkdownPreview';
 import { MonthlyInputPreview } from '../components/MonthlyInputPreview';
 import { MonthlySummaryPanel, summaryTitle } from '../components/MonthlySummaryPanel';
 import { PageLayout } from '../components/PageLayout';
+import { TagCompletedCounts, TagStatsTable } from '../components/TagStats';
 import { formatDayHeading } from '../day';
 import { useFadeInAfterLoading } from '../loadMotion';
 
@@ -253,6 +254,8 @@ function MonthSummarySection({ ym, data }: { ym: string; data: MonthResponse }) 
           onRequested={() => setPreviewKey(null)}
         />
       )}
+      {/* その月のタグごとの内訳（FR-R08） */}
+      <TagStatsTable stats={data.tagStats} caption={`${formatMonthHeading(ym)}のタグごと`} />
       {isFuture ? (
         <p className="text-small">まだ始まっていない月です</p>
       ) : (
@@ -376,6 +379,13 @@ export function CalendarPage({ ym, day }: { ym: string; day: string | undefined 
               <DayCell key={d.day} d={d} ym={ym} today={data.today} selected={d.day === day} />
             ))}
           </section>
+        )}
+        {/* 月のタグごとの完了の数（FR-R08）。内訳は詳細ペインの総括に出す */}
+        {data !== undefined && (
+          <TagCompletedCounts
+            stats={data.tagStats}
+            label={`${formatMonthHeading(ym)}のタグごとの完了`}
+          />
         )}
         <p className="calendar-legend text-small">
           <span>マメの表情＝その日の調子</span>
