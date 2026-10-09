@@ -41,6 +41,38 @@ test.describe('NFR-29 ホバーと押下の反応', () => {
     await expect(icon).toHaveCSS('transform', 'none');
   });
 
+  test('副ボタンは出っぱり、押している間はくぼみの層が現れる', async ({ page }) => {
+    await page.goto('/');
+    // 押すと画面の状態が変わるボタンを避け、共通のボタンの見た目のものを置いて確かめる
+    await page.evaluate(() => {
+      const button = document.createElement('button');
+      button.className = 'button button-secondary';
+      button.textContent = 'くぼみを確かめる';
+      document.querySelector('main')?.prepend(button);
+    });
+    const button = page.getByRole('button', { name: 'くぼみを確かめる' });
+    await expect(button).toBeVisible();
+    // 出っぱりは、外側の影と、縁の面取り（内側の影）で表す（ADR-0019）
+    await expect(button).toHaveCSS('box-shadow', /inset/);
+    const pressLayer = () => button.evaluate((el) => getComputedStyle(el, '::after').opacity);
+    expect(await pressLayer()).toBe('0');
+    await button.hover();
+    await page.mouse.down();
+    try {
+      await expect.poll(pressLayer).toBe('1');
+    } finally {
+      await page.mouse.up();
+    }
+    await expect.poll(pressLayer).toBe('0');
+  });
+
+  test('入力欄は、地の色のくぼみで表す', async ({ page }) => {
+    await page.goto('/');
+    const input = page.locator('.add-task').first();
+    await expect(input).toHaveCSS('background-color', 'rgb(228, 233, 240)');
+    await expect(input).toHaveCSS('box-shadow', /inset/);
+  });
+
   test('主ボタンには、藍色の面の上で見える白の層を重ねる', async ({ page }) => {
     await page.goto('/');
     const primary = page.getByRole('link', { name: /振り返りを書く/ });

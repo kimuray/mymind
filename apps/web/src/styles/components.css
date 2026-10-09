@@ -119,9 +119,10 @@
 }
 
 .button-secondary {
-  background: var(--button-secondary-bg);
-  border: var(--button-secondary-border);
+  background: var(--surface);
+  border: var(--neu-edge);
   color: var(--ink-1);
+  box-shadow: var(--button-raised);
 }
 
 .button-text {
@@ -150,8 +151,9 @@
 .add-task-sub {
   height: 40px;
   padding: 0 var(--space-4);
-  border: var(--button-secondary-border);
-  background: var(--button-secondary-bg);
+  border: var(--input-border);
+  background: var(--surface);
+  box-shadow: var(--neu-inset-1);
 }
 
 .add-task input {
@@ -251,7 +253,7 @@
 .task-note-mark {
   flex-shrink: 0;
   padding: 1px var(--space-2);
-  border: var(--button-secondary-border);
+  border: var(--divider);
   border-radius: var(--radius-full);
   font-size: 11px;
   color: var(--ink-3);
@@ -282,6 +284,12 @@
 
 .status-icon:disabled {
   cursor: default;
+}
+
+/* 円は地の色のくぼみにはめる（Figma の StatusIcon、ADR-0018） */
+.status-icon svg {
+  border-radius: var(--radius-full);
+  box-shadow: var(--neu-inset-1);
 }
 
 .status-icon[data-status="todo"] {
@@ -620,9 +628,10 @@
 .task-tags-input {
   height: 36px;
   padding: 0 var(--space-4);
-  border: var(--button-secondary-border);
+  border: var(--input-border);
   border-radius: var(--radius-m);
-  background: var(--button-secondary-bg);
+  background: var(--surface);
+  box-shadow: var(--neu-inset-1);
   font: inherit;
   font-size: 13px;
   color: var(--ink-1);
@@ -1006,9 +1015,10 @@
 .agent-select select {
   min-height: 40px;
   padding: 0 var(--space-3);
-  border: var(--button-secondary-border);
+  border: var(--input-border);
   border-radius: var(--radius-m);
-  background: var(--button-secondary-bg);
+  background: var(--surface);
+  box-shadow: var(--neu-inset-1);
   font: inherit;
   font-size: 13px;
   color: var(--ink-1);
@@ -1198,9 +1208,10 @@
   display: flex;
   margin: 0;
   padding: var(--space-1);
-  border: var(--button-secondary-border);
+  border: var(--neu-edge);
   border-radius: var(--radius-m);
-  background: var(--button-secondary-bg);
+  background: var(--surface);
+  box-shadow: var(--neu-raised-1);
 }
 
 .segmented-item {
@@ -1217,7 +1228,8 @@
 }
 
 .segmented-item[aria-pressed="true"] {
-  background: var(--segmented-active-bg);
+  background: var(--surface);
+  box-shadow: var(--neu-inset-1);
 }
 
 .reflection-actions {
@@ -1635,9 +1647,10 @@
   flex-direction: column;
   align-items: center;
   padding: var(--space-2) 0;
-  border: var(--button-secondary-border);
+  border: var(--neu-edge);
   border-radius: var(--radius-l);
-  background: var(--button-secondary-bg);
+  background: var(--surface);
+  box-shadow: var(--button-raised);
   font: inherit;
   font-size: 11px;
   font-weight: 500;
@@ -1646,7 +1659,8 @@
 }
 
 .condition-option[aria-pressed="true"] {
-  background: var(--segmented-active-bg);
+  background: var(--surface);
+  box-shadow: var(--neu-inset-1);
   border: var(--row-selected-border);
 }
 
@@ -2011,9 +2025,10 @@
   flex-shrink: 0;
   min-height: 40px;
   padding: 0 var(--space-3);
-  border: var(--button-secondary-border);
+  border: var(--input-border);
   border-radius: var(--radius-m);
-  background: var(--button-secondary-bg);
+  background: var(--surface);
+  box-shadow: var(--neu-inset-1);
   font: inherit;
   font-size: 14px;
   color: var(--ink-1);
@@ -2024,9 +2039,10 @@
   width: 280px;
   min-height: 40px;
   padding: 0 var(--space-3);
-  border: var(--button-secondary-border);
+  border: var(--input-border);
   border-radius: var(--radius-m);
-  background: var(--button-secondary-bg);
+  background: var(--surface);
+  box-shadow: var(--neu-inset-1);
   font: inherit;
   font-size: 14px;
   color: var(--ink-1);
@@ -2037,9 +2053,10 @@
   width: 72px;
   min-height: 40px;
   padding: 0 var(--space-3);
-  border: var(--button-secondary-border);
+  border: var(--input-border);
   border-radius: var(--radius-m);
-  background: var(--button-secondary-bg);
+  background: var(--surface);
+  box-shadow: var(--neu-inset-1);
   font: inherit;
   font-size: 14px;
   color: var(--ink-1);
@@ -2072,9 +2089,10 @@
 .palette-input {
   min-height: 48px;
   padding: 0 var(--space-4);
-  border: var(--button-secondary-border);
+  border: var(--input-border);
   border-radius: var(--radius-xl);
-  background: var(--button-secondary-bg);
+  background: var(--surface);
+  box-shadow: var(--neu-inset-1);
   font: inherit;
   font-size: 15px;
   color: var(--ink-1);
@@ -2446,7 +2464,8 @@
   gap: 2px;
   padding: var(--space-3);
   border-radius: var(--radius-l);
-  background: var(--button-secondary-bg);
+  background: var(--surface);
+  box-shadow: var(--neu-inset-1);
 }
 
 .timeline-counts dt {
@@ -2594,6 +2613,26 @@
   transform: scale(var(--press-scale));
 }
 
+/*
+ * 押下のくぼみ（DESIGN.md 2.8、ADR-0018）。影そのものは動かさず、くぼみの影を持つ層の opacity を変える。
+ * 浮き出た部品は、押すとへこんで見える
+ */
+:is(.button:not(.button-text), .segmented-item, .condition-option)::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  box-shadow: var(--neu-inset-1);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--motion-fast) var(--ease-out);
+}
+
+:is(.button:not(.button-text), .segmented-item, .condition-option):not(:disabled):active::after {
+  opacity: 1;
+}
+
 .status-icon:not(:disabled):active {
   transform: scale(var(--press-scale-icon));
 }
@@ -2724,9 +2763,10 @@
   width: 200px;
   min-height: 36px;
   padding: 0 var(--space-3);
-  border: var(--button-secondary-border);
+  border: var(--input-border);
   border-radius: var(--radius-m);
-  background: var(--button-secondary-bg);
+  background: var(--surface);
+  box-shadow: var(--neu-inset-1);
   font: inherit;
   font-size: 13px;
   color: var(--ink-1);
@@ -2783,9 +2823,10 @@
 .tag-filter-select select {
   min-height: 32px;
   padding: 0 var(--space-3);
-  border: var(--button-secondary-border);
+  border: var(--input-border);
   border-radius: var(--radius-m);
-  background: var(--button-secondary-bg);
+  background: var(--surface);
+  box-shadow: var(--neu-inset-1);
   font: inherit;
   font-size: 13px;
   color: var(--ink-1);

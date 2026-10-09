@@ -69,6 +69,8 @@
   --neu-edge: 1px solid rgba(255, 255, 255, 0.5);
   /* 面の中の行や表の区切り線 */
   --divider: 1px solid rgba(26, 31, 41, 0.1);
+  /* 入力欄はくぼみで示すので枠は見せないが、幅は残して大きさを変えない */
+  --input-border: 1px solid transparent;
 
   /* 2.4 角の丸み */
   --radius-s: 6px;
@@ -156,13 +158,10 @@
   --button-raised:
     var(--neu-raised-2), inset 2px 2px 3px rgba(255, 255, 255, 0.9),
     inset -2px -2px 4px rgba(163, 177, 198, 0.35);
-  --button-secondary-bg: rgba(255, 255, 255, 0.4);
-  --button-secondary-border: 1px solid rgba(255, 255, 255, 0.95);
   --button-confirm-bg: #26303f;
 
   /* 4.7 Markdown のプレビューと、書く／プレビューの切り替え */
   --code-bg: rgba(26, 31, 41, 0.06);
-  --segmented-active-bg: rgba(255, 255, 255, 0.85);
 
   /* 4.14 カレンダー */
   --calendar-cell-bg: rgba(255, 255, 255, 0.32);
@@ -184,8 +183,6 @@
   --overlay: rgba(26, 31, 41, 0.18);
 
   /* 4.5 kbd */
-  --kbd-bg: rgba(255, 255, 255, 0.8);
-  --kbd-border: 1px solid rgba(26, 31, 41, 0.12);
   --kbd-bg-on-dark: rgba(255, 255, 255, 0.18);
 }
 
