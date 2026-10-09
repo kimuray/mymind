@@ -178,4 +178,32 @@ describe('FR-A13 月次総括の入力のタグ', () => {
     });
     expect(payload.stats.by_tag[0]?.tag).toHaveLength(30);
   });
+
+  it('絵文字を含む30文字のタグの名前は、途中で切らずにそのまま送る', () => {
+    const emoji = '🍣'.repeat(30);
+    const { payload } = buildMonthlySummaryInput('プロンプト', {
+      ...data,
+      stats: { ...data.stats, byTag: [{ tag: emoji, completed: 1, doingDays: 1, waitingDays: 0 }] },
+    });
+    expect(payload.stats.by_tag[0]?.tag).toBe(emoji);
+  });
+
+  it('NFR-15 タグの集計だけで上限を超えるときは、動きの少ないタグから省き、注記を付ける', () => {
+    const byTag = Array.from({ length: 400 }, (_, i) => ({
+      tag: `タグ${String(i).padStart(3, '0')}${'あ'.repeat(20)}`,
+      completed: i,
+      doingDays: 0,
+      waitingDays: 0,
+    }));
+    const { payload, annotations, charCount } = buildMonthlySummaryInput('プロンプト', {
+      ...data,
+      stats: { ...data.stats, byTag },
+    });
+    expect(charCount).toBeLessThanOrEqual(20_000);
+    expect(payload.stats.by_tag.length).toBeLessThan(400);
+    // 残るのは動きの多いタグ
+    expect(payload.stats.by_tag.some((t) => t.completed === 399)).toBe(true);
+    expect(payload.stats.by_tag.some((t) => t.completed === 0)).toBe(false);
+    expect(annotations.some((a) => a.path.startsWith('stats.by_tag.'))).toBe(true);
+  });
 });

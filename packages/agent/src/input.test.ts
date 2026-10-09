@@ -264,4 +264,13 @@ describe('FR-A13 日次 FB の入力のタグ', () => {
     expect(tags).toHaveLength(10);
     expect(tags.every((t) => t.length === 30)).toBe(true);
   });
+
+  it('絵文字を含む30文字のタグの名前は、途中で切らずにそのまま送る', () => {
+    const emoji = '🍣'.repeat(30);
+    const { payload } = buildDailyFeedbackInput('プロンプト', {
+      ...data,
+      tasks: [{ title: '寿司', status: 'todo', parentTitle: null, statusDays: 1, tags: [emoji] }],
+    });
+    expect(payload.tasks[0]?.tags).toEqual([emoji]);
+  });
 });

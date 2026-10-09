@@ -64,7 +64,10 @@ const isDailyPayload = (input: DailyStageInput): input is DailyPayload => 'stats
  * 保存のときにも上限で検証しているが、入力の量を決めるのはここなので、受け取った値をそのまま信じない
  */
 const limitTags = (names: readonly string[]): string[] =>
-  names.slice(0, MAX_TAGS_PER_TASK).map((n) => n.slice(0, MAX_TAG_NAME_LENGTH));
+  names.slice(0, MAX_TAGS_PER_TASK).map(limitTagName);
+
+/** タグの名前を上限の文字数に収める。domain と同じく、絵文字などを途中で切らないようコードポイントで数える */
+const limitTagName = (name: string): string => [...name].slice(0, MAX_TAG_NAME_LENGTH).join('');
 
 /** 必要な項目だけに絞る。タスクの ID、内部の時刻、設定値は送らない（architecture.md 12.5） */
 export const minimizeDaily: Stage<DailyStageInput> = {
@@ -341,7 +344,7 @@ export const minimizeMonthly: Stage<MonthlyStageInput> = {
         corrected_days: data.stats.correctedDays,
         completed: data.stats.completed,
         by_tag: data.stats.byTag.map((t) => ({
-          tag: t.tag === null ? null : t.tag.slice(0, MAX_TAG_NAME_LENGTH),
+          tag: t.tag === null ? null : limitTagName(t.tag),
           completed: t.completed,
           doing_days: t.doingDays,
           waiting_days: t.waitingDays,
@@ -397,6 +400,7 @@ const MONTHLY_TRIMS: readonly {
 /**
  * 量の上限に収める（architecture.md 12.5）。古い日から順に、振り返りの冒頭を省き、
  * それでも超えるなら日次 FB の「よかったこと」と「気づき」を省く（調子と明日の一手は残す）。
+ * さらに超えるなら、タグごとの集計を動きの少ないタグから省く。
  * 週ごとの要約を先に作る段階は、まだない（上限を超える月が出てきたら加える）
  */
 export const budgetMonthly: Stage<MonthlyStageInput> = {
@@ -418,6 +422,23 @@ export const budgetMonthly: Stage<MonthlyStageInput> = {
           reason: `${limit}を超えたため、古い日の${what}を省きました`,
         });
       }
+    }
+    // それでも超えるなら、タグごとの集計を、動きの少ないタグから省く（タグの数には上限がないため）
+    const activity = (t: MonthlyPayload['stats']['by_tag'][number]) =>
+      t.completed + t.doing_days + t.waiting_days;
+    while (monthlySize(payload) > ctx.maxChars && payload.stats.by_tag.length > 0) {
+      const least = payload.stats.by_tag.reduce((min, t) =>
+        activity(t) < activity(min) ? t : min,
+      );
+      payload = {
+        ...payload,
+        stats: { ...payload.stats, by_tag: payload.stats.by_tag.filter((t) => t !== least) },
+      };
+      annotations.push({
+        kind: 'omitted',
+        path: `stats.by_tag.${least.tag ?? 'タグなし'}`,
+        reason: `${limit}を超えたため、動きの少ないタグの集計を省きました`,
+      });
     }
     return { input: payload, annotations };
   },
