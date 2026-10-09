@@ -14,7 +14,15 @@ import type { Stage } from './pipeline';
 
 const data: DailyFeedbackData = {
   day: '2026-09-23',
-  tasks: [{ title: '企画書を書く', status: 'doing', parentTitle: 'Q4計画', statusDays: 3 }],
+  tasks: [
+    {
+      title: '企画書を書く',
+      status: 'doing',
+      parentTitle: 'Q4計画',
+      statusDays: 3,
+      tags: ['仕事'],
+    },
+  ],
   counts: { planned: 1, done: 0, doing: 1, paused: 0, waiting: 0 },
   reflection: { thoughtsMd: '集中できた', learningMd: '朝に始めると続く' },
   recent: [{ day: '2026-09-22', level: 3, nextAction: '朝に見出しを書く', isBlank: false }],
@@ -215,5 +223,45 @@ describe('FR-A12 送る入力のハッシュ', () => {
     expect(buildDailyFeedbackInput('別のプロンプト', data).payloadHash).toBe(
       buildDailyFeedbackInput('プロンプト', data).payloadHash,
     );
+  });
+});
+
+describe('FR-A13 日次 FB の入力のタグ', () => {
+  it('タスクにタグの名前を添える。タグのないタスクには tags を付けない', () => {
+    const { payload } = buildDailyFeedbackInput('プロンプト', {
+      ...data,
+      tasks: [
+        ...data.tasks,
+        { title: '買い物', status: 'todo', parentTitle: null, statusDays: 1, tags: [] },
+      ],
+    });
+    expect(payload.tasks).toEqual([
+      { title: '企画書を書く', status: 'doing', parent: 'Q4計画', days: 3, tags: ['仕事'] },
+      { title: '買い物', status: 'todo', days: 1 },
+    ]);
+  });
+
+  it('メモやタグの ID が付いていても送らない', () => {
+    const task = { ...(data.tasks[0] as DailyFeedbackData['tasks'][number]) };
+    // サーバーが余計な項目を付けて渡しても、minimize で落ちることを確かめる
+    const withExtra: DailyFeedbackData = {
+      ...data,
+      tasks: [Object.assign(task, { noteMd: '秘密のメモ', tagIds: ['01ABC'] })],
+    };
+    const { text } = buildDailyFeedbackInput('プロンプト', withExtra);
+    expect(text).not.toContain('秘密のメモ');
+    expect(text).not.toContain('01ABC');
+    expect(text).not.toContain('noteMd');
+  });
+
+  it('タグは1タスクに10個、名前は30文字までに収める（NFR-15）', () => {
+    const many = Array.from({ length: 12 }, (_, i) => `${'あ'.repeat(40)}${i}`);
+    const { payload } = buildDailyFeedbackInput('プロンプト', {
+      ...data,
+      tasks: [{ title: 'たくさん', status: 'todo', parentTitle: null, statusDays: 1, tags: many }],
+    });
+    const tags = payload.tasks[0]?.tags ?? [];
+    expect(tags).toHaveLength(10);
+    expect(tags.every((t) => t.length === 30)).toBe(true);
   });
 });

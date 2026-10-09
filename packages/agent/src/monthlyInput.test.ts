@@ -22,7 +22,17 @@ const data: MonthlySummaryData = {
   month: '2026-09',
   isPartial: true,
   through: '2026-09-23',
-  stats: { recordedDays: 2, blankDays: 1, feedbackDays: 1, correctedDays: 1, completed: 4 },
+  stats: {
+    recordedDays: 2,
+    blankDays: 1,
+    feedbackDays: 1,
+    correctedDays: 1,
+    completed: 4,
+    byTag: [
+      { tag: '仕事', completed: 3, doingDays: 5, waitingDays: 1 },
+      { tag: null, completed: 1, doingDays: 1, waitingDays: 0 },
+    ],
+  },
   days: [
     day('2026-09-02', {
       condition: { ai: 3, user: 2 },
@@ -146,5 +156,26 @@ describe('FR-A06 NFR-15 月次総括の入力', () => {
 
   it('上限に収まっていれば何も省かない', () => {
     expect(buildMonthlySummaryInput('プロンプト', data).annotations).toEqual([]);
+  });
+});
+
+describe('FR-A13 月次総括の入力のタグ', () => {
+  it('タグごとの集計を stats.by_tag として、数えた値のまま渡す。タグなしは null', () => {
+    const { payload } = buildMonthlySummaryInput('プロンプト', data);
+    expect(payload.stats.by_tag).toEqual([
+      { tag: '仕事', completed: 3, doing_days: 5, waiting_days: 1 },
+      { tag: null, completed: 1, doing_days: 1, waiting_days: 0 },
+    ]);
+  });
+
+  it('タグの名前は30文字までに収める（NFR-15）', () => {
+    const { payload } = buildMonthlySummaryInput('プロンプト', {
+      ...data,
+      stats: {
+        ...data.stats,
+        byTag: [{ tag: 'い'.repeat(50), completed: 1, doingDays: 1, waitingDays: 0 }],
+      },
+    });
+    expect(payload.stats.by_tag[0]?.tag).toHaveLength(30);
   });
 });

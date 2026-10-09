@@ -11,7 +11,7 @@ import {
   parseMonthlySummary,
 } from '@mymind/agent';
 import type { JobKind } from '@mymind/domain';
-import { STATUSES } from '@mymind/domain';
+import { MAX_TAG_NAME_LENGTH, MAX_TAGS_PER_TASK, STATUSES } from '@mymind/domain';
 import { z } from 'zod';
 
 /** 評価用のサンプル（prompts/eval/samples/*.json）。どんな日かの説明と、エージェントに渡す元のデータ */
@@ -25,6 +25,11 @@ const sampleSchema = z.strictObject({
         status: z.enum(STATUSES),
         parentTitle: z.string().nullable(),
         statusDays: z.number().int().min(1),
+        /** タグの名前（FR-A13）。古いサンプルにはないので、省けば付いていないものとする */
+        tags: z
+          .array(z.string().min(1).max(MAX_TAG_NAME_LENGTH))
+          .max(MAX_TAGS_PER_TASK)
+          .default([]),
       }),
     ),
     counts: z.strictObject({
@@ -130,6 +135,17 @@ const monthlySampleSchema = z.strictObject({
       feedbackDays: z.number().int().min(0),
       correctedDays: z.number().int().min(0),
       completed: z.number().int().min(0),
+      /** タグごとの集計（FR-R08、FR-A13）。古いサンプルにはないので、省けば空 */
+      byTag: z
+        .array(
+          z.strictObject({
+            tag: z.string().min(1).max(MAX_TAG_NAME_LENGTH).nullable(),
+            completed: z.number().int().min(0),
+            doingDays: z.number().int().min(0),
+            waitingDays: z.number().int().min(0),
+          }),
+        )
+        .default([]),
     }),
     days: z.array(
       z.strictObject({

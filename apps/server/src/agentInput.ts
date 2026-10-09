@@ -9,13 +9,14 @@ import {
   type MonthlySummaryData,
   RECENT_DAYS,
 } from '@mymind/agent';
-import type { DailyLogRepository, JobRepository, TaskRepository } from '@mymind/db';
+import type { DailyLogRepository, JobRepository, TagRepository, TaskRepository } from '@mymind/db';
 import {
   dayOrdinalSince,
   daysOfMonth,
   type JobKind,
   previousDays,
   statusSinceDay,
+  tagStats,
 } from '@mymind/domain';
 import { createDayRecordReader, hasReflection } from './dayRecords';
 
@@ -23,6 +24,8 @@ export type AgentInputDeps = {
   tasks: TaskRepository;
   jobs: JobRepository;
   logs: DailyLogRepository;
+  /** タグ（FR-A13）。入力にはタグの名前だけを入れる */
+  tags: TagRepository;
   /** 日次 FB のプロンプト（prompts/daily-feedback.md） */
   promptText: string;
   /** 月次総括のプロンプト（prompts/monthly-summary.md） */
@@ -44,6 +47,7 @@ export function createAgentInputBuilder({
   tasks,
   jobs,
   logs,
+  tags,
   promptText,
   monthlyPromptText,
   today,
@@ -54,6 +58,7 @@ export function createAgentInputBuilder({
     const parentIds = [...new Set(plan.flatMap((t) => (t.parentId === null ? [] : [t.parentId])))];
     const parents = new Map(tasks.findMany(parentIds).map((p) => [p.id, p.title]));
     const count = (s: string) => plan.filter((t) => t.status === s).length;
+    const tagsOf = tags.tagsOfTasks(plan.map((t) => t.id));
     return {
       day,
       tasks: plan.map((t) => ({
@@ -62,6 +67,8 @@ export function createAgentInputBuilder({
         parentTitle: t.parentId === null ? null : (parents.get(t.parentId) ?? null),
         // 作成のイベントは必ずあるので、見つからないのはその日に作られた場合と同じに扱う
         statusDays: dayOrdinalSince(statusSinceDay(tasks.listEvents(t.id)) ?? day, day),
+        // タグは名前だけを渡す。メモ（noteMd）は渡さない（FR-A13）
+        tags: (tagsOf.get(t.id) ?? []).map((g) => g.name),
       })),
       counts: {
         planned: plan.length,
@@ -100,6 +107,30 @@ export function createAgentInputBuilder({
         condition === undefined &&
         latest === undefined,
     };
+  };
+
+  /**
+   * 月のタグごとの集計（FR-R08、FR-A13）。画面の月の応答と同じく、domain の tagStats で数える。
+   * タグは名前の順、「タグなし」（null）は最後
+   */
+  const monthlyTagStats = (from: string, to: string): MonthlySummaryData['stats']['byTag'] => {
+    if (from > to) return [];
+    const list = tasks.listTimelineTasks(from, to);
+    const events = tasks.listEventsOfTasks(list.map((t) => t.id));
+    const tagsOf = tags.tagsOfTasks(list.map((t) => t.id));
+    const all = tags.list();
+    const names = new Map(all.map((t) => [t.id, t.name]));
+    return tagStats(
+      list.map((t) => ({
+        tagIds: (tagsOf.get(t.id) ?? []).map((g) => g.id),
+        events: events.get(t.id) ?? [],
+      })),
+      { from, to },
+      all.map((t) => t.id),
+    ).map(({ tagId, ...counts }) => ({
+      tag: tagId === null ? null : (names.get(tagId) ?? null),
+      ...counts,
+    }));
   };
 
   /**
@@ -150,6 +181,7 @@ export function createAgentInputBuilder({
             r.condition.user !== r.condition.ai,
         ).length,
         completed: rows.reduce((sum, r) => sum + r.completed, 0),
+        byTag: monthlyTagStats(`${month}-01`, through),
       },
       days: rows.map(({ completed: _, ...row }) => row),
     };

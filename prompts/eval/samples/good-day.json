@@ -7,23 +7,38 @@
         "title": "D1のスキーマ設計",
         "status": "done",
         "parentTitle": "TODOツール MVP",
-        "statusDays": 1
+        "statusDays": 1,
+        "tags": ["仕事"]
       },
       {
         "title": "APIのルーティング",
         "status": "done",
         "parentTitle": "TODOツール MVP",
-        "statusDays": 1
+        "statusDays": 1,
+        "tags": []
       },
-      { "title": "週報", "status": "done", "parentTitle": null, "statusDays": 1 },
+      {
+        "title": "週報",
+        "status": "done",
+        "parentTitle": null,
+        "statusDays": 1,
+        "tags": []
+      },
       {
         "title": "画面の下書き",
         "status": "doing",
         "parentTitle": "TODOツール MVP",
-        "statusDays": 1
+        "statusDays": 1,
+        "tags": []
       }
     ],
-    "counts": { "planned": 4, "done": 3, "doing": 1, "paused": 0, "waiting": 0 },
+    "counts": {
+      "planned": 4,
+      "done": 3,
+      "doing": 1,
+      "paused": 0,
+      "waiting": 0
+    },
     "reflection": {
       "thoughtsMd": "## 今日の手応え\n朝いちばんに週報を15分で終わらせたら、午前のうちに設計に入れた。スキーマとルーティングが一気に片付いて気持ちがいい。\n\n午後は少し欲張って画面にも手を付けた。",
       "learningMd": "- 朝の15分で小さなものを片付けると、午前の集中が途切れない\n- ルーティングはスキーマが固まってからの方が速い"

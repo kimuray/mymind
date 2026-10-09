@@ -1,4 +1,4 @@
-import type { Status } from '@mymind/domain';
+import { MAX_TAG_NAME_LENGTH, MAX_TAGS_PER_TASK, type Status } from '@mymind/domain';
 import {
   type Annotation,
   hashPayload,
@@ -34,6 +34,8 @@ export type DailyFeedbackData = {
     parentTitle: string | null;
     /** 今のステータスになってから何日目か（dayOrdinalSince） */
     statusDays: number;
+    /** 付いているタグの名前（FR-A13）。メモ（FR-T09）は送らない */
+    tags: string[];
   }[];
   /** domain で計算した件数（FR-A10：AI には数えさせない） */
   counts: { planned: number; done: number; doing: number; paused: number; waiting: number };
@@ -47,7 +49,7 @@ export type DailyFeedbackData = {
 export type DailyPayload = {
   day: string;
   reflection?: { thoughts_md: string; learning_md: string };
-  tasks: { title: string; status: Status; parent?: string; days: number }[];
+  tasks: { title: string; status: Status; parent?: string; days: number; tags?: string[] }[];
   stats: DailyFeedbackData['counts'];
   recent: { day: string; condition: number | null; next_action: string | null; blank: boolean }[];
 };
@@ -56,6 +58,13 @@ export type DailyPayload = {
 export type DailyStageInput = DailyFeedbackData | DailyPayload;
 
 const isDailyPayload = (input: DailyStageInput): input is DailyPayload => 'stats' in input;
+
+/**
+ * タグの名前を、タグの上限（1タスクに10個、30文字）に収める（NFR-15）。
+ * 保存のときにも上限で検証しているが、入力の量を決めるのはここなので、受け取った値をそのまま信じない
+ */
+const limitTags = (names: readonly string[]): string[] =>
+  names.slice(0, MAX_TAGS_PER_TASK).map((n) => n.slice(0, MAX_TAG_NAME_LENGTH));
 
 /** 必要な項目だけに絞る。タスクの ID、内部の時刻、設定値は送らない（architecture.md 12.5） */
 export const minimizeDaily: Stage<DailyStageInput> = {
@@ -77,6 +86,7 @@ export const minimizeDaily: Stage<DailyStageInput> = {
         status: t.status,
         ...(t.parentTitle === null ? {} : { parent: t.parentTitle }),
         days: t.statusDays,
+        ...(t.tags.length === 0 ? {} : { tags: limitTags(t.tags) }),
       })),
       stats: {
         planned: data.counts.planned,
@@ -254,6 +264,11 @@ export type MonthlySummaryData = {
     correctedDays: number;
     /** 完了したタスクの数（振り返りの「完了」と同じ定義の合計） */
     completed: number;
+    /**
+     * タグごとの集計（FR-R08、FR-A13）。domain の tagStats で数えた値。tag が null の行は「タグなし」。
+     * 完了の数と、着手中・待ちの日数（タスクごとに足したもの）
+     */
+    byTag: { tag: string | null; completed: number; doingDays: number; waitingDays: number }[];
   };
   days: {
     day: string;
@@ -278,6 +293,7 @@ export type MonthlyPayload = {
     feedback_days: number;
     corrected_days: number;
     completed: number;
+    by_tag: { tag: string | null; completed: number; doing_days: number; waiting_days: number }[];
   };
   days: {
     day: string;
@@ -324,6 +340,12 @@ export const minimizeMonthly: Stage<MonthlyStageInput> = {
         feedback_days: data.stats.feedbackDays,
         corrected_days: data.stats.correctedDays,
         completed: data.stats.completed,
+        by_tag: data.stats.byTag.map((t) => ({
+          tag: t.tag === null ? null : t.tag.slice(0, MAX_TAG_NAME_LENGTH),
+          completed: t.completed,
+          doing_days: t.doingDays,
+          waiting_days: t.waitingDays,
+        })),
       },
       days: [...data.days]
         .sort((a, b) => (a.day < b.day ? -1 : 1))

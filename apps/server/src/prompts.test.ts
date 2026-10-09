@@ -36,7 +36,7 @@ describe('FR-A11 日次 FB のプロンプト', () => {
   });
 
   it('バージョンを読み、状態を日本語で書くよう指示している', () => {
-    expect(prompt.version).toBe('1.0.0');
+    expect(prompt.version).toBe('1.1.0');
     for (const word of ['未着手', '着手中', '中断', '待ち', '完了', '中止']) {
       expect(prompt.text).toContain(word);
     }
@@ -53,7 +53,7 @@ describe('FR-A06 FR-A11 月次総括のプロンプト', () => {
   });
 
   it('下書きのバージョンを読み、途中経過と数値の扱いを指示している', () => {
-    expect(prompt.version).toBe('0.1.0');
+    expect(prompt.version).toBe('0.2.0');
     expect(prompt.text).toContain('途中経過');
     expect(prompt.text).toContain('`stats` の値だけを使い');
     for (const key of ['learnings', 'trends', 'self_gap', 'proposals']) {
@@ -123,7 +123,7 @@ describe('FR-A11 評価用のサンプル', () => {
     expect(result).toMatchObject({
       sample: 'good-day',
       agent: 'fake',
-      promptVersion: '1.0.0',
+      promptVersion: '1.1.0',
       durationMs: 1500,
       valid: true,
       error: null,
@@ -193,5 +193,17 @@ describe('FR-A06 月次総括の評価用のサンプル', () => {
       promptVersion: prompt.version,
     });
     expect(runner.inputs[0]).toBe(buildMonthlySummaryInput(prompt.text, sample.data).text);
+  });
+});
+
+describe('FR-A13 プロンプトのタグの説明', () => {
+  it('日次 FB のプロンプトは、タスクの tags の意味を説明している', () => {
+    expect(loadDailyPrompt().text).toContain('`tags` は利用者がタスクを分類するために付けた名前');
+  });
+
+  it('月次総括のプロンプトは、stats.by_tag の意味と、足しても完了の数にならないことを説明している', () => {
+    const { text } = loadMonthlyPrompt();
+    expect(text).toContain('`by_tag`');
+    expect(text).toContain('行を足しても `completed` にはなりません');
   });
 });

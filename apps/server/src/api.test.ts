@@ -40,6 +40,7 @@ beforeEach(() => {
     jobs,
     tasks,
     logs: createDailyLogRepository({ db, codec: plainCodec }),
+    tags: createTagRepository({ db }),
     runners: { claude: createFakeAgentRunner(), codex: createFakeAgentRunner() },
     defaultAgent: () => 'claude',
     events,

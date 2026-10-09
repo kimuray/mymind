@@ -9,7 +9,14 @@ const preview = (extra: Partial<MonthlyInputPreview> = {}): MonthlyInputPreview 
     month: '2026-09',
     partial: true,
     through: '2026-09-23',
-    stats: { recorded_days: 2, blank_days: 1, feedback_days: 1, corrected_days: 1, completed: 4 },
+    stats: {
+      recorded_days: 2,
+      blank_days: 1,
+      feedback_days: 1,
+      corrected_days: 1,
+      completed: 4,
+      by_tag: [{ tag: '仕事', completed: 3, doing_days: 5, waiting_days: 1 }],
+    },
     days: [
       {
         day: '2026-09-01',
@@ -70,5 +77,13 @@ describe('FR-A06 FR-A12 月次総括の送信内容', () => {
     );
     expect(html).toContain('古い日のよかったことと気づきを省きました');
     expect(html).toContain('加工した箇所が1件あります');
+  });
+});
+
+describe('FR-A13 FR-A12 月次総括の送信内容のタグ', () => {
+  it('タグごとの集計を、タグの名前と数えた値で出す', () => {
+    const html = renderToStaticMarkup(<MonthlyInputPreviewView preview={preview()} />);
+    expect(html).toContain('タグごとの集計');
+    expect(html).toContain('完了 3件／着手中 5日／待ち 1日');
   });
 });
