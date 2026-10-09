@@ -42,7 +42,7 @@ https://www.figma.com/design/VLCoEFLm1ujvYPq8xyEQFg/mymind-view-design
 
 ### 変数とスタイル
 
-- **色の変数**：コレクション `mymind` に25個。名前は DESIGN.md のトークンと同じ（`ink-1`〜`ink-4`、`ground`、`ground-evening`、`surface`、`line`、`accent`、`accent-strong`、`accent-soft`、`neu-light`、`neu-dark`、`status-*` 6色、`mame-*` 6色）。`surface` は `ground` の別名で、面と地は同じ色です
+- **色の変数**：コレクション `mymind` に24個。名前は DESIGN.md のトークンと同じ（`ink-1`〜`ink-4`、`ground`、`surface`、`line`、`accent`、`accent-strong`、`accent-soft`、`neu-light`、`neu-dark`、`status-*` 6色、`mame-*` 6色）。`surface` は `ground` の別名で、面と地は同じ色です。振り返りの画面も同じ地です（ADR-0019）
 - **テキストスタイル**：`Display / 30`、`Title / 22`、`Heading / 15`、`Label / 11`、`Body / 14`、`Body Medium / 14`、`Small / 12`、`Caption / 11`
 - **エフェクトスタイル**：`ニューモ / 凸 1`〜`凸 3`、`ニューモ / 凹 1`〜`凹 2`。影の色は変数 `neu-light`・`neu-dark` につないであります
 
@@ -63,7 +63,7 @@ Figma に接続できない環境では、`docs/design/mockup-source/` のモッ
 
 | 要素 | Figma | 実装（CSS、#237 以降） |
 |---|---|---|
-| 地 | フレームの塗り＝変数 `ground`（振り返りは `ground-evening`）。背景のにじみはない | `background: var(--ground)` |
+| 地 | フレームの塗り＝変数 `ground`（全画面で同じ）。背景のにじみはない | `background: var(--ground)` |
 | 浮き出た面 | 塗り＝`surface`、線＝白50%・1px、`ニューモ / 凸 2`（ペイン、リスト）、`凸 1`（カード、ボタン、`kbd`、セグメントの外枠）、`凸 3`（ダイアログ、パレット、バナー） | `var(--surface)` ＋ `var(--neu-edge)` ＋ `box-shadow: var(--neu-raised-*)` |
 | くぼんだ面 | 塗り＝`surface`、`ニューモ / 凹 1`（入力欄、選んだ行、選んだセグメント、選んだナビ）、`凹 2`（エディタ、カレンダーとタイムラインの表） | `box-shadow: var(--neu-inset-*)` |
 | 選んだ行 | `凹 1` ＋ 藍50%の枠 1.5px | `var(--neu-inset-1)` ＋ `var(--row-selected-border)` |
