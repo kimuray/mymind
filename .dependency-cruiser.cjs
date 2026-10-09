@@ -32,9 +32,11 @@ module.exports = {
     {
       name: 'no-child-process-outside-agent',
       comment:
-        'エージェントの起動は packages/agent の AgentRunner を経由する。ビルド用のスクリプト（apps/*/scripts、ルートの scripts と同じ扱い）は対象外',
+        'エージェントの起動は packages/agent の AgentRunner を経由する。ビルド用のスクリプト（apps/*/scripts、ルートの scripts と同じ扱い）と、デスクトップアプリの更新で git と pnpm を動かす1ファイル（ADR-0017）は対象外',
       severity: 'error',
-      from: { pathNot: '^(packages/agent/|apps/[^/]+/scripts/)' },
+      from: {
+        pathNot: '^(packages/agent/|apps/[^/]+/scripts/|apps/desktop/src/updateCommands\\.ts$)',
+      },
       to: { path: '^(node:)?child_process$', dependencyTypes: ['core'] },
     },
     {
