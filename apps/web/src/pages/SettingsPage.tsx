@@ -17,6 +17,7 @@ import { Button } from '../components/Button';
 import { Loading } from '../components/Loading';
 import { PageLayout } from '../components/PageLayout';
 import { SavedNote } from '../components/SavedNote';
+import { TagSettings } from '../components/TagSettings';
 import { formatDateTime } from '../day';
 import { changeLoginItem, desktopBridge, type LoginItemState } from '../desktop';
 import { useFadeInAfterLoading } from '../loadMotion';
@@ -745,7 +746,9 @@ export function SettingsPage() {
       <div className="page" ref={pageRoot}>
         <header className="page-header">
           <h1 className="text-display">設定</h1>
-          <p className="text-small">アプリの状態、FB の依頼、棚卸し、通知、バックアップ、MCP</p>
+          <p className="text-small">
+            アプリの状態、FB の依頼、棚卸し、タグ、通知、バックアップ、MCP
+          </p>
         </header>
         <section className="task-list settings-status glass-2" aria-label="状態">
           <div className="settings-status-head">
@@ -793,6 +796,7 @@ export function SettingsPage() {
         </p>
         <FeedbackSettings />
         <ReviewSettings />
+        <TagSettings />
         <NotificationSettings />
         <DesktopSettings />
         <BackupSettings />
