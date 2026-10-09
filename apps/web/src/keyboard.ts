@@ -130,3 +130,28 @@ export function runAction(action: KeyAction): boolean {
   }
   return false;
 }
+
+/**
+ * キーを割り当てない、画面の内容から作るパレットの操作（「タグで絞り込む：仕事」のように、データごとにあるもの）。
+ * キーの割り当てはキーマップの定義だけで管理し、ここには名前と処理だけを置く（DESIGN.md 4.16）
+ */
+export type PaletteCommand = { id: string; label: string; run: () => void };
+
+const paletteRegistry: { current: readonly PaletteCommand[] }[] = [];
+
+/** 画面が出すパレットの操作を登録する。画面を離れると外れる */
+export function usePaletteCommands(commands: readonly PaletteCommand[]) {
+  const ref = useRef(commands);
+  ref.current = commands;
+  useEffect(() => {
+    paletteRegistry.push(ref);
+    return () => {
+      const i = paletteRegistry.indexOf(ref);
+      if (i >= 0) paletteRegistry.splice(i, 1);
+    };
+  }, []);
+}
+
+/** 今の画面が出しているパレットの操作 */
+export const pagePaletteCommands = (): PaletteCommand[] =>
+  paletteRegistry.flatMap((r) => [...r.current]);

@@ -23,6 +23,7 @@ import { useDayGuard } from '../dayGuard';
 import { useKeyBindings } from '../keyboard';
 import { useListMotion } from '../listMotion';
 import { useSelectionMotion } from '../selectionMotion';
+import { useTagFilter } from '../tagFilter';
 import { type ListRow, useTaskListKeys } from '../useTaskListKeys';
 
 /** 最後に触れてからの日数（「3日前」）。日数は domain で数える */
@@ -89,7 +90,10 @@ export function BacklogPage() {
   const [reviewError, setReviewError] = useState<string | null>(null);
 
   const today = backlog.data?.today ?? screenDay;
-  const tasks = backlog.data?.tasks ?? [];
+  const allTasks = backlog.data?.tasks ?? [];
+  // タグで絞り込んだ行（FR-T14）。見えなくなったタスクは選択から外れたものとして、詳細ペインを閉じる
+  const tagFilter = useTagFilter(allTasks);
+  const tasks = tagFilter.visible;
   const selected = tasks.find((t) => t.id === selectedId);
 
   const changeStatus = (task: ListTask, to: Status) => transition.mutate({ task, to, ...screen });
@@ -156,7 +160,7 @@ export function BacklogPage() {
       place="backlog"
       onTransition={(to) => changeStatus(selected, to)}
       onMove={(to) => moveTask(selected, to)}
-      childTasks={tasks.filter((t) => t.parentId === selected.id)}
+      childTasks={allTasks.filter((t) => t.parentId === selected.id)}
       onAddChild={(title) => create.mutate({ title, parentId: selected.id, ...screen })}
       onSaveNote={async (noteMd) => {
         await edit.mutateAsync({ task: selected, noteMd, ...screen });
@@ -176,7 +180,7 @@ export function BacklogPage() {
           <h1 className="text-display">バックログ</h1>
           {/* 読み込みの前後で作り直す。読み込み中の 0 から届いた件数へ変わるのを「増えた」として動かさない（DESIGN.md 4.20） */}
           <p className="text-small" key={backlog.isSuccess ? 'loaded' : 'loading'}>
-            覚えておくだけのタスク <AnimatedNumber value={tasks.length} />
+            覚えておくだけのタスク <AnimatedNumber value={allTasks.length} />
           </p>
         </header>
 
@@ -185,6 +189,8 @@ export function BacklogPage() {
           placeholder="覚えておくことを追加（Enterで確定）"
           onSubmit={(title) => create.mutate({ title, ...screen })}
         />
+
+        {tagFilter.bar}
 
         {/* 通知・グループの面・空の案内も出入りと押し下げを動かす（DESIGN.md 4.18、FR-T06）。key はタスクの ID とぶつからない名前にする */}
         {notice !== null && (
@@ -230,9 +236,14 @@ export function BacklogPage() {
           </section>
         ))}
         {backlog.isPending && <Loading />}
-        {backlog.isSuccess && tasks.length === 0 && (
+        {backlog.isSuccess && allTasks.length === 0 && (
           <p className="empty-note" data-motion-key="ui:empty">
             バックログは空です
+          </p>
+        )}
+        {backlog.isSuccess && allTasks.length > 0 && tasks.length === 0 && (
+          <p className="empty-note" data-motion-key="ui:empty-filtered">
+            このタグの付いたタスクは、バックログにありません
           </p>
         )}
       </div>

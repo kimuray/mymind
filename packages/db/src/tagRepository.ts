@@ -1,7 +1,7 @@
 import type { TagColor } from '@mymind/domain';
-import { asc, count, eq, inArray } from 'drizzle-orm';
+import { asc, count, eq, inArray, sql } from 'drizzle-orm';
 import type { Database } from './client';
-import { tags, taskTags } from './schema';
+import { tags, tasks, taskTags } from './schema';
 
 export type Tag = { id: string; name: string; color: TagColor };
 export type TagWithCount = Tag & { taskCount: number };
@@ -80,6 +80,16 @@ export function createTagRepository({ db }: { db: Database }) {
     /** タグを消す。付いていたタスクからも外す（FR-T13） */
     delete(id: string): boolean {
       return db.transaction((tx) => {
+        // 外れるタスクの版を進める。付け外しと同じくタスクの属性の変更なので、古い画面からの更新を拒否できるようにする（NFR-13）
+        tx.update(tasks)
+          .set({ version: sql`${tasks.version} + 1` })
+          .where(
+            inArray(
+              tasks.id,
+              tx.select({ id: taskTags.taskId }).from(taskTags).where(eq(taskTags.tagId, id)),
+            ),
+          )
+          .run();
         tx.delete(taskTags).where(eq(taskTags.tagId, id)).run();
         return tx.delete(tags).where(eq(tags.id, id)).run().changes > 0;
       });
