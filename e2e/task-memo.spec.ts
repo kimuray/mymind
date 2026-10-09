@@ -102,4 +102,54 @@ test.describe('FR-T09 タスクのメモ', () => {
     await leaveMemo(page);
     await expect(detail.getByText('保存しました')).toBeVisible();
   });
+
+  test('NFR-12 書いてすぐ別のタスクを選び、保存も届かなくても、書きかけは下書きに残る', async ({
+    page,
+  }) => {
+    const first = uniqueTitle('メモをすぐ離れる');
+    const second = uniqueTitle('メモの移り先');
+    await page.goto('/');
+    await addAndSelect(page, first);
+    await addAndSelect(page, second);
+    await page.getByRole('button', { name: first, exact: true }).click();
+    await page.route('**/api/tasks/*', (route) =>
+      route.request().method() === 'PATCH' ? route.abort() : route.continue(),
+    );
+    // 1秒を待たずに別のタスクを選ぶ
+    await writeMemo(page, 'すぐ離れたメモ');
+    await page.getByRole('button', { name: second, exact: true }).click();
+    await page.waitForTimeout(500);
+    await page.unroute('**/api/tasks/*');
+
+    await page.reload();
+    await page.getByRole('button', { name: first, exact: true }).click();
+    const detail = page.getByRole('complementary', { name: '詳細' });
+    await expect(detail.getByText(/保存していないメモの下書きがあります/)).toBeVisible();
+  });
+
+  test('NFR-13 保存が遅れている間に書き直しても、最後の内容が保存される', async ({ page }) => {
+    const title = uniqueTitle('メモを続けて保存');
+    await page.goto('/');
+    await addAndSelect(page, title);
+    // 1件目の保存だけを遅らせる
+    let delayed = false;
+    await page.route('**/api/tasks/*', async (route) => {
+      if (route.request().method() === 'PATCH' && !delayed) {
+        delayed = true;
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+      await route.continue();
+    });
+    await writeMemo(page, '1回目');
+    await leaveMemo(page);
+    await writeMemo(page, '2回目');
+    await leaveMemo(page);
+    const detail = page.getByRole('complementary', { name: '詳細' });
+    await expect(detail.getByText('保存しました')).toBeVisible({ timeout: 10_000 });
+    await expect(detail.getByText(/保存できませんでした/)).toHaveCount(0);
+    await page.unroute('**/api/tasks/*');
+    await page.reload();
+    await page.getByRole('button', { name: title, exact: true }).click();
+    await expect(memoEditor(page)).toHaveText('2回目');
+  });
 });

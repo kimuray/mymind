@@ -37,26 +37,42 @@ export function TaskMemo({
     text,
     saved: { text: savedText, updatedAt: task.lastTouchedAt },
   });
-  const clearSaved = useRef(draft.clearSaved);
-  clearSaved.current = draft.clearSaved;
+  const draftRef = useRef(draft);
+  draftRef.current = draft;
 
-  // 保存中の内容。欄から抜けた直後に別のタスクを選ぶと、同じ内容を2回保存しようとするので重ねない
-  const saving = useRef<string | null>(null);
-  const save = async (text = latest.current.text) => {
-    const current = text;
-    if (current === lastSaved.current || current === saving.current) return;
-    saving.current = current;
-    try {
-      await latest.current.onSave(toNoteMd(current));
-      lastSaved.current = current;
-      clearSaved.current(current);
-      setStatus('保存しました');
-    } catch (e) {
-      // 下書きは残るので、次に開いたときに復元できる
-      setStatus(`保存できませんでした（${e instanceof Error ? e.message : String(e)}）`);
-    } finally {
-      saving.current = null;
+  // 保存は1件ずつ順に行う。保存中に内容が変わったら、終わってから最新の内容だけを続けて送る
+  // （並べて送ると、後の保存が先に届いたときに版の食い違いで拒否されるため、NFR-13）
+  const inFlight = useRef<Promise<void> | null>(null);
+  const queued = useRef(false);
+  const save = (first?: string): Promise<void> => {
+    if (inFlight.current !== null) {
+      queued.current = true;
+      return inFlight.current;
     }
+    const run = async () => {
+      let next: string | undefined = first;
+      do {
+        queued.current = false;
+        const current = next ?? latest.current.text;
+        next = undefined;
+        if (current === lastSaved.current) continue;
+        try {
+          await latest.current.onSave(toNoteMd(current));
+          lastSaved.current = current;
+          draftRef.current.markSaved(current);
+          setStatus('保存しました');
+        } catch (e) {
+          // 届かなかった内容は下書きに残し、次に開いたときに復元できるようにする
+          draftRef.current.flush(current);
+          setStatus(`保存できませんでした（${e instanceof Error ? e.message : String(e)}）`);
+          return;
+        }
+      } while (queued.current);
+    };
+    inFlight.current = run().finally(() => {
+      inFlight.current = null;
+    });
+    return inFlight.current;
   };
 
   // ほかの画面で変わったとき、書きかけがなければ新しい内容にする
@@ -73,6 +89,8 @@ export function TaskMemo({
   // biome-ignore lint/correctness/useExhaustiveDependencies: 閉じるときに一度だけ
   useEffect(
     () => () => {
+      // 1秒を待たずに下書きにも残す（保存が届かなくても、書きかけを失わないため）
+      if (latest.current.text !== lastSaved.current) draftRef.current.flush(latest.current.text);
       void save();
     },
     [],

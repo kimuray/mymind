@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { expiredDraftKeys, isRestorable, reflectionDraftKey } from './drafts';
+import { expiredDraftKeys, isRestorable, reflectionDraftKey, taskNoteDraftKey } from './drafts';
 
 describe('NFR-12 下書きの復元', () => {
   const draft = {
@@ -49,5 +49,13 @@ describe('NFR-12 下書きの期限', () => {
         now,
       ),
     ).toEqual(['2026-09-27T11:59:59.999Z']);
+  });
+});
+
+describe('FR-T09 NFR-12 タスクのメモの下書き', () => {
+  it('キーは architecture.md 12.2 のとおり task-note:<タスクID>', () => {
+    expect(taskNoteDraftKey('01J0000000000000000000000A')).toBe(
+      'task-note:01J0000000000000000000000A',
+    );
   });
 });

@@ -27,8 +27,27 @@ export function useTaskNoteDraft({
   store?: DraftStore;
 }) {
   const [offer, setOffer] = useState<Draft | null>(null);
+  // 下書きに書いた（または保存済みで、書く必要のない）内容
   const written = useRef(saved.text);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // 待っている書き込みの内容（なければ null）
+  const pending = useRef<string | null>(null);
   const key = taskNoteDraftKey(taskId);
+
+  const cancelTimer = () => {
+    if (timer.current !== null) clearTimeout(timer.current);
+    timer.current = null;
+    pending.current = null;
+  };
+
+  const write = (value: string) => {
+    cancelTimer();
+    if (value === written.current) return;
+    written.current = value;
+    store
+      .put({ key, text: value, updatedAt: new Date().toISOString() })
+      .catch((e: unknown) => console.warn('メモの下書きを残せませんでした', e));
+  };
 
   // 欄を開いたときだけ、残っている下書きを確かめる
   // biome-ignore lint/correctness/useExhaustiveDependencies: 開いた時点の保存済みの内容と比べる
@@ -49,19 +68,26 @@ export function useTaskNoteDraft({
   // biome-ignore lint/correctness/useExhaustiveDependencies: 内容が変わったときだけ書く
   useEffect(() => {
     if (text === written.current) return;
-    const timer = setTimeout(() => {
-      written.current = text;
-      store
-        .put({ key, text, updatedAt: new Date().toISOString() })
-        .catch((e: unknown) => console.warn('メモの下書きを残せませんでした', e));
-    }, DRAFT_DELAY_MS);
-    return () => clearTimeout(timer);
+    cancelTimer();
+    pending.current = text;
+    timer.current = setTimeout(() => write(text), DRAFT_DELAY_MS);
+    return cancelTimer;
   }, [text]);
 
   return {
     offer,
-    /** 保存できた内容と同じ下書きを消す（保存の後に書き足した分は残す） */
-    clearSaved: (savedText: string) => {
+    /**
+     * 1秒を待たずに、今の内容を下書きに書く。欄が閉じるときと保存に失敗したときに呼ぶ
+     * （待っている間に欄が閉じたり、サーバーに届かなかったりしても、書きかけを失わないため）
+     */
+    flush: (value: string) => write(value),
+    /**
+     * 保存できた。待っている書き込みを取り消し、保存した内容と同じ下書きを消す
+     * （取り消さないと、消したあとで同じ内容をまた書いてしまう）。保存の後に書き足した分は残す
+     */
+    markSaved: (savedText: string) => {
+      if (pending.current === savedText) cancelTimer();
+      written.current = savedText;
       store
         .deleteIfSaved(key, savedText)
         .catch((e: unknown) => console.warn('メモの下書きを消せませんでした', e));
