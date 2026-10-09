@@ -1,5 +1,5 @@
 import type { TagColor } from '@mymind/domain';
-import { and, asc, count, eq, inArray } from 'drizzle-orm';
+import { asc, count, eq, inArray } from 'drizzle-orm';
 import type { Database } from './client';
 import { tags, taskTags } from './schema';
 
@@ -90,17 +90,6 @@ export function createTagRepository({ db }: { db: Database }) {
       return (
         db.select({ n: count() }).from(taskTags).where(eq(taskTags.taskId, taskId)).get()?.n ?? 0
       );
-    },
-
-    /** タスクにタグを付ける。付いていれば何もしない */
-    attach(taskId: string, tagId: string): void {
-      db.insert(taskTags).values({ taskId, tagId }).onConflictDoNothing().run();
-    },
-
-    detach(taskId: string, tagId: string): void {
-      db.delete(taskTags)
-        .where(and(eq(taskTags.taskId, taskId), eq(taskTags.tagId, tagId)))
-        .run();
     },
 
     /**

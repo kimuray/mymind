@@ -15,7 +15,7 @@ import {
   sql,
 } from 'drizzle-orm';
 import type { Database } from './client';
-import { dayPlans, taskEvents, tasks } from './schema';
+import { dayPlans, taskEvents, tasks, taskTags } from './schema';
 import type { SensitiveCodec } from './sensitiveCodec';
 
 /** タスク名の検索で返す最大の件数（FR-M02） */
@@ -73,6 +73,11 @@ export type TaskChange = {
    * 状態は変えないので、ステータスの変更のイベントは要らない
    */
   touchedAt?: string;
+  /**
+   * タグの付け外し（FR-T13）。タスクの属性の変更として版を進めるが、イベントには残さず、最後に触れた日時も変えない
+   * （requirements.md 5章）。付いているタグを付けても、付いていないタグを外しても何もしない
+   */
+  tags?: { attach?: string[]; detach?: string[] };
 };
 
 export type ApplyChangesError =
@@ -193,6 +198,15 @@ export function createTaskRepository({ db, codec, newEventId }: TaskRepositoryDe
           .values({ day, taskId: change.taskId, position: nextPosition(tx, day) })
           .run();
       }
+    }
+
+    for (const tagId of change.tags?.attach ?? []) {
+      tx.insert(taskTags).values({ taskId: change.taskId, tagId }).onConflictDoNothing().run();
+    }
+    for (const tagId of change.tags?.detach ?? []) {
+      tx.delete(taskTags)
+        .where(and(eq(taskTags.taskId, change.taskId), eq(taskTags.tagId, tagId)))
+        .run();
     }
 
     const lastAt =
