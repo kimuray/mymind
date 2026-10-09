@@ -19,19 +19,8 @@ body {
   font-size: 14px;
   line-height: 1.7;
   color: var(--ink-1);
+  /* 地は単色にする。面も同じ色で塗り、影で凸凹を表す（DESIGN.md 2.3、ADR-0018） */
   background-color: var(--ground);
-  /* 色のにじみは画面の角に置き、中心付近には置かない（DESIGN.md 2.1） */
-  background-image:
-    radial-gradient(ellipse 60% 70% at 15% 15%, var(--blob-indigo), transparent 100%),
-    radial-gradient(ellipse 55% 65% at 95% 5%, var(--blob-apricot), transparent 100%),
-    radial-gradient(ellipse 60% 60% at 25% 95%, var(--blob-sage), transparent 100%),
-    radial-gradient(ellipse 50% 60% at 98% 90%, var(--blob-lilac), transparent 100%);
-  background-attachment: fixed;
-}
-
-/* 振り返りの画面の地色（DESIGN.md 2.1） */
-body[data-ground="evening"] {
-  background-color: var(--ground-evening);
 }
 
 h1,
@@ -65,48 +54,48 @@ ul {
   letter-spacing: 0.06em;
 }
 
-.glass-2 {
-  background: var(--glass-2);
-  backdrop-filter: var(--glass-2-blur);
+/*
+ * ニューモフィズムの面（DESIGN.md 2.3）。raised は浮き出た面、inset はくぼんだ面。
+ * 数字は影の大きさで、1＝カード、2＝ペインとリスト、3＝ダイアログなどの重なる面
+ */
+.neu-raised-1,
+.neu-raised-2,
+.neu-raised-3,
+.neu-inset-1,
+.neu-inset-2 {
+  /*
+   * 面をいつも中の要素の位置の基準（offsetParent）にする。ガラスのときは backdrop-filter がそうしていた。
+   * 基準でないと、面に transform の動きが走っている間だけ基準が変わり、行の位置の測り方が丸めの分ぶれて、
+   * 動いていない行に動きを付けてしまう（DESIGN.md 4.18、apps/web/src/listMotion.ts）
+   */
+  position: relative;
+  background: var(--surface);
 }
 
-/* ガラスの面（DESIGN.md 2.3）。backdrop-filter は面にだけ使い、リストの行には使わない */
-.glass-1,
-.glass-3 {
-  border: var(--glass-border);
-  box-shadow: var(--glass-shadow);
+.neu-raised-1,
+.neu-raised-2,
+.neu-raised-3 {
+  border: var(--neu-edge);
 }
 
-.glass-1 {
-  background: var(--glass-1);
-  backdrop-filter: var(--glass-1-blur);
+.neu-raised-1 {
+  box-shadow: var(--neu-raised-1);
 }
 
-.glass-3 {
-  background: var(--glass-3);
-  backdrop-filter: var(--glass-3-blur);
+.neu-raised-2 {
+  box-shadow: var(--neu-raised-2);
 }
 
-.glass-4 {
-  border: var(--glass-border);
-  box-shadow: var(--glass-shadow);
-  background: var(--glass-4);
-  backdrop-filter: var(--glass-4-blur);
+.neu-raised-3 {
+  box-shadow: var(--neu-raised-3);
 }
 
-@media (prefers-reduced-transparency: reduce) {
-  body {
-    background-image: none;
-  }
+.neu-inset-1 {
+  box-shadow: var(--neu-inset-1);
+}
 
-  .glass-1,
-  .glass-2,
-  .glass-3,
-  .glass-4 {
-    background: var(--glass-opaque);
-    border: var(--glass-opaque-border);
-    backdrop-filter: none;
-  }
+.neu-inset-2 {
+  box-shadow: var(--neu-inset-2);
 }
 
 /* 3ペイン（DESIGN.md 3章）。外周とペインの間隔は 16px */
@@ -259,8 +248,9 @@ ul {
   flex-direction: column;
   gap: var(--space-2);
   padding: var(--space-3);
-  border: var(--glass-border);
   border-radius: var(--radius-l);
+  /* キーの案内は、サイドバーの中のくぼみにする（Figma「ショートカット」） */
+  box-shadow: var(--neu-inset-1);
   font-size: 12px;
   color: var(--ink-2);
 }
@@ -335,8 +325,8 @@ ul {
 }
 
 /*
- * 画面の切り替え（DESIGN.md 2.9、FR-U04）。名前を付けた要素は中のガラスの backdrop-filter が
- * 後ろを見られなくなる（backdrop root になる）ので、名前は切り替えの最中だけ付ける。
+ * 画面の切り替え（DESIGN.md 2.9、FR-U04）。名前を付けた要素は重なりの文脈が分かれ、
+ * 面の影の描き方が変わるので、名前は切り替えの最中だけ付ける。
  * サイドバーと地は動かさず、メインと詳細ペインの中身を入れ替え、選択中の印を滑らせる
  */
 :root:active-view-transition .pane-main {

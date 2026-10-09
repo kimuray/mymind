@@ -62,14 +62,14 @@ export function StocktakePanel({
       </div>
 
       {current === undefined ? (
-        <div className="stocktake-card glass-2" role="status">
+        <div className="stocktake-card neu-raised-1" role="status">
           <h3>棚卸し完了</h3>
           <p className="text-small">
             {`今週やる ${reviewed.this_week}件・残す ${reviewed.keep}件・中止 ${reviewed.drop}件`}
           </p>
         </div>
       ) : (
-        <div className="stocktake-card glass-2">
+        <div className="stocktake-card neu-raised-1">
           <div>
             <h3>{current.title}</h3>
             <p className="text-small">{staleNote(current)}</p>

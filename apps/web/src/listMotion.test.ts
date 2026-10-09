@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   type MotionItem,
+  offsetPosition,
   parseDuration,
   planListMotion,
   type RowPosition,
@@ -198,5 +199,36 @@ describe('FR-U01 リストの行の動き（DESIGN.md 4.18）', () => {
       ]);
       expect(survivingDescendants(previous, new Map(), 'closed')).toEqual([]);
     });
+  });
+});
+
+describe('FR-U01 行の位置の測り方（DESIGN.md 4.18）', () => {
+  /** offset で測れる要素の代わり。枠の太さ（clientLeft・clientTop）を持つ */
+  const box = (
+    left: number,
+    top: number,
+    border: number,
+    offsetParent: unknown = null,
+  ): Parameters<typeof offsetPosition>[0] => ({
+    offsetLeft: left,
+    offsetTop: top,
+    clientLeft: border,
+    clientTop: border,
+    offsetParent,
+  });
+
+  it('祖先の枠の太さも足して、文書の左上からの位置にする', () => {
+    const body = box(0, 0, 0);
+    const pane = box(288, 331, 1, body);
+    expect(offsetPosition(box(8, 35, 0, pane))).toEqual({ x: 297, y: 367 });
+  });
+
+  it('枠のある面が offsetParent かどうかで、同じ行の位置が変わらない', () => {
+    // 面に transform の動きが走っている間だけ、面が行の offsetParent になる（issue 237 で見つけたぶれ）
+    const body = box(0, 0, 0);
+    const pane = box(288, 331, 1, body);
+    const viaPane = offsetPosition(box(8, 35, 0, pane));
+    const viaBody = offsetPosition(box(297, 367, 0, body));
+    expect(viaPane).toEqual(viaBody);
   });
 });

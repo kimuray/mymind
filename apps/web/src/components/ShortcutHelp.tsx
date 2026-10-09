@@ -34,7 +34,7 @@ export function ShortcutHelp({
   return (
     <div ref={backdrop} className="dialog-backdrop">
       <div
-        className="dialog shortcut-help glass-4"
+        className="dialog shortcut-help neu-raised-3"
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}

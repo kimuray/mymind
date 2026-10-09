@@ -138,15 +138,31 @@ const ANIMATION_ID = 'list-motion';
  */
 const FADE_IN_ID = 'list-fade-in';
 
-/** 文書の左上からの位置。offset の連なりで測るので、transform（動きの途中のずれ）を含まない */
-export function offsetPosition(el: HTMLElement): RowPosition {
-  let x = 0;
-  let y = 0;
-  let current: Element | null = el;
-  while (current instanceof HTMLElement) {
-    x += current.offsetLeft;
-    y += current.offsetTop;
-    current = current.offsetParent;
+/** offset で位置を測れる要素（テストでは、この形の値を渡す） */
+type OffsetBox = {
+  offsetLeft: number;
+  offsetTop: number;
+  clientLeft: number;
+  clientTop: number;
+  offsetParent: unknown;
+};
+
+const isOffsetBox = (value: unknown): value is OffsetBox =>
+  typeof value === 'object' && value !== null && 'offsetTop' in value && 'clientTop' in value;
+
+/**
+ * 文書の左上からの位置。offset の連なりで測るので、transform（動きの途中のずれ）を含まない。
+ * offsetLeft・offsetTop は offsetParent の枠の内側から測るので、祖先の枠の太さ（clientLeft・clientTop）も足す。
+ * 足さないと、どの祖先が offsetParent になるか（transform の動きの最中かどうか）で、枠の分だけ値がぶれる
+ */
+export function offsetPosition(el: OffsetBox): RowPosition {
+  let x = el.offsetLeft;
+  let y = el.offsetTop;
+  let parent = el.offsetParent;
+  while (isOffsetBox(parent)) {
+    x += parent.offsetLeft + parent.clientLeft;
+    y += parent.offsetTop + parent.clientTop;
+    parent = parent.offsetParent;
   }
   return { x, y };
 }

@@ -8,8 +8,8 @@ const hex = (h) => [
   Number.parseInt(h.slice(3, 5), 16),
   Number.parseInt(h.slice(5, 7), 16),
 ];
-// DESIGN.md 2.3 と 4.1 のトークン（--glass-opaque、--mame-good、--mame-face、--mame-stem、--mame-leaf）
-const PAPER = hex('#fbf9f5');
+// DESIGN.md 2.3 と 4.1 のトークン（--surface、--mame-good、--mame-face、--mame-stem、--mame-leaf）
+const PAPER = hex('#e4e9f0');
 const BODY = hex('#f2b27e');
 const FACE = hex('#1f1d1a');
 const STEM = hex('#3e7a55');

@@ -32,7 +32,7 @@ export function DaySummary({ summary }: { summary: Summary }) {
   return (
     <section className="day-summary" aria-label="この日の記録">
       {CARDS.map((card) => (
-        <div key={card.key} className="day-summary-card glass-2">
+        <div key={card.key} className="day-summary-card neu-raised-1">
           <h2 className={`day-summary-label day-summary-${card.tone}`}>
             {card.label} <span className="day-summary-count">{summary[card.key].length}</span>
           </h2>

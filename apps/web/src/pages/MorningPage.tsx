@@ -182,7 +182,7 @@ export function MorningPage() {
         {guard.dialog}
         <div className="page morning">
           {header}
-          <section className="morning-done glass-2" aria-live="polite">
+          <section className="morning-done neu-raised-1" aria-live="polite">
             <p>{`今日の計画を確定しました（${plan.data?.tasks.length ?? plannedCount}件）`}</p>
             <Link to="/" className="button button-primary">
               今日の画面へ
@@ -214,7 +214,7 @@ export function MorningPage() {
         {carryover.isSuccess && candidates.length === 0 ? (
           <p className="empty-note">持ち越すタスクはありません</p>
         ) : (
-          <ul className="task-list glass-2" aria-label="持ち越し">
+          <ul className="task-list neu-raised-2" aria-label="持ち越し">
             {candidates.map((task) => (
               <li
                 key={task.id}
@@ -276,7 +276,7 @@ export function MorningPage() {
         {backlog.isSuccess && backlogTasks.length === 0 ? (
           <p className="empty-note">バックログにタスクはありません</p>
         ) : (
-          <ul className="task-list glass-2" aria-label="バックログから今日へ">
+          <ul className="task-list neu-raised-2" aria-label="バックログから今日へ">
             {backlogTasks.map((task) => {
               const added = additions.has(task.id);
               return (

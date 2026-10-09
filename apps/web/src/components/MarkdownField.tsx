@@ -51,7 +51,7 @@ export function MarkdownField({
           ))}
         </fieldset>
       </div>
-      <div className="markdown-editor glass-2">
+      <div className="markdown-editor neu-inset-2">
         <MarkdownEditor
           label={label}
           initialValue={initialValue}

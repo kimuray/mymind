@@ -44,7 +44,7 @@ export function MonthlyInputPreviewView({
           {payload.partial && `。${formatShortDay(payload.through)}までの途中経過として送ります`}
         </p>
       </div>
-      <section className="input-section glass-2" aria-label="集計値">
+      <section className="input-section neu-raised-1" aria-label="集計値">
         <h3>集計値</h3>
         <dl className="input-stats">
           {Object.entries(payload.stats).flatMap(([key, value]) =>
@@ -60,7 +60,7 @@ export function MonthlyInputPreviewView({
         </dl>
       </section>
       {payload.stats.by_tag.length > 0 && (
-        <section className="input-section glass-2" aria-label="タグごとの集計">
+        <section className="input-section neu-raised-1" aria-label="タグごとの集計">
           <h3>タグごとの集計</h3>
           <p className="text-small">
             タグの名前と、アプリが数えた値だけを送ります（メモは送りません）
@@ -76,7 +76,7 @@ export function MonthlyInputPreviewView({
         </section>
       )}
       <section
-        className="input-section glass-2"
+        className="input-section neu-raised-1"
         aria-label="日ごとの記録"
         data-annotated={annotations.length > 0}
       >

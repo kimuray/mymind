@@ -117,7 +117,7 @@ function DayChangedDialog({ ref, screenDay, today, onMoveToToday, onContinue }: 
     <div ref={backdrop} className="dialog-backdrop">
       <div
         ref={ref}
-        className="dialog glass-4"
+        className="dialog neu-raised-3"
         role="alertdialog"
         aria-modal="true"
         aria-labelledby="day-changed-title"
