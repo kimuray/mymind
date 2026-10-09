@@ -104,17 +104,34 @@ test.describe('NFR-22 コントラスト・動きの設定への対応', () => {
   });
 });
 
+/** WCAG 2 AA のコントラストの違反がないことを axe で確かめる */
+async function expectNoContrastViolations(page: Page) {
+  const results = await new AxeBuilder({ page })
+    .withTags(['wcag2a', 'wcag2aa'])
+    .withRules(['color-contrast'])
+    .analyze();
+  // 検査が空振りしていない（背景色を決められずに判定を見送っただけではない）ことを確かめる
+  expect(results.passes.flatMap((v) => v.nodes).length).toBeGreaterThan(0);
+  expect(
+    results.violations.flatMap((v) =>
+      v.nodes.map((n) => `${n.target.join(' ')}: ${n.failureSummary}`),
+    ),
+  ).toEqual([]);
+}
+
+const screens = [
+  ['今日', '/'],
+  ['バックログ', '/backlog'],
+  ['朝の計画', '/morning'],
+  ['振り返り', '/reflection'],
+  ['マメの表情', '/dev/mame'],
+  ['設定', '/settings'],
+  ['カレンダー', `/calendar/${currentMonth()}`],
+  ['タイムライン', '/timeline'],
+] as const;
+
 test.describe('NFR-06 コントラスト', () => {
-  for (const [name, path] of [
-    ['今日', '/'],
-    ['バックログ', '/backlog'],
-    ['朝の計画', '/morning'],
-    ['振り返り', '/reflection'],
-    ['マメの表情', '/dev/mame'],
-    ['設定', '/settings'],
-    ['カレンダー', `/calendar/${currentMonth()}`],
-    ['タイムライン', '/timeline'],
-  ] as const) {
+  for (const [name, path] of screens) {
     test(`${name}の画面に、WCAG 2 AA のコントラストの違反がない`, async ({ page }) => {
       // 面は地と同じ不透明な色なので、ふだんの画面のまま検査できる（ADR-0018）
       emulation = await emulatePreferences(page);
@@ -122,17 +139,47 @@ test.describe('NFR-06 コントラスト', () => {
       await addTask(page, `コントラスト確認（${name}）`);
       await page.goto(path);
       await page.waitForLoadState('networkidle');
-      const results = await new AxeBuilder({ page })
-        .withTags(['wcag2a', 'wcag2aa'])
-        .withRules(['color-contrast'])
-        .analyze();
-      // 検査が空振りしていない（背景色を決められずに判定を見送っただけではない）ことを確かめる
-      expect(results.passes.flatMap((v) => v.nodes).length).toBeGreaterThan(0);
-      expect(
-        results.violations.flatMap((v) =>
-          v.nodes.map((n) => `${n.target.join(' ')}: ${n.failureSummary}`),
-        ),
-      ).toEqual([]);
+      await expectNoContrastViolations(page);
     });
   }
+
+  for (const [name, path] of screens) {
+    test(`「コントラストを上げる」設定でも、${name}の画面に違反がない`, async ({ page }) => {
+      // 縁を濃い線にし、影を弱めた画面（ADR-0018、DESIGN.md 2.3）
+      emulation = await emulatePreferences(page, { moreContrast: true });
+      await page.goto(path);
+      await page.waitForLoadState('networkidle');
+      await expectNoContrastViolations(page);
+    });
+  }
+
+  test('タスクを選んで詳細ペインを開いた画面に、違反がない', async ({ page }) => {
+    emulation = await emulatePreferences(page);
+    const title = `コントラスト確認（詳細）-${Date.now().toString(36)}`;
+    await page.goto('/');
+    await addTask(page, title);
+    await page.getByRole('button', { name: title, exact: true }).click();
+    await expect(page.getByRole('complementary', { name: '詳細' })).toContainText(title);
+    await expectNoContrastViolations(page);
+  });
+
+  test('コマンドパレットを開いた画面に、違反がない', async ({ page }) => {
+    emulation = await emulatePreferences(page);
+    await page.goto('/');
+    await page.locator('body').click();
+    await page.keyboard.press('ControlOrMeta+k');
+    await expect(page.getByRole('dialog', { name: 'コマンドパレット' })).toBeVisible();
+    await expectNoContrastViolations(page);
+    await page.keyboard.press('Escape');
+  });
+
+  test('ショートカットの一覧（ダイアログ）を開いた画面に、違反がない', async ({ page }) => {
+    emulation = await emulatePreferences(page);
+    await page.goto('/');
+    await page.locator('body').click();
+    await page.keyboard.press('?');
+    await expect(page.getByRole('dialog', { name: 'ショートカットの一覧' })).toBeVisible();
+    await expectNoContrastViolations(page);
+    await page.keyboard.press('Escape');
+  });
 });
