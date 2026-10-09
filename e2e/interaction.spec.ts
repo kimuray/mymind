@@ -297,16 +297,27 @@ test.describe('FR-U01 選択のカーソルの動き', () => {
     }
   });
 
-  test('選択中の行には、選択の面を ::after に描く', async ({ page }) => {
+  test('選択中の行には、くぼみと藍色の枠の選択の面を ::after に描く', async ({ page }) => {
     await page.goto('/');
     const row = await addTask(page, '選択の面を確かめる');
     await row.locator('.task-title').click();
     await expect(row).toHaveAttribute('data-selected', 'true');
     const after = await row.evaluate((el) => {
       const style = getComputedStyle(el, '::after');
-      return { content: style.content, background: style.backgroundColor };
+      return {
+        content: style.content,
+        background: style.backgroundColor,
+        isInset: style.boxShadow.includes('inset'),
+        border: style.borderTopColor,
+      };
     });
-    expect(after).toEqual({ content: '""', background: 'rgba(255, 255, 255, 0.5)' });
+    // 影だけに頼らず、藍色の枠でも選択を示す（ADR-0018）
+    expect(after).toEqual({
+      content: '""',
+      background: 'rgb(228, 233, 240)',
+      isInset: true,
+      border: 'rgba(47, 75, 124, 0.5)',
+    });
   });
 
   test('J で選択を動かすと、選択の面が前の行から滑って移る', async ({ page }) => {
@@ -379,12 +390,14 @@ test.describe('FR-U04 画面の切り替え', () => {
   });
 
   for (const path of ['/', '/settings']) {
-    test(`サイドバーの選択中の印は、項目の後ろの面で示す（${path}）`, async ({ page }) => {
+    test(`サイドバーの選択中の印は、項目の後ろのくぼみで示す（${path}）`, async ({ page }) => {
       await page.goto(path);
       const active = page.locator('.nav-item.is-active .nav-highlight');
       await expect(active).toHaveCount(1);
       await expect(active).toHaveCSS('opacity', '1');
-      await expect(active).toHaveCSS('background-color', 'rgba(47, 75, 124, 0.12)');
+      await expect(active).toHaveCSS('box-shadow', /inset/);
+      // 影だけに頼らず、項目の文字も藍色にする（ADR-0018）
+      await expect(page.locator('.nav-item.is-active')).toHaveCSS('color', 'rgb(35, 58, 99)');
     });
   }
 
