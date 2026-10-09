@@ -123,4 +123,45 @@ test.describe('FR-T14 タグでの絞り込み', () => {
     await filterSelect(page).selectOption({ label: tag });
     await expect(detail(page)).not.toContainText(hidden);
   });
+
+  test('NFR-13 絞り込んでいたタグを別のタブで消すと、絞り込みが解除される', async ({
+    page,
+    context,
+  }) => {
+    const tagged = unique('別のタブで消すタグのタスク');
+    const tag = unique('別のタブで消す');
+    await page.goto('/');
+    await addToday(page, tagged);
+    await select(page, tagged);
+    await attachTag(page, tagged, tag);
+    await filterSelect(page).selectOption({ label: tag });
+    await expect(page.locator('.tag-filter-status')).toBeVisible();
+
+    // 別のタブでタグを消す。設定の画面で消したときと同じく、API で消してから、ほかのタブに変更を知らせる
+    const other = await context.newPage();
+    await other.goto('/');
+    const tagId = await other.evaluate(async (name) => {
+      const tags = (await (await fetch('/api/tags')).json()) as {
+        tags: { id: string; name: string }[];
+      };
+      return tags.tags.find((t) => t.name === name)?.id ?? '';
+    }, tag);
+    expect(tagId).not.toBe('');
+    const status = await other.evaluate(async (id) => {
+      const token =
+        document.querySelector('meta[name="mymind-token"]')?.getAttribute('content') ?? '';
+      const res = await fetch(`/api/tags/${id}`, {
+        method: 'DELETE',
+        headers: { 'X-Mymind-Token': token },
+      });
+      new BroadcastChannel('mymind').postMessage({ type: 'tasks.changed' });
+      return res.status;
+    }, tagId);
+    expect(status).toBe(200);
+    await other.close();
+
+    await expect(page.locator('.tag-filter-status')).toHaveCount(0);
+    await expect(filterSelect(page).locator('option', { hasText: tag })).toHaveCount(0);
+    await expect(taskButton(page, tagged)).toBeVisible();
+  });
 });
