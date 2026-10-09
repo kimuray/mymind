@@ -3,6 +3,7 @@ import {
   createDailyLogRepository,
   createJobRepository,
   createSettingsRepository,
+  createTagRepository,
   createTaskRepository,
   MIGRATIONS_FOLDER,
   openDatabase,
@@ -66,6 +67,7 @@ beforeEach(() => {
     },
     settings: createSettingsRepository({ db }),
     logs: createDailyLogRepository({ db, codec: plainCodec }),
+    tags: createTagRepository({ db }),
   });
   app = createApp({ ports: [PORT], sessionToken: TOKEN }, api);
 });
@@ -1107,5 +1109,140 @@ describe('FR-M02 タスク名の検索の API', () => {
     ['101文字', `/tasks/search?q=${'あ'.repeat(101)}`],
   ])('%s は 400', async (_, path) => {
     expect((await get(path)).status).toBe(400);
+  });
+});
+
+describe('FR-T13 タグの API', () => {
+  type TagJson = { id: string; name: string; color: string };
+  const listTags = async () =>
+    ((await (await get('/tags')).json()) as { tags: (TagJson & { taskCount: number })[] }).tags;
+  const attach = (task: TaskJson, body: Record<string, unknown>) =>
+    send('POST', `/tasks/${task.id}/tags`, body);
+  const tagsInBacklog = async (id: string) =>
+    (
+      (await (await get('/backlog')).json()) as { tasks: (TaskJson & { tags: TagJson[] })[] }
+    ).tasks.find((t) => t.id === id)?.tags;
+
+  it('名前と色を指定してタグを作れる。名前の前後と連続する空白は整える', async () => {
+    const res = await send('POST', '/tags', { name: '  仕事   A ', color: 'teal' });
+    expect(res.status).toBe(201);
+    expect(((await res.json()) as { tag: TagJson }).tag).toMatchObject({
+      name: '仕事 A',
+      color: 'teal',
+    });
+    expect(await listTags()).toEqual([expect.objectContaining({ name: '仕事 A', taskCount: 0 })]);
+  });
+
+  it('大文字・小文字や全角・半角だけが違う名前のタグは作れない（409）', async () => {
+    await send('POST', '/tags', { name: 'Work', color: 'rose' });
+    const res = await send('POST', '/tags', { name: 'ｗｏｒｋ', color: 'plum' });
+    expect(res.status).toBe(409);
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe('DUPLICATE_TAG');
+  });
+
+  it('空の名前、長すぎる名前、決まった6色以外の色は 400', async () => {
+    expect((await send('POST', '/tags', { name: '   ', color: 'rose' })).status).toBe(400);
+    expect((await send('POST', '/tags', { name: 'あ'.repeat(31), color: 'rose' })).status).toBe(
+      400,
+    );
+    expect((await send('POST', '/tags', { name: '仕事', color: 'red' })).status).toBe(400);
+  });
+
+  it('タスクに名前で付けると、ないタグは最初の色で作られ、一覧の行に出る。タスクの版は変わらない', async () => {
+    const task = await addTask();
+    const res = await attach(task, { name: '仕事' });
+    expect(res.status).toBe(200);
+    expect(await res.json()).toMatchObject({
+      created: true,
+      tags: [{ name: '仕事', color: 'rose' }],
+    });
+    expect(await tagsInBacklog(task.id)).toEqual([expect.objectContaining({ name: '仕事' })]);
+    const backlog = (await (await get('/backlog')).json()) as { tasks: TaskJson[] };
+    expect(backlog.tasks[0]?.version).toBe(task.version);
+  });
+
+  it('あるタグを名前で付けると、作らずにそのタグを付ける。同じタグを2回付けても1つ', async () => {
+    const task = await addTask();
+    await send('POST', '/tags', { name: 'Work', color: 'indigo' });
+    expect(await (await attach(task, { name: 'work' })).json()).toMatchObject({
+      created: false,
+      tags: [{ name: 'Work', color: 'indigo' }],
+    });
+    expect(
+      ((await (await attach(task, { name: 'WORK' })).json()) as { tags: TagJson[] }).tags,
+    ).toHaveLength(1);
+    expect(await listTags()).toEqual([expect.objectContaining({ name: 'Work', taskCount: 1 })]);
+  });
+
+  it('1つのタスクに付けられるタグは10個まで（11個目は 422）', async () => {
+    const task = await addTask();
+    for (let i = 1; i <= 10; i++) {
+      expect((await attach(task, { name: `タグ${i}` })).status).toBe(200);
+    }
+    const res = await attach(task, { name: 'タグ11' });
+    expect(res.status).toBe(422);
+    expect(((await res.json()) as { error: { code: string } }).error.code).toBe('TOO_MANY_TAGS');
+    expect(await listTags()).toHaveLength(10);
+  });
+
+  it('タスクから外すと、タグは残り、そのタスクの行からは消える', async () => {
+    const task = await addTask();
+    const tag = ((await (await attach(task, { name: '仕事' })).json()) as { tags: TagJson[] })
+      .tags[0] as TagJson;
+    const res = await send('DELETE', `/tasks/${task.id}/tags/${tag.id}`, {});
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ tags: [] });
+    expect(await tagsInBacklog(task.id)).toEqual([]);
+    expect(await listTags()).toEqual([expect.objectContaining({ name: '仕事', taskCount: 0 })]);
+  });
+
+  it('ないタスクに付けようとすると 404', async () => {
+    expect((await send('POST', '/tasks/nope/tags', { name: '仕事' })).status).toBe(404);
+  });
+
+  it('名前と色を変えられる。大文字・小文字だけの変更は自分自身なので許す', async () => {
+    const tag = (
+      (await (await send('POST', '/tags', { name: 'work', color: 'rose' })).json()) as {
+        tag: TagJson;
+      }
+    ).tag;
+    const res = await send('PATCH', `/tags/${tag.id}`, { name: 'Work', color: 'green' });
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { tag: TagJson }).tag).toMatchObject({
+      name: 'Work',
+      color: 'green',
+    });
+  });
+
+  it('ほかのタグと同じ名前には変えられない（409）。ないタグは 404', async () => {
+    await send('POST', '/tags', { name: '仕事', color: 'rose' });
+    const tag = (
+      (await (await send('POST', '/tags', { name: '家', color: 'rose' })).json()) as {
+        tag: TagJson;
+      }
+    ).tag;
+    expect((await send('PATCH', `/tags/${tag.id}`, { name: '仕事' })).status).toBe(409);
+    expect((await send('PATCH', '/tags/nope', { color: 'plum' })).status).toBe(404);
+  });
+
+  it('タグを消すと、付いていたタスクからも外れる', async () => {
+    const task = await addTask();
+    const tag = ((await (await attach(task, { name: '仕事' })).json()) as { tags: TagJson[] })
+      .tags[0] as TagJson;
+    const res = await send('DELETE', `/tags/${tag.id}`, {});
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual({ tags: [] });
+    expect(await tagsInBacklog(task.id)).toEqual([]);
+    expect((await send('DELETE', `/tags/${tag.id}`, {})).status).toBe(404);
+  });
+
+  it('トークンのない要求ではタグを作れない（403）', async () => {
+    const { [TOKEN_HEADER]: _, ...withoutToken } = headers;
+    const res = await app.request('/api/tags', {
+      method: 'POST',
+      headers: withoutToken,
+      body: JSON.stringify({ name: '仕事', color: 'rose' }),
+    });
+    expect(res.status).toBe(403);
   });
 });

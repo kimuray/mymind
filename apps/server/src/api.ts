@@ -3,6 +3,7 @@ import type {
   DailyLogRepository,
   Feedback,
   SettingsRepository,
+  TagRepository,
   Task,
   TaskRepository,
 } from '@mymind/db';
@@ -31,8 +32,6 @@ import {
   toBusinessDay,
 } from '@mymind/domain';
 import { type Context, Hono } from 'hono';
-import type { ContentfulStatusCode } from 'hono/utils/http-status';
-import { validator } from 'hono/validator';
 import { z } from 'zod';
 import {
   createDayRecordReader,
@@ -43,6 +42,7 @@ import {
   summarizeDayOf,
 } from './dayRecords';
 import { createHealthApi, type HealthDeps } from './health';
+import { fail, jsonBody } from './http';
 import { createJobsApi, type JobsApiDeps } from './jobsApi';
 import { createBrowserPermissionState, createPendingNotifications } from './notificationAdapters';
 import { createNotificationsApi, type NotificationsApiDeps } from './notificationsApi';
@@ -53,6 +53,7 @@ import {
   createSettingsReader,
   type SettingsRuntime,
 } from './settingsApi';
+import { createTagsApi } from './tagsApi';
 
 export type ApiDeps = {
   tasks: TaskRepository;
@@ -74,6 +75,8 @@ export type ApiDeps = {
   settingsRuntime?: SettingsRuntime;
   /** 業務日ごとの振り返り（FR-D06） */
   logs: DailyLogRepository;
+  /** タグ（FR-T13） */
+  tags: TagRepository;
   /** 画面のバナーに出す通知と、ブラウザの通知の許可の状態（FR-N05）。省くと空の状態で始める */
   notifications?: NotificationsApiDeps;
   /** 設定を保存したあとに呼ぶ（通知の予定の組み直し、FR-N04） */
@@ -206,43 +209,6 @@ const transitionBody = z.strictObject({ ...withVersion, to: z.enum(STATUSES) });
 
 const moveBody = z.strictObject({ ...withVersion, to: z.enum(['today', 'tomorrow', 'backlog']) });
 
-type ErrorCode =
-  | 'INVALID_REQUEST'
-  | 'NOT_FOUND'
-  | 'VERSION_CONFLICT'
-  | 'DAY_CHANGED'
-  | 'INVALID_TRANSITION'
-  | 'DEPTH_EXCEEDED'
-  | 'PLAN_CONFIRMED'
-  | 'NOT_IN_BACKLOG'
-  | 'NOT_REVIEW_TARGET';
-
-/** エラーの応答。状態コードを型に残し、Hono RPC のクライアントが成功と失敗を区別できるようにする */
-function fail<S extends ContentfulStatusCode>(
-  c: Context,
-  status: S,
-  code: ErrorCode,
-  message: string,
-  extra = {},
-) {
-  return c.json({ error: { code, message, ...extra } }, status);
-}
-
-/**
- * JSON の本文を zod で検証するミドルウェア。形が違えば 400 を返す。
- * 入力の型は Hono RPC で画面と共有される（architecture.md 6章）。
- */
-const jsonBody = <T extends z.ZodType>(schema: T) =>
-  validator('json', (value, c) => {
-    const parsed = schema.safeParse(value);
-    if (!parsed.success) {
-      return fail(c, 400, 'INVALID_REQUEST', '入力が正しくありません', {
-        issues: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
-      });
-    }
-    return parsed.data as z.infer<T>;
-  });
-
 /**
  * 今日とバックログの API（architecture.md 6章）。
  * 状態の変更はすべて domain の関数でイベントにし、リポジトリが1つのトランザクションで保存する（ADR-0004）。
@@ -258,6 +224,7 @@ export function createApi({
   settingsDefaults = {},
   settingsRuntime = { fakeAgent: false, defaultBackupDir: '' },
   logs,
+  tags,
   notifications = {
     pending: createPendingNotifications(now),
     permission: createBrowserPermissionState(),
@@ -278,6 +245,7 @@ export function createApi({
     const ids = list.map((t) => t.id);
     const events = tasks.listEventsOfTasks(ids);
     const childrenOf = tasks.listChildrenOfMany(ids);
+    const tagsOf = tags.tagsOfTasks(ids);
     return list.map((t) => {
       const children = childrenOf.get(t.id) ?? [];
       return {
@@ -286,6 +254,8 @@ export function createApi({
           statusSinceDay(events.get(t.id) ?? []) ??
           toBusinessDay(new Date(t.createdAt), dayOptions),
         parentTitle: t.parentId === null ? null : (parents.get(t.parentId) ?? null),
+        // タスクに付いたタグ（FR-T13）。名前の順
+        tags: tagsOf.get(t.id) ?? [],
         children: {
           total: children.length,
           closed: children.filter((ch) => ch.status === 'done' || ch.status === 'cancelled').length,
@@ -864,7 +834,8 @@ export function createApi({
     .route('/', createJobsApi(jobs))
     .route('/', createHealthApi(health))
     .route('/', createSettingsApi(settings, settingsDefaults, settingsRuntime, onSettingsChange))
-    .route('/', createNotificationsApi(notifications));
+    .route('/', createNotificationsApi(notifications))
+    .route('/', createTagsApi({ tags, tasks, newId, now }));
 }
 
 export type Api = ReturnType<typeof createApi>;

@@ -1,7 +1,8 @@
 // アプリのスキーマ（docs/architecture.md 5章）。変更したら pnpm --filter @mymind/db db:generate でマイグレーションを作る。
-import { JOB_KINDS, JOB_STATUSES, NOTIFICATION_KINDS, STATUSES } from '@mymind/domain';
+import { JOB_KINDS, JOB_STATUSES, NOTIFICATION_KINDS, STATUSES, TAG_COLORS } from '@mymind/domain';
 import {
   type AnySQLiteColumn,
+  index,
   integer,
   primaryKey,
   real,
@@ -116,4 +117,28 @@ export const notificationsSent = sqliteTable(
     sentAt: text('sent_at').notNull(), // UTC
   },
   (t) => [primaryKey({ columns: [t.kind, t.day] })],
+);
+
+/** タグ（FR-T13）。name_key は重複の判定に使う（domain の normalizeTagName） */
+export const tags = sqliteTable('tags', {
+  id: text('id').primaryKey(), // ULID
+  name: text('name').notNull(),
+  nameKey: text('name_key').notNull().unique(),
+  color: text('color', { enum: TAG_COLORS }).notNull(),
+  createdAt: text('created_at').notNull(),
+});
+
+/** タスクに付いたタグ。付け外しはイベントに残さない（requirements.md 5章） */
+export const taskTags = sqliteTable(
+  'task_tags',
+  {
+    taskId: text('task_id')
+      .notNull()
+      .references(() => tasks.id),
+    tagId: text('tag_id')
+      .notNull()
+      .references(() => tags.id),
+  },
+  // タグごとの件数と、タグを消したときに外す行を、tag_id から引く
+  (t) => [primaryKey({ columns: [t.taskId, t.tagId] }), index('task_tags_tag_id').on(t.tagId)],
 );

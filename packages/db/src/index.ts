@@ -6,4 +6,5 @@ export * from './schema';
 export * from './sensitiveCodec';
 export * from './settingsRepository';
 export * from './snapshot';
+export * from './tagRepository';
 export * from './taskRepository';

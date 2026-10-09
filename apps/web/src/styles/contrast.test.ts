@@ -76,6 +76,13 @@ describe('NFR-06 文字色のコントラスト', () => {
     });
   }
 
+  for (const color of ['rose', 'amber', 'green', 'teal', 'indigo', 'plum']) {
+    it(`FR-T13 タグのチップ（${color}）の文字は、リストの上のチップの背景に対して 4.5:1 以上`, () => {
+      const chip = over(token(`tag-${color}-bg`), surfaces.リスト);
+      expect(contrast(token(`tag-${color}-text`), chip)).toBeGreaterThanOrEqual(4.5);
+    });
+  }
+
   it('主ボタンの白い文字は、藍色の塗りに対して 4.5:1 以上', () => {
     expect(contrast(token('text-on-accent'), token('accent'))).toBeGreaterThanOrEqual(4.5);
   });

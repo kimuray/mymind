@@ -14,6 +14,7 @@ import {
   createJobRepository,
   createNotificationRepository,
   createSettingsRepository,
+  createTagRepository,
   createTaskRepository,
   MIGRATIONS_FOLDER,
   openDatabase,
@@ -261,6 +262,7 @@ async function main(): Promise<number> {
     settingsRuntime: { fakeAgent: agent.name === 'fake', defaultBackupDir: backupsDir(dataDir) },
     logs,
     notifications: { pending: pendingNotifications, permission: browserPermission, events },
+    tags: createTagRepository({ db }),
     onSettingsChange: () => scheduler.reschedule(),
   });
   // 開発時は Vite が画面を配信する。古い本番ビルドを出さないよう、画面の URL は Vite へ移す（#97）
