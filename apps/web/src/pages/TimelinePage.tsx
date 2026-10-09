@@ -302,7 +302,7 @@ export function TimelinePage() {
                 );
               })}
             </div>
-            <div className="timeline-row timeline-lane">
+            <div className="timeline-row timeline-lane neu-inset-1">
               <span className="timeline-lane-label">調子</span>
               {data.days.map((d, i) => {
                 const level = effectiveLevel(d.condition);
