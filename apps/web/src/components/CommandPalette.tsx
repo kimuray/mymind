@@ -1,12 +1,17 @@
 import { type KeyboardEvent, useId, useRef, useState } from 'react';
 import { useDialogExit } from '../dialogMotion';
 import { keyName } from '../keyboard';
-import type { KeyAction, KeyCommand } from '../keymap';
 import { useSelectionMotion } from '../selectionMotion';
 import { Kbd } from './Kbd';
 
+/** パレットの候補。キーマップの操作と、画面の内容から作る操作（keyboard.ts の usePaletteCommands）をまとめて扱う */
+export type PaletteItem = { id: string; label: string; keys: readonly string[]; run: () => void };
+
 /** 名前かキーの表示に、入力した文字を含む操作（大文字と小文字は区別しない） */
-export function filterCommands(commands: readonly KeyCommand[], query: string): KeyCommand[] {
+export function filterCommands<T extends { label: string; keys: readonly string[] }>(
+  commands: readonly T[],
+  query: string,
+): T[] {
   const q = query.trim().toLowerCase();
   if (q === '') return [...commands];
   return commands.filter(
@@ -16,15 +21,16 @@ export function filterCommands(commands: readonly KeyCommand[], query: string): 
 
 /**
  * コマンドパレット（FR-U02、DESIGN.md 4.16）。今の画面で使える操作を検索して実行する。
- * 操作の一覧はキーマップの定義から作り（keymap.ts の commandsFor）、選んだ操作はキーと同じ処理で実行する
+ * 操作の一覧はキーマップの定義から作り（keymap.ts の commandsFor）、選んだ操作はキーと同じ処理で実行する。
+ * 画面の内容から作る操作（タグで絞り込む、など）も、画面が登録したものを後ろに並べる
  */
 export function CommandPalette({
   commands,
   onRun,
   onClose,
 }: {
-  commands: readonly KeyCommand[];
-  onRun: (action: KeyAction) => void;
+  commands: readonly PaletteItem[];
+  onRun: (item: PaletteItem) => void;
   onClose: () => void;
 }) {
   const id = useId();
@@ -54,7 +60,7 @@ export function CommandPalette({
       );
     } else if (name === 'Enter' && !e.nativeEvent.isComposing) {
       e.preventDefault();
-      if (current !== undefined) onRun(current.action);
+      if (current !== undefined) onRun(current);
     } else if (name === 'Tab' || name === 'Shift+Tab') {
       // 入力欄の外へフォーカスを出さない（候補は ↑↓ で選ぶ）
       e.preventDefault();
@@ -76,7 +82,7 @@ export function CommandPalette({
           aria-label="操作を検索"
           aria-expanded="true"
           aria-controls={`${id}-list`}
-          aria-activedescendant={current === undefined ? undefined : `${id}-${current.action}`}
+          aria-activedescendant={current === undefined ? undefined : `${id}-${current.id}`}
           placeholder="操作を検索（↑↓で選んで Enter）"
           // パレットを開いたら、すぐに入力できるようにする
           // biome-ignore lint/a11y/noAutofocus: ダイアログを開いた直後のフォーカスの置き場所
@@ -90,8 +96,8 @@ export function CommandPalette({
         <div id={`${id}-list`} ref={list} className="palette-list" role="listbox" aria-label="操作">
           {filtered.map((c) => (
             <div
-              key={c.action}
-              id={`${id}-${c.action}`}
+              key={c.id}
+              id={`${id}-${c.id}`}
               role="option"
               aria-selected={c === current}
               // 候補は入力欄の aria-activedescendant で選ぶので、Tab では止まらない
@@ -99,9 +105,9 @@ export function CommandPalette({
               className="palette-option"
               // クリックしても入力欄からフォーカスを外さない
               onMouseDown={(e) => e.preventDefault()}
-              onClick={() => onRun(c.action)}
+              onClick={() => onRun(c)}
               onKeyDown={(e) => {
-                if (e.key === 'Enter') onRun(c.action);
+                if (e.key === 'Enter') onRun(c);
               }}
             >
               <span>{c.label}</span>

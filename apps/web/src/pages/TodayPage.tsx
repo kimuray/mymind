@@ -24,6 +24,7 @@ import { useDayGuard } from '../dayGuard';
 import { LIST_HINTS, NAVIGATION_KEYS } from '../keymap';
 import { useListMotion } from '../listMotion';
 import { useSelectionMotion } from '../selectionMotion';
+import { useTagFilter } from '../tagFilter';
 import { type ListRow, useTaskListKeys } from '../useTaskListKeys';
 
 const isClosed = (s: Status) => s === 'done' || s === 'cancelled';
@@ -62,11 +63,15 @@ export function TodayPage() {
   const attachTag = useAttachTag();
   const detachTag = useDetachTag();
 
-  const tasks = plan.data?.tasks ?? [];
+  const allTasks = plan.data?.tasks ?? [];
+  // タグで絞り込んだ行（FR-T14）。件数のチップと提案は、絞り込みに関わらず今日の計画全体で数える
+  const tagFilter = useTagFilter(allTasks);
+  const tasks = tagFilter.visible;
   const open = tasks.filter((t) => !isClosed(t.status));
   const closed = tasks.filter((t) => isClosed(t.status));
+  // 絞り込みで見えなくなったタスクは、選択から外れたものとして詳細ペインを閉じる
   const selected = tasks.find((t) => t.id === selectedId);
-  const count = (s: Status) => tasks.filter((t) => t.status === s).length;
+  const count = (s: Status) => allTasks.filter((t) => t.status === s).length;
   const positions = new Map((plan.data?.tasks ?? []).map((t) => [t.id, t.position]));
   const openRows = orderWithChildren(open);
   // キー操作で移動する順（未完了の欄、完了の欄の順）
@@ -119,7 +124,7 @@ export function TodayPage() {
         place="today"
         onTransition={(to) => changeStatus(selected, to)}
         onMove={(to) => moveTask(selected, to)}
-        childTasks={tasks.filter((t) => t.parentId === selected.id)}
+        childTasks={allTasks.filter((t) => t.parentId === selected.id)}
         onAddChild={(title) =>
           create.mutate({ title, parentId: selected.id, planFor: 'today', ...screen })
         }
@@ -166,6 +171,8 @@ export function TodayPage() {
           onSubmit={(title) => create.mutate({ title, planFor: 'today', ...screen })}
         />
 
+        {tagFilter.bar}
+
         {/* 通知・提案・リストの面・空の案内も出入りと押し下げを動かす（DESIGN.md 4.18、FR-T06）。key はタスクの ID とぶつからない名前にする */}
         {notice !== null && (
           <p className="suggestions" aria-live="polite" data-motion-key="ui:notice">
@@ -178,7 +185,7 @@ export function TodayPage() {
 
         <SuggestionBar
           suggestions={suggestions}
-          tasks={tasks}
+          tasks={allTasks}
           onTransition={changeStatus}
           onDismiss={() => setSuggestions([])}
         />
@@ -201,9 +208,14 @@ export function TodayPage() {
           </ul>
         )}
         {plan.isPending && <Loading />}
-        {plan.isSuccess && tasks.length === 0 && (
+        {plan.isSuccess && allTasks.length === 0 && (
           <p className="empty-note" data-motion-key="ui:empty">
             今日の計画はまだありません。上の欄からタスクを追加できます
+          </p>
+        )}
+        {plan.isSuccess && allTasks.length > 0 && tasks.length === 0 && (
+          <p className="empty-note" data-motion-key="ui:empty-filtered">
+            このタグの付いたタスクは、今日の計画にありません
           </p>
         )}
 
