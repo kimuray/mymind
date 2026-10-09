@@ -13,7 +13,7 @@ https://www.figma.com/design/VLCoEFLm1ujvYPq8xyEQFg/mymind-view-design
 
 ### 画面のフレーム（PC ページ）
 
-各フレームの中は「背景/にじみ」「サイドバー」「メイン」「詳細/…」の4つに分かれています（例：`PC/今日` のメインは `6:66`、詳細ペインは `6:168`）。`Components` ページの node-id は `12:2` です（`Mame` は `12:50`、`StatusIcon` は `12:68`、`Chip` は `12:79`、`Button` は `12:88`、`Kbd` は `12:89`、`GlassPanel` は `12:91`）。Figma MCP の `get_metadata` でファイルのページ一覧を取ると `PC` しか返らないことがあるので、node-id を直接指定してください。
+各フレームの中は「サイドバー」「メイン」「詳細/…」の3つに分かれています（例：`PC/今日` のメインは `6:66`、詳細ペインは `6:168`）。`Components` ページの node-id は `12:2` です（`Mame` は `12:50`、`StatusIcon` は `12:68`、`Chip` は `12:79`、`Button` は `12:88`、`Kbd` は `12:89`、`NeuPanel` は `12:91`、`NeuWell` は `40:7`）。Figma MCP の `get_metadata` でファイルのページ一覧を取ると `PC` しか返らないことがあるので、node-id を直接指定してください。
 
 | フレーム名 | node-id | 画面 | URL（issue 011 の暫定決定） |
 |---|---|---|---|
@@ -35,15 +35,16 @@ https://www.figma.com/design/VLCoEFLm1ujvYPq8xyEQFg/mymind-view-design
 | `Chip` | コンポーネントセット | `tone` = doing / waiting / paused / done / todo |
 | `Button` | コンポーネントセット | `kind` = primary / confirm / ghost / danger |
 | `Kbd` | コンポーネント | ショートカットの表示 |
-| `GlassPanel` | コンポーネント | ガラスの面の見本（塗りの濃さの目安） |
+| `NeuPanel` | コンポーネント | 浮き出た面の見本（ペイン、カード、リストの面） |
+| `NeuWell` | コンポーネント | くぼんだ面の見本（入力欄、選んだ行、エディタ、表） |
 
 各コンポーネントの説明文に、使い方の注意（状態は色だけで区別しない、チップは状態色を14〜16%で重ねる、など）を書いてあります。
 
 ### 変数とスタイル
 
-- **色の変数**：コレクション `mymind` に22個。名前は DESIGN.md のトークンと同じ（`ink-1`〜`ink-4`、`ground`、`surface`、`line`、`accent`、`accent-strong`、`accent-soft`、`status-*` 6色、`mame-*` 6色）
+- **色の変数**：コレクション `mymind` に25個。名前は DESIGN.md のトークンと同じ（`ink-1`〜`ink-4`、`ground`、`ground-evening`、`surface`、`line`、`accent`、`accent-strong`、`accent-soft`、`neu-light`、`neu-dark`、`status-*` 6色、`mame-*` 6色）。`surface` は `ground` の別名で、面と地は同じ色です
 - **テキストスタイル**：`Display / 30`、`Title / 22`、`Heading / 15`、`Label / 11`、`Body / 14`、`Body Medium / 14`、`Small / 12`、`Caption / 11`
-- **エフェクトスタイル**：`ガラス / 面`、`ガラス / 面（影なし）`、`ボタン / アクセントの影`
+- **エフェクトスタイル**：`ニューモ / 凸 1`〜`凸 3`、`ニューモ / 凹 1`〜`凹 2`。影の色は変数 `neu-light`・`neu-dark` につないであります
 
 ## エージェントが画面を実装するときの手順
 
@@ -54,15 +55,17 @@ https://www.figma.com/design/VLCoEFLm1ujvYPq8xyEQFg/mymind-view-design
 
 Figma に接続できない環境では、`docs/design/mockup-source/` のモックアップのソースを参照します。
 
-## ガラス表現の作り方（Figma と実装の対応）
+## 凸凹の作り方（Figma と実装の対応）
 
-Figma の作り方と CSS の対応は次のとおりです。**レイアウト用の入れ物には塗りを付けない**（Figma のオートレイアウトは初期値が不透明な白なので、必ず塗りを外す）点が、見た目を崩さないための要です。
+面は地と同じ色で塗り、左上に明るい影、右下に暗い影を付けて浮き出させたり、内側に付けてへこませたりします（ADR-0018）。**レイアウト用の入れ物には塗りも影も付けない**（Figma のオートレイアウトは初期値が不透明な白なので、必ず塗りを外す）点と、**影を持つ要素の親では「コンテンツを切り取る」を外す**（外さないと影が途中で切れる）点が、見た目を崩さないための要です。
 
 | 要素 | Figma | 実装（CSS） |
 |---|---|---|
-| 背景の色のにじみ | フレーム `背景/にじみ` の中に、ぼかし（半径240〜300）を掛けた楕円を6〜7枚 | `radial-gradient` を重ねた `background-image` |
-| ガラスの面 | 塗り＝白20〜40%、線＝白80%、エフェクトスタイル `ガラス / 面` | `rgba(255,255,255,0.34)` ＋ `backdrop-filter: blur(28px)` ＋ 縁取りと影 |
-| 面の濃さ | サイドバー・リスト34%、詳細ペイン・入力欄40%、控えめな面20% | 同じ |
+| 地 | フレームの塗り＝変数 `ground`（振り返りは `ground-evening`）。背景のにじみはない | `background: var(--ground)` |
+| 浮き出た面 | 塗り＝`surface`、線＝白50%・1px、`ニューモ / 凸 2`（ペイン、リスト）、`凸 1`（カード、ボタン、`kbd`、セグメントの外枠）、`凸 3`（ダイアログ、パレット、バナー） | `var(--surface)` ＋ `var(--neu-edge)` ＋ `box-shadow: var(--neu-raised-*)` |
+| くぼんだ面 | 塗り＝`surface`、`ニューモ / 凹 1`（入力欄、選んだ行、選んだセグメント、選んだナビ）、`凹 2`（エディタ、カレンダーとタイムラインの表） | `box-shadow: var(--neu-inset-*)` |
+| 選んだ行 | `凹 1` ＋ 藍50%の枠 1.5px | `var(--neu-inset-1)` ＋ `var(--row-selected-border)` |
+| 主ボタン・確定ボタン | 塗りを残し、`凸 1` | 同じ |
 | チップ | 状態色を14〜16%で重ねる | `rgba(<状態色>, 0.14)` |
 
 ## 既知の差分
@@ -72,4 +75,5 @@ Figma の作り方と CSS の対応は次のとおりです。**レイアウト�
 - **コンポーネントの適用**：6枚のフレームの中身は、まだコンポーネントのインスタンスではなく個別のレイヤーです（`PC/設定` はチップとボタンに Components のインスタンスを使っている）。差し替えは今後の作業です（issue 004）。
 - **ステータスアイコンの形**：Figma の `StatusIcon` は、中断と待ちがどちらも「輪＋中の点」で、違いが色だけです。DESIGN.md 2.2・4.2 は「状態は色だけで区別せず、形（時計、一時停止）を併用する」としているので、実装は DESIGN.md の形にしています。
 - **マメの表情**：Figma の `Mame` は6種類で、DESIGN.md 4.1 の `think`（生成中）がありません。実装は `docs/design/mockup-source/Mame.dc.html` をもとに7種類を作っています。
+- **実装との先後**：Figma は M8（ADR-0018）で先にニューモフィズムに作り直しました。実装が追いつくまで（#237、#239〜#243）、画面のスクリーンショットはガラスのままで、Figma と食い違います。
 - **スマホ版**：Figma にはありません。`docs/design/mockup-source/` にもPC版のみを置いています。

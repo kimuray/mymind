@@ -8,7 +8,7 @@ mymind のデザインシステムです。画面を作るとき、直すとき�
 
 - ファイル：https://www.figma.com/design/VLCoEFLm1ujvYPq8xyEQFg/mymind-view-design （fileKey `VLCoEFLm1ujvYPq8xyEQFg`）
 - `PC` ページ：`PC/今日`、`PC/今日（親を選択）`、`PC/朝の計画`、`PC/振り返り`、`PC/バックログ`、`PC/タイムライン`、`PC/カレンダー`、`PC/設定`（各 1440×900）
-- `Components` ページ：`Mame`、`StatusIcon`、`Chip`、`Button`、`Kbd`、`GlassPanel`、色の変数（コレクション `mymind`）、テキストスタイル、エフェクトスタイル
+- `Components` ページ：`Mame`、`StatusIcon`、`Chip`、`Button`、`Kbd`、`NeuPanel`、`NeuWell`、色の変数（コレクション `mymind`）、テキストスタイル、エフェクトスタイル
 
 どのフレームを見ればよいか、node-id の取り方、Figma と CSS の対応、既知の差分は `docs/design/README.md` にまとめています。
 
