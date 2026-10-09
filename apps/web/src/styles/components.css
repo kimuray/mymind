@@ -496,6 +496,199 @@
   gap: var(--space-4);
 }
 
+/* タグ（FR-T13、DESIGN.md 2.2.1、4.22）。色は data-color で6色のトークンから選ぶ */
+.tag-chip[data-color="rose"],
+.tag-color-option[data-color="rose"] {
+  --tag-dot: var(--tag-rose);
+  --tag-fill: var(--tag-rose-bg);
+  --tag-ink: var(--tag-rose-text);
+}
+.tag-chip[data-color="amber"],
+.tag-color-option[data-color="amber"] {
+  --tag-dot: var(--tag-amber);
+  --tag-fill: var(--tag-amber-bg);
+  --tag-ink: var(--tag-amber-text);
+}
+.tag-chip[data-color="green"],
+.tag-color-option[data-color="green"] {
+  --tag-dot: var(--tag-green);
+  --tag-fill: var(--tag-green-bg);
+  --tag-ink: var(--tag-green-text);
+}
+.tag-chip[data-color="teal"],
+.tag-color-option[data-color="teal"] {
+  --tag-dot: var(--tag-teal);
+  --tag-fill: var(--tag-teal-bg);
+  --tag-ink: var(--tag-teal-text);
+}
+.tag-chip[data-color="indigo"],
+.tag-color-option[data-color="indigo"] {
+  --tag-dot: var(--tag-indigo);
+  --tag-fill: var(--tag-indigo-bg);
+  --tag-ink: var(--tag-indigo-text);
+}
+.tag-chip[data-color="plum"],
+.tag-color-option[data-color="plum"] {
+  --tag-dot: var(--tag-plum);
+  --tag-fill: var(--tag-plum-bg);
+  --tag-ink: var(--tag-plum-text);
+}
+
+.tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: 12em;
+  padding: 1px var(--space-2);
+  border-radius: var(--radius-full);
+  background: var(--tag-fill);
+  color: var(--tag-ink);
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+.tag-chip-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tag-chip-dot {
+  flex-shrink: 0;
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--tag-dot);
+}
+
+.tag-chip-remove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  margin-right: calc(var(--space-1) * -1);
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-full);
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.tag-chip-remove:hover {
+  background: var(--tag-fill);
+}
+
+/* 行のタグ。行の高さを変えないよう1行に収め、3つを超えた分は数だけを出す */
+.row-tags {
+  display: inline-flex;
+  flex-shrink: 1;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  overflow: hidden;
+}
+
+.row-tags-more {
+  font-size: 11px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+/* 詳細ペインのタグの欄 */
+.task-tags {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.tag-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tag-chips .tag-chip {
+  font-size: 12px;
+  padding: 2px var(--space-2) 2px var(--space-3);
+}
+
+.task-tags-input {
+  height: 36px;
+  padding: 0 var(--space-4);
+  border: var(--button-secondary-border);
+  border-radius: var(--radius-m);
+  background: var(--button-secondary-bg);
+  font: inherit;
+  font-size: 13px;
+  color: var(--ink-1);
+}
+
+.task-tags-input::placeholder {
+  color: var(--ink-4);
+}
+
+.tag-color-picker {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.tag-color-picker legend {
+  float: left;
+  margin-right: var(--space-2);
+  padding: 0;
+}
+
+.tag-color-option {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-full);
+  background: var(--tag-fill);
+  cursor: pointer;
+}
+
+.tag-color-option input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.tag-color-option .tag-chip-dot {
+  width: 12px;
+  height: 12px;
+}
+
+/* 選んだ色は輪で示す（色だけに頼らないよう、選択は読み上げでも伝わる radio にしている） */
+.tag-color-option:has(input:checked) {
+  box-shadow: 0 0 0 2px var(--tag-dot);
+}
+
+.tag-color-option:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.task-tags-message {
+  margin: 0;
+  min-height: 1.2em;
+}
+
 /* 詳細ペインの子タスク（FR-T02、DESIGN.md 4.12） */
 .task-memo {
   display: flex;

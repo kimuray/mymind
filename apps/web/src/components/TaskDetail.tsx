@@ -3,6 +3,7 @@ import {
   dayOrdinalSince,
   STATUS_LABELS,
   type Status,
+  type TagColor,
   TRANSITIONS,
 } from '@mymind/domain';
 import { useRef, useState } from 'react';
@@ -13,6 +14,7 @@ import { AddTaskInput } from './AddTaskInput';
 import { Button } from './Button';
 import { StatusBadge } from './StatusBadge';
 import { TaskMemo } from './TaskMemo';
+import { TaskTags } from './TaskTags';
 
 /** 詳細ペインの主な操作。状態ごとに、次にとる自然な操作を1つ選ぶ */
 const PRIMARY: Readonly<Record<Status, { to: Status; label: string }>> = {
@@ -54,6 +56,9 @@ type TaskDetailProps = {
   onAddChild: (title: string) => void;
   /** メモを保存する（FR-T09）。失敗したら理由を投げる */
   onSaveNote: (noteMd: string | null) => Promise<void>;
+  /** タグを名前で付ける。ない名前ならその色で作る（FR-T13）。失敗したら理由を投げる */
+  onAttachTag: (name: string, color: TagColor) => Promise<void>;
+  onDetachTag: (tagId: string) => void;
 };
 
 /**
@@ -73,6 +78,8 @@ export function TaskDetail({
   childTasks,
   onAddChild,
   onSaveNote,
+  onAttachTag,
+  onDetachTag,
 }: TaskDetailProps) {
   const [showOthers, setShowOthers] = useState(false);
   const events = useTaskEvents(task.id);
@@ -124,6 +131,8 @@ export function TaskDetail({
         <Button onClick={() => onMove('tomorrow')}>明日へ</Button>
         {place === 'today' && <Button onClick={() => onMove('backlog')}>バックログへ</Button>}
       </div>
+
+      <TaskTags key={`tags-${task.id}`} task={task} onAttach={onAttachTag} onDetach={onDetachTag} />
 
       {/* タスクごとに作り直す（書きかけと下書きをタスクごとに分け、選び直したときに前のタスクのメモを保存する） */}
       <TaskMemo key={task.id} task={task} onSave={onSaveNote} />

@@ -1,6 +1,7 @@
 import { daysBetween, nextOnAdvance, type ReviewDecision, type Status } from '@mymind/domain';
 import { type ReactNode, useRef, useState } from 'react';
 import { type StaleTask, useReviewDecision, useStaleTasks } from '../api/review';
+import { useAttachTag, useDetachTag } from '../api/tags';
 import {
   type ListTask,
   useBacklog,
@@ -79,6 +80,8 @@ export function BacklogPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const edit = useEditTask();
+  const attachTag = useAttachTag();
+  const detachTag = useDetachTag();
   const staleTasks = useStaleTasks();
   const review = useReviewDecision();
   // この画面を開いてから判断した件数（棚卸しの進み具合とまとめ）
@@ -158,6 +161,10 @@ export function BacklogPage() {
       onSaveNote={async (noteMd) => {
         await edit.mutateAsync({ task: selected, noteMd, ...screen });
       }}
+      onAttachTag={async (name, color) => {
+        await attachTag.mutateAsync({ task: selected, name, color, ...screen });
+      }}
+      onDetachTag={(tagId) => detachTag.mutate({ task: selected, tagId, ...screen })}
     />
   );
 

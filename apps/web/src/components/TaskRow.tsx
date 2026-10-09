@@ -5,6 +5,7 @@ import { useStatusChanged } from '../statusChange';
 import { AnimatedNumber } from './AnimatedNumber';
 import { StatusBadge } from './StatusBadge';
 import { StatusIcon } from './StatusIcon';
+import { RowTags } from './TagChip';
 
 type TaskRowProps = {
   task: ListTask;
@@ -94,6 +95,7 @@ export function TaskRow({
           )}
         </button>
       )}
+      <RowTags tags={task.tags} />
       {/* メモがあることだけを示す。中身は詳細ペインで見る（FR-T09） */}
       {task.noteMd !== null && task.noteMd.trim() !== '' && (
         <span className="task-note-mark" title="メモあり">

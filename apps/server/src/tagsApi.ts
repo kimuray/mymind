@@ -164,8 +164,16 @@ export function createTagsApi({ tags, tasks, newId, now, checkDay, conflict }: T
       const input = c.req.valid('json');
       const dayError = checkDay(c, input);
       if (dayError) return dayError;
-      return changeTags(c, c.req.param('id'), input.expectedVersion, {
-        detach: [c.req.param('tagId')],
-      });
+      const taskId = c.req.param('id');
+      const tagId = c.req.param('tagId');
+      const task = tasks.find(taskId);
+      if (task === undefined) return conflict(c, { kind: 'not_found', taskId });
+      if (task.version !== input.expectedVersion) {
+        return conflict(c, { kind: 'version_conflict', taskId });
+      }
+      // 付いていないタグを外しても何も変えず、版も進めない（付いているタグを付けたときと同じ）
+      const current = tagsOf(taskId);
+      if (!current.some((t) => t.id === tagId)) return c.json({ task, tags: current }, 200);
+      return changeTags(c, taskId, input.expectedVersion, { detach: [tagId] });
     });
 }
