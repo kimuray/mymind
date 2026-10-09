@@ -21,3 +21,4 @@
 | [ADR-0015](./0015-desktop-app-with-electron.md) | 画面の入口をデスクトップアプリにし、Electron で apps/desktop に作る | 採用（spike の結果は ADR-0016） |
 | [ADR-0016](./0016-desktop-runtime-and-bundling.md) | Electron の版、サーバーの束ね方、エージェントの PATH（ADR-0015 の spike の結果） | 採用 |
 | [ADR-0017](./0017-desktop-update-from-local-repo.md) | デスクトップアプリの更新は、手元のリポジトリを更新元にする | 採用 |
+| [ADR-0018](./0018-neumorphism.md) | 画面の質感を、すりガラスからニューモフィズムに変える | 採用 |
