@@ -1273,7 +1273,7 @@
   outline: none;
 }
 
-/* 入力欄の中はガラスの面に任せ、キーボードのフォーカスは面の枠で示す */
+/* 入力欄の中はくぼみの面に任せ、キーボードのフォーカスは面の枠で示す */
 .markdown-editor:focus-within {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
