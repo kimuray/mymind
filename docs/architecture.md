@@ -247,7 +247,7 @@ CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 | 設定 | `GET /api/settings`、`PATCH /api/settings` | 依頼の前に毎回確認する（`confirmBeforeRequest`、FR-A12）、既定のエージェント（`defaultAgent`、FR-A07）、棚卸しの対象にする日数（`reviewAfterDays`、0〜365、初期値30、FR-R06） |
 | 状態 | `GET /api/health` | `status`（`ok` / `degraded`）、DB（問い合わせの可否とファイルの合計サイズ）、エージェント（使えるか、実行ファイルの有無とバージョン、理由）、最後のバックアップ、通知を出す手段、直近の FB 生成の失敗。DB に問い合わせられなければ 503（NFR-21） |
 | タグ | `GET /api/tags`、`POST /api/tags`、`PATCH /api/tags/:id`、`DELETE /api/tags/:id` | 一覧は名前の順に、付いているタスクの件数を添えて返す。色は DESIGN.md 2.2.1 の6色の識別子。名前は空白を整え、30文字まで。大文字・小文字や全角・半角だけが違う名前は同じタグとみなし、重複は 409（`DUPLICATE_TAG`）。消すと、付いていたタスクからも外れる（FR-T13） |
-| タスクのタグ | `POST /api/tasks/:id/tags`、`DELETE /api/tasks/:id/tags/:tagId` | 名前で付ける。ない名前ならその場で作る（色を省くと `rose`）。1つのタスクに10個まで（11個目は 422 `TOO_MANY_TAGS`）。付け外しはタスクの属性の変更として、ほかの編集と同じく `expectedVersion` と `expectedDay` を確かめ（NFR-13、NFR-14）、タスクの版を進める。イベントには残さず、最後に触れた日時も変えない。応答は新しい版のタスクと、付いているタグ。一覧の各行（`GET /api/days/:day`、`GET /api/backlog` など）には `tags` を名前の順で含める（FR-T13） |
+| タスクのタグ | `POST /api/tasks/:id/tags`、`DELETE /api/tasks/:id/tags/:tagId` | 名前で付ける。ない名前ならその場で作る（色を省くと `rose`）。1つのタスクに10個まで（11個目は 422 `TOO_MANY_TAGS`）。付け外しはタスクの属性の変更として、ほかの編集と同じく `expectedVersion` と `expectedDay` を確かめ（NFR-13、NFR-14）、タスクの版を進める。イベントには残さず、最後に触れた日時も変えない。付いているタグを付けたときと、付いていないタグを外したときは何も変えず、版も進めない。応答は（新しい版の）タスクと、付いているタグ。一覧の各行（`GET /api/days/:day`、`GET /api/backlog` など）には `tags` を名前の順で含める（FR-T13） |
 | 通知のバナー | `GET /api/notifications/pending`、`DELETE /api/notifications/pending/:kind` | 画面のバナーに出す通知の一覧と、閉じる操作（FR-N05、9.2） |
 | ブラウザの通知の許可 | `PUT /api/notifications/browser` | 画面が `Notification.permission` を知らせる（FR-N05、9.2） |
 

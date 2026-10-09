@@ -126,4 +126,22 @@ test.describe('FR-T13 タグの表示と付け外し', () => {
     await expect(detail(page).getByText('保存しました')).toBeVisible();
     await expect(row(page, title).locator('.task-note-mark')).toBeVisible();
   });
+
+  test('NFR-13 付いているタグの名前をもう一度打っても送らず、続けてメモを保存できる', async ({
+    page,
+  }) => {
+    const title = unique('同じタグを2回');
+    const tag = unique('二度');
+    await page.goto('/');
+    await addAndSelect(page, title);
+    await attach(page, title, tag);
+    await tagInput(page, title).fill(tag.toUpperCase());
+    await tagInput(page, title).press('Enter');
+    await expect(detail(page)).toContainText(`「${tag.toUpperCase()}」は付いています`);
+    await expect(detail(page).locator('.tag-chips .tag-chip')).toHaveCount(1);
+    await detail(page).getByRole('textbox', { name: 'メモ', exact: true }).click();
+    await page.keyboard.type('同じタグの後に書いた');
+    await detail(page).getByRole('heading', { level: 2 }).first().click();
+    await expect(detail(page).getByText('保存しました')).toBeVisible();
+  });
 });

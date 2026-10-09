@@ -1203,6 +1203,17 @@ describe('FR-T13 タグの API', () => {
     expect(await listTags()).toEqual([expect.objectContaining({ name: '仕事', taskCount: 0 })]);
   });
 
+  it('付いているタグを付けても、付いていないタグを外しても、版は進まない', async () => {
+    const attached = await attachOk(await addTask(), '仕事');
+    const again = await attachOk(attached.task, '仕事');
+    expect(again.task.version).toBe(attached.task.version);
+    const other = await send('POST', '/tags', { name: '家', color: 'rose' });
+    const tag = ((await other.json()) as { tag: TagJson }).tag;
+    const res = await detach(attached.task, tag.id);
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as TagsResult).task.version).toBe(attached.task.version);
+  });
+
   it('ないタスクに付けようとすると 404', async () => {
     const res = await send('POST', '/tasks/nope/tags', {
       name: '仕事',

@@ -7,17 +7,12 @@ import {
 } from '@mymind/domain';
 import { useId, useState } from 'react';
 import { ApiError } from '../api/client';
-import { PENDING_TAG_PREFIX, useTags } from '../api/tags';
+import { PENDING_TAG_PREFIX, tagKeyOf, useTags } from '../api/tags';
 import type { ListTask } from '../api/tasks';
 import { TAG_COLOR_LABELS, TagChip } from './TagChip';
 
 /** 詳細ペインのタグの入力欄。リストの # キーでここへ移る（DESIGN.md 5.2） */
 export const TASK_TAG_INPUT_ID = 'task-tag-input';
-
-const keyOf = (name: string) => {
-  const n = normalizeTagName(name);
-  return n.ok ? n.value.key : null;
-};
 
 /** 付けられなかった理由。サーバーの判定をそのまま短く伝える */
 function describeError(e: unknown): string {
@@ -50,11 +45,11 @@ export function TaskTags({
   const listId = useId();
   const colorName = useId();
 
-  const attachedKeys = new Set(task.tags.map((t) => keyOf(t.name)));
-  const candidates = (tags.data?.tags ?? []).filter((t) => !attachedKeys.has(keyOf(t.name)));
-  const typedKey = keyOf(name);
+  const attachedKeys = new Set(task.tags.map((t) => tagKeyOf(t.name)));
+  const candidates = (tags.data?.tags ?? []).filter((t) => !attachedKeys.has(tagKeyOf(t.name)));
+  const typedKey = tagKeyOf(name);
   const isNew =
-    typedKey !== null && !(tags.data?.tags ?? []).some((t) => keyOf(t.name) === typedKey);
+    typedKey !== null && !(tags.data?.tags ?? []).some((t) => tagKeyOf(t.name) === typedKey);
   const isFull = !canAddTag(task.tags.length);
 
   const submit = async () => {
@@ -69,6 +64,11 @@ export function TaskTags({
     }
     setName('');
     setColor(TAG_COLORS[0]);
+    // 付いているタグは送らない（サーバーは何も変えないが、送ると画面の版の見込みがずれるため）
+    if (attachedKeys.has(n.value.key)) {
+      setMessage(`「${n.value.name}」は付いています`);
+      return;
+    }
     setMessage('');
     try {
       await onAttach(n.value.name, color);

@@ -21,7 +21,16 @@ export function useTags() {
 /** 画面が想定している業務日（NFR-14）。前の日として続けると決めた画面では allowPastDay を付ける */
 type ScreenState = { expectedDay: string; allowPastDay?: boolean };
 
-/** 一覧のキャッシュの中のタスクのタグを書き換え、版を1つ進める（楽観的更新。ui.md「即時に画面へ反映」） */
+/** タグの名前の重複を判定するキー（サーバーと同じ domain の関数で作る）。整えられない名前は null */
+export const tagKeyOf = (name: string) => {
+  const n = normalizeTagName(name);
+  return n.ok ? n.value.key : null;
+};
+
+/**
+ * 一覧のキャッシュの中のタスクのタグを書き換え、版を1つ進める（楽観的更新。ui.md「即時に画面へ反映」）。
+ * タグが変わらないとき（付いているタグを付ける、など）はサーバーも版を進めないので、何もしない
+ */
 async function patchCachedTags(
   qc: QueryClient,
   task: ListTask,
@@ -34,9 +43,11 @@ async function patchCachedTags(
       ? old
       : {
           ...old,
-          tasks: old.tasks.map((t) =>
-            t.id === task.id ? { ...t, tags: update(t.tags), version: task.version + 1 } : t,
-          ),
+          tasks: old.tasks.map((t) => {
+            if (t.id !== task.id) return t;
+            const tags = update(t.tags);
+            return tags === t.tags ? t : { ...t, tags, version: task.version + 1 };
+          }),
         };
   qc.setQueriesData<{ tasks: ListTask[] }>({ queryKey: ['day'] }, apply);
   qc.setQueriesData<{ tasks: ListTask[] }>({ queryKey: ['backlog'] }, apply);
@@ -68,20 +79,16 @@ export function useAttachTag() {
       ),
     onMutate: async ({ task, name, color }) => {
       // 既にあるタグなら、その色で先に出す。ない名前は、選んだ色で仮のタグとして出す
-      const n = normalizeTagName(name);
-      if (!n.ok) return;
-      const keyOf = (tagName: string) => {
-        const m = normalizeTagName(tagName);
-        return m.ok ? m.value.key : tagName;
-      };
+      const key = tagKeyOf(name);
+      if (key === null) return;
       const known = qc
         .getQueryData<{ tags: TagWithCount[] }>(tagsKey)
-        ?.tags.find((t) => keyOf(t.name) === n.value.key);
+        ?.tags.find((t) => tagKeyOf(t.name) === key);
       const tag: TaskTag = known
         ? { id: known.id, name: known.name, color: known.color }
-        : { id: `${PENDING_TAG_PREFIX}${n.value.key}`, name: n.value.name, color: color ?? 'rose' };
+        : { id: `${PENDING_TAG_PREFIX}${key}`, name: name.trim(), color: color ?? 'rose' };
       await patchCachedTags(qc, task, (tags) =>
-        tags.some((t) => t.id === tag.id) ? tags : [...tags, tag].sort(byName),
+        tags.some((t) => tagKeyOf(t.name) === key) ? tags : [...tags, tag].sort(byName),
       );
     },
     onSettled: () => {
@@ -106,7 +113,9 @@ export function useDetachTag() {
         }),
       ),
     onMutate: ({ task, tagId }) =>
-      patchCachedTags(qc, task, (tags) => tags.filter((t) => t.id !== tagId)),
+      patchCachedTags(qc, task, (tags) =>
+        tags.some((t) => t.id === tagId) ? tags.filter((t) => t.id !== tagId) : tags,
+      ),
     onSettled: () => {
       qc.invalidateQueries({ queryKey: tagsKey });
       return invalidateTasks(qc);
