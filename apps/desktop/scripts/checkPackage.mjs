@@ -7,6 +7,7 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { BUILD_INFO_FILE, readBuildInfo } from '../src/buildInfo.ts';
 import { PACKAGED_RESOURCES, SERVER_ENTRY } from '../src/packageLayout.ts';
 
 const desktopDir = fileURLToPath(new URL('..', import.meta.url));
@@ -54,6 +55,13 @@ const appPackage = existsSync(at('app', 'package.json'))
   : {};
 if (appPackage.main !== 'dist/main.mjs')
   problems.push(`package.json の main が dist/main.mjs でない：${appPackage.main}`);
+// 更新の確認に使う、作ったコミットとリポジトリの場所（FR-U05）。git のある環境（CI も）で作れば必ずある
+const buildInfo = readBuildInfo(at('app', BUILD_INFO_FILE));
+if (buildInfo.kind !== 'ok') {
+  problems.push(
+    `${BUILD_INFO_FILE} がない、または正しくない：${buildInfo.kind === 'invalid' ? buildInfo.reason : 'ない'}`,
+  );
+}
 
 // 2. Info.plist（XML から、キーの次の文字列を読む）
 const plist = readFileSync(join(contents, 'Info.plist'), 'utf8');

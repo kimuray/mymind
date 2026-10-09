@@ -13,6 +13,8 @@ import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } fr
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { packager } from '@electron/packager';
+import { APP_BUNDLE_ID } from '../src/appInstall.ts';
+import { BUILD_INFO_FILE } from '../src/buildInfo.ts';
 import { PACKAGED_RESOURCES, SERVER_ENTRY } from '../src/packageLayout.ts';
 
 const desktopDir = fileURLToPath(new URL('..', import.meta.url));
@@ -51,21 +53,28 @@ const electronVersion = JSON.parse(
 // 作り直すたびに「この .app をどのコミットから作ったか」を、Finder の情報（CFBundleVersion）で見分けられるようにする
 const rootPackage = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
 const appVersion = typeof rootPackage.version === 'string' ? rootPackage.version : '0.0.0';
-const commit = (() => {
+const fullCommit = (() => {
   try {
-    return execFileSync('git', ['rev-parse', '--short', 'HEAD'], {
-      cwd: root,
-      encoding: 'utf8',
-    }).trim();
+    return execFileSync('git', ['rev-parse', 'HEAD'], { cwd: root, encoding: 'utf8' }).trim();
   } catch {
     // git がない環境（展開したソースなど）でも作れるようにする
-    return 'unknown';
+    return null;
   }
 })();
+const commit = fullCommit === null ? 'unknown' : fullCommit.slice(0, 7);
 writeFileSync(
   join(stageApp, 'package.json'),
   `${JSON.stringify({ name: 'mymind', productName: 'mymind', version: appVersion, type: 'module', main: desktopPackage.main }, null, 2)}\n`,
 );
+
+// アプリが更新を確かめるときに読む、作ったコミットとリポジトリの場所（FR-U05、ADR-0017）。
+// git のない環境で作った .app には置かない（アプリは更新の項目を出さない）
+if (fullCommit !== null) {
+  writeFileSync(
+    join(stageApp, BUILD_INFO_FILE),
+    `${JSON.stringify({ commit: fullCommit, repoPath: root }, null, 2)}\n`,
+  );
+}
 
 // Resources に入れるもの。名前は起動したアプリが探す名前（packageLayout.ts）と同じにする
 const resources = {
@@ -101,7 +110,7 @@ const [appPath] = await packager({
   arch: platformArch,
   name: 'mymind',
   electronVersion,
-  appBundleId: 'local.mymind.desktop',
+  appBundleId: APP_BUNDLE_ID,
   appVersion,
   buildVersion: `${appVersion}+${commit}`,
   appCategoryType: 'public.app-category.productivity',

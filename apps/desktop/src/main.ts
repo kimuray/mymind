@@ -1,3 +1,4 @@
+import { homedir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { desktopMessageSchema } from '@mymind/server/desktop-bridge';
@@ -17,6 +18,7 @@ import {
   utilityProcess,
 } from 'electron';
 import { buildAppMenu } from './appMenu';
+import { BUILD_INFO_FILE, readBuildInfo } from './buildInfo';
 import { initLoginItemOnce, readDesktopState, writeDesktopState } from './desktopState';
 import { IPC, type LoginItemState } from './ipc';
 import { isAppUrl, isExpectedServerUrl, isExternalWebUrl, serverPort } from './navigation';
@@ -24,6 +26,8 @@ import { handleNotifyRequest } from './notifications';
 import { resolveResources, serverEnv } from './resources';
 import { createSupervisor, type ServerProcess } from './supervisor';
 import { buildTrayMenu } from './tray';
+import { buildUpdateEnv, createGitRunner, startUpdateScript } from './updateCommands';
+import { checkForUpdate, createUpdater, type Updater } from './updater';
 import { fitWindowBounds, MIN_WINDOW, readWindowBounds, writeWindowBounds } from './windowState';
 
 /**
@@ -44,6 +48,13 @@ let serverUrl: string | null = null;
 let quitting = false;
 // メニューバーのアイコン。参照を持っておかないと、ガベージコレクションで消える
 let tray: Tray | null = null;
+// アップデートの確認と適用。.app を作ったときの情報がないとき（開発時の起動）は null で、メニューに出さない
+let updater: Updater | null = null;
+let updateLogPath: string | null = null;
+
+/** 更新を確かめる間隔。起動の直後はサーバーの起動を優先して少し待つ（FR-U05） */
+const UPDATE_FIRST_CHECK_MS = 60_000;
+const UPDATE_CHECK_INTERVAL_MS = 6 * 60 * 60 * 1000;
 
 /** ウィンドウの中で開いてよいオリジン。開発時は画面を Vite が配信する（ADR-0007） */
 const allowedOrigins = (): string[] => {
@@ -135,15 +146,87 @@ function createTray() {
   icon.setTemplateImage(true);
   tray = new Tray(icon);
   tray.setToolTip('mymind');
+  refreshTrayMenu();
+}
+
+/** メニューを作り直す。アップデートの状態が変わるたびに呼ぶ */
+function refreshTrayMenu() {
+  if (tray === null) return;
+  const current = updater;
   tray.setContextMenu(
     Menu.buildFromTemplate(
       buildTrayMenu({
         open: () => openWindow(),
         openPath: (path) => openWindow(path),
         quit: () => app.quit(),
+        ...(current === null
+          ? {}
+          : {
+              update: {
+                state: current.getState(),
+                check: () => void current.check({ manual: true }),
+                apply: () => void confirmUpdate(),
+                openLog: () => {
+                  if (updateLogPath !== null) void shell.openPath(updateLogPath);
+                },
+              },
+            }),
       }),
     ),
   );
+}
+
+/**
+ * アップデートの確認と適用を用意する（FR-U05、ADR-0017）。更新元は .app を作った手元のリポジトリ。
+ * .app を作ったときの情報がなければ（開発時の起動、git のない環境で作った .app）、更新の項目を出さない
+ */
+function initUpdater() {
+  const read = readBuildInfo(join(appDir, BUILD_INFO_FILE));
+  if (read.kind !== 'ok') {
+    if (read.kind === 'invalid') console.warn(`${BUILD_INFO_FILE} を読めません（${read.reason}）`);
+    return;
+  }
+  const { commit, repoPath } = read.info;
+  const env = buildUpdateEnv(process.env, homedir());
+  const runGit = createGitRunner({ repoPath, env });
+  updater = createUpdater({
+    check: () => checkForUpdate(runGit, commit),
+    startUpdate: () => {
+      updateLogPath = join(
+        app.getPath('logs'),
+        `update-${new Date().toISOString().replace(/[-:.]/g, '')}.log`,
+      );
+      return startUpdateScript({ repoPath, env, logPath: updateLogPath });
+    },
+    notify: ({ title, body }) => {
+      if (!Notification.isSupported()) return;
+      const notice = new Notification({ title, body });
+      // アップデートがあるという通知を選んだら、更新するかを尋ねる
+      notice.on('click', () => {
+        if (updater?.getState().kind === 'available') void confirmUpdate();
+      });
+      notice.show();
+    },
+    onChange: () => refreshTrayMenu(),
+  });
+  const checkQuietly = () => void updater?.check({ manual: false });
+  setTimeout(checkQuietly, UPDATE_FIRST_CHECK_MS);
+  setInterval(checkQuietly, UPDATE_CHECK_INTERVAL_MS);
+}
+
+/** 更新するかを尋ねてから適用する。ビルドに数分かかり、終わると再起動するため */
+async function confirmUpdate() {
+  const state = updater?.getState();
+  if (updater === null || state?.kind !== 'available') return;
+  const { response } = await dialog.showMessageBox({
+    type: 'info',
+    buttons: ['再起動して更新', 'あとで'],
+    defaultId: 0,
+    cancelId: 1,
+    message: 'mymind を更新しますか？',
+    detail: `${state.commits} 件の変更があります。手元のリポジトリで pnpm update-app を動かし、ビルドが終わると mymind が再起動します（数分かかります。そのあいだも使えます）。`,
+  });
+  if (response === 0) updater.apply();
 }
 
 /** ログイン時の起動の状態。開発時（electron .）は、Electron の本体を登録してしまうので切り替えさせない */
@@ -281,6 +364,7 @@ if (!app.requestSingleInstanceLock()) {
     if (!app.isPackaged) app.dock?.setIcon(join(resources.assets, 'icon.png'));
     registerIpc();
     initLoginItem();
+    initUpdater();
     createTray();
     supervisor.start();
     app.on('activate', () => openWindow());
