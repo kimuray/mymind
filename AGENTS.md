@@ -67,6 +67,7 @@ e2e/            Playwright の E2E テスト
 | `pnpm test:e2e` | E2E テスト |
 | `pnpm test:desktop` | デスクトップアプリ（Electron）の起動とサーバーの見守りの E2E（先に `pnpm build`。Claude Code のサンドボックスの中では起動できないので CI で動かす） |
 | `pnpm desktop:package` | 自分用の `mymind.app`（署名なし）を `apps/desktop/out/` に作る。入れ方と更新は `docs/operations.md`。中身は `pnpm --filter @mymind/desktop package:check` で確かめる（CI でも実行） |
+| `pnpm desktop:install-electron` | Electron の本体（バイナリ）を落とす。`pnpm install` を `--ignore-scripts` で実行したときに使う |
 | `pnpm desktop:start` / `pnpm desktop:dev` | デスクトップアプリをビルドして起動する（データは `./.data`）/ 画面を Vite から読む開発用（別に `pnpm --filter @mymind/web dev` を動かす） |
 | `pnpm screenshots` | 各画面のスクリーンショットを `.data/screenshots/` に出力（先に `pnpm build`） |
 | `pnpm docs:check` / `pnpm docs:build` | 設計文書のリンク・参照の検査 / 人が読むための HTML の生成 |
