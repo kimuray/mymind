@@ -31,6 +31,7 @@
     "desktop:start": "pnpm build && MYMIND_DATA_DIR=${MYMIND_DATA_DIR:-$PWD/.data} pnpm --filter @mymind/desktop start",
     "desktop:dev": "pnpm --filter @mymind/desktop build && MYMIND_DATA_DIR=${MYMIND_DATA_DIR:-$PWD/.data} MYMIND_VITE_PORT=${MYMIND_VITE_PORT:-5173} pnpm --filter @mymind/desktop start",
     "desktop:package": "pnpm build && pnpm --filter @mymind/desktop package",
+    "desktop:install-electron": "NODE_USE_ENV_PROXY=1 electron_config_cache=$PWD/.data/electron-cache node apps/desktop/node_modules/electron/install.js",
     "docs:build": "node scripts/docs-build.mjs",
     "docs:check": "node scripts/docs-build.mjs --check",
     "docs:open": "node scripts/docs-build.mjs && open docs-site/docs/index.html",
