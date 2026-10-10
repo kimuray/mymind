@@ -8,7 +8,7 @@
     "start": "electron .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "package": "NODE_USE_ENV_PROXY=1 node scripts/packageApp.mjs",
+    "package": "NODE_USE_ENV_PROXY=1 electron_config_cache=$PWD/../../.data/electron-cache node scripts/packageApp.mjs",
     "package:check": "node scripts/checkPackage.mjs"
   },
   "dependencies": {

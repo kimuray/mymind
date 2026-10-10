@@ -112,7 +112,6 @@
       "allowWrite": [
         "~/Library/pnpm",
         "~/Library/Caches/ms-playwright",
-        "~/Library/Caches/electron",
         "~/.npm/_cacache",
         "./.git"
       ],
