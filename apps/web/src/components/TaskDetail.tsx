@@ -82,6 +82,13 @@ export function TaskDetail({
   onDetachTag,
 }: TaskDetailProps) {
   const [showOthers, setShowOthers] = useState(false);
+  // 詳細ペインはタスクを切り替えても同じコンポーネントのままなので、別のタスクを選んだら
+  // 「その他の状態…」を閉じた状態に戻す（issue 270）。描画の途中で前のタスクと比べて戻す（effect だと、開いたまま一度描かれる）
+  const [shownTaskId, setShownTaskId] = useState(task.id);
+  if (shownTaskId !== task.id) {
+    setShownTaskId(task.id);
+    setShowOthers(false);
+  }
   const events = useTaskEvents(task.id);
   // 子タスクの出入りを目で追えるようにする（DESIGN.md 4.18）。別のタスクを選んだときは動かさない
   const childList = useRef<HTMLUListElement>(null);
@@ -154,6 +161,8 @@ export function TaskDetail({
           )}
           {canAddChildFromDetail(task) ? (
             <AddTaskInput
+              // 打ちかけの文字を、別のタスクの欄に持ち越さない（意図しない親に子ができるため、issue 270）
+              key={task.id}
               label={`「${task.title}」の子タスクを追加`}
               placeholder="子タスクを追加（Enterで確定）"
               onSubmit={onAddChild}
