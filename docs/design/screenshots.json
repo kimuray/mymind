@@ -29,6 +29,12 @@
     { "file": "timeline.png", "path": "/timeline", "frame": "PC/タイムライン", "state": "初期" },
     { "file": "calendar.png", "path": "/calendar/{ym}", "frame": "PC/カレンダー", "state": "今月" },
     {
+      "file": "calendar-day.png",
+      "path": "/calendar/{ym}/{day}",
+      "frame": "PC/カレンダー",
+      "state": "今日を選んだ状態（詳細ペインはこの日の記録と「記録を再生成」）"
+    },
+    {
       "file": "settings.png",
       "path": "/settings",
       "frame": "PC/設定",

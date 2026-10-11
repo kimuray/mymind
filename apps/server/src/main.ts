@@ -11,6 +11,7 @@ import {
 } from '@mymind/agent';
 import {
   createDailyLogRepository,
+  createDailyRecordRepository,
   createJobRepository,
   createNotificationRepository,
   createSettingsRepository,
@@ -126,6 +127,7 @@ async function main(): Promise<number> {
   const tasks = createTaskRepository({ db, codec: plainCodec, newEventId: newId });
   const jobs = createJobRepository({ db, codec: plainCodec });
   const logs = createDailyLogRepository({ db, codec: plainCodec });
+  const records = createDailyRecordRepository({ db, codec: plainCodec });
   const events = createEventBus();
   const prompt = paths.prompts === null ? loadDailyPrompt() : loadDailyPrompt(paths.prompts);
   const monthlyPrompt =
@@ -169,6 +171,7 @@ async function main(): Promise<number> {
     tasks,
     logs,
     tags: createTagRepository({ db }),
+    records,
     runners,
     defaultAgent: () => currentSettings().defaultAgent,
     events,
@@ -233,6 +236,7 @@ async function main(): Promise<number> {
     dayOptions: DAY_OPTIONS,
     newId,
     jobs: { runner: jobRunner, jobs, events },
+    records,
     health: {
       checkDatabase: () => {
         try {

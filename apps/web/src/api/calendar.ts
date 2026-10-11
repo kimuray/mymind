@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, unwrap } from './client';
 import type { AgentChoice } from './settings';
+import { queryKeys } from './tasks';
 
 /** カレンダーの月（GET /api/months/:ym、FR-R04） */
 const fetchMonth = async (ym: string) => unwrap(await api.months[':ym'].$get({ param: { ym } }));
@@ -42,5 +43,24 @@ export function useCancelMonthlySummary(ym: string) {
     mutationFn: async (jobId: string) =>
       unwrap(await api.jobs[':id'].cancel.$post({ param: { id: jobId } })),
     onSettled: () => qc.invalidateQueries({ queryKey: monthKey(ym) }),
+  });
+}
+
+const regenerateRecord = async (day: string) =>
+  unwrap(await api.days[':day'].record.regenerate.$post({ param: { day } }));
+
+export type RegenerateResponse = Awaited<ReturnType<typeof regenerateRecord>>;
+
+/** その日の記録をイベントから作り直す（FR-R07）。前後の違いが返る */
+export function useRegenerateRecord() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: regenerateRecord,
+    // 記録のまとめと件数を読み直す
+    onSettled: (_data, _error, day) =>
+      Promise.all([
+        qc.invalidateQueries({ queryKey: queryKeys.day(day) }),
+        qc.invalidateQueries({ queryKey: monthKey(day.slice(0, 7)) }),
+      ]),
   });
 }

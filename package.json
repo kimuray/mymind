@@ -26,6 +26,7 @@
     "update-app": "node scripts/update-app.mjs",
     "restore-backup": "tsx apps/server/src/restoreCli.ts",
     "export": "tsx apps/server/src/exportCli.ts",
+    "seed": "tsx apps/server/src/seedCli.ts",
     "mcp": "pnpm --silent --dir packages/mcp start",
     "eval-prompt": "tsx apps/server/src/evalPromptCli.ts",
     "start": "pnpm --filter @mymind/server start",

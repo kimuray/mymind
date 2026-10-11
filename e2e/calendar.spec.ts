@@ -51,8 +51,8 @@ test.describe('NFR-06 カレンダーの面', () => {
     page,
   }) => {
     await page.goto(`/calendar/${ym}/${ym}-10`);
-    const selected = page.getByRole('link', { name: new RegExp(`月10日（.）`) });
-    const other = page.getByRole('link', { name: new RegExp(`月11日（.）`) });
+    const selected = page.getByRole('link', { name: /月10日（.）/ });
+    const other = page.getByRole('link', { name: /月11日（.）/ });
     // マスは --surface の面に --neu-inset-1 のくぼみ（DESIGN.md 4.14、ADR-0018）
     await expect(other).toHaveCSS('background-color', 'rgb(228, 233, 240)');
     await expect(other).toHaveCSS('box-shadow', /3px 3px 6px 0px inset/);
@@ -157,5 +157,28 @@ test.describe('FR-R04 FR-A05 FR-A09 カレンダー', () => {
     await expect(
       calendar.getByRole('link', { name: new RegExp(`月${dayNumber(day)}日（.） FBなし`) }),
     ).toBeVisible();
+  });
+});
+
+test.describe('FR-R07 記録を再生成', () => {
+  test('日付の詳細で記録を再生成すると、変わりがなかったことが出る', async ({ page }) => {
+    const day = `${ym}-12`;
+    await page.goto('/');
+    // 振り返りを保存すると、その時点の記録のスナップショットが残る
+    expect(await saveReflection(page, day, '再生成を試す日の振り返り')).toBe(200);
+
+    await page.goto(`/calendar/${ym}/${day}`);
+    const section = page.getByRole('region', { name: '記録の再生成' });
+    await section.getByRole('button', { name: '記録を再生成' }).click();
+    await expect(section).toContainText('変わりはありませんでした');
+    // 変わっていないので、FB の再依頼は出さない
+    await expect(section.getByRole('button', { name: 'FBをもう一度もらう' })).toHaveCount(0);
+  });
+
+  test('空白日には「記録を再生成」を出さない', async ({ page }) => {
+    await page.goto(`/calendar/${ym}/${ym}-13`);
+    const detail = page.getByRole('complementary', { name: '詳細' });
+    await expect(detail).toContainText('記録なし');
+    await expect(detail.getByRole('button', { name: '記録を再生成' })).toHaveCount(0);
   });
 });

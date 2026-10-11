@@ -1,6 +1,7 @@
 import { dailyFeedbackSchema, monthlySummarySchema } from '@mymind/agent';
 import type {
   DailyLogRepository,
+  DailyRecordRepository,
   Feedback,
   SettingsRepository,
   TagRepository,
@@ -37,6 +38,7 @@ import { Hono } from 'hono';
 import { z } from 'zod';
 import {
   createDayRecordReader,
+  createDayRecordStore,
   type DayRecordReader,
   findCarryover as findCarryoverOf,
   hasReflection,
@@ -67,6 +69,8 @@ export type ApiDeps = {
   newId: () => string;
   /** エージェントのジョブと FB（architecture.md 7章） */
   jobs: JobsApiDeps;
+  /** 日ごとの記録のスナップショット（FR-R07、architecture.md 4.6） */
+  records: DailyRecordRepository;
   /** 状態の見える化（NFR-21） */
   health: HealthDeps;
   /** 画面から変えられる設定 */
@@ -211,6 +215,7 @@ export function createApi({
   dayOptions,
   newId,
   jobs,
+  records,
   health,
   settings,
   settingsDefaults = {},
@@ -282,6 +287,7 @@ export function createApi({
   };
 
   const findCarryover = (day: string) => findCarryoverOf(tasks, day);
+  const dayRecords = createDayRecordStore({ tasks, tags, records });
 
   /**
    * カレンダーの1日分（FR-R04、FR-A09）。件数や有無はここで決め、画面では数えない。
@@ -615,8 +621,33 @@ export function createApi({
         return fail(c, 400, 'INVALID_REQUEST', 'まだ来ていない日の振り返りは保存できません');
       }
       const input = c.req.valid('json');
-      const log = logs.saveReflection({ day: day.data, ...input, at: now().toISOString() });
+      const at = now().toISOString();
+      const log = logs.saveReflection({ day: day.data, ...input, at });
+      // 振り返りを書いた時点の記録を残す（architecture.md 4.6）
+      dayRecords.snapshot(day.data, 'log_saved', at);
       return c.json({ log });
+    })
+
+    /**
+     * 記録を再生成する（FR-R07）。イベントから作り直してスナップショットを上書きし、前後の違いを返す。
+     * FB をもう一度依頼するかは、違いを見て利用者が選ぶ（ここでは依頼しない）
+     */
+    .post('/days/:day/record/regenerate', (c) => {
+      const day = dayParam.safeParse(c.req.param('day'));
+      if (!day.success) return fail(c, 400, 'INVALID_REQUEST', '業務日の形式が正しくありません');
+      if (day.data > toBusinessDay(now(), dayOptions)) {
+        return fail(c, 400, 'INVALID_REQUEST', 'まだ来ていない日の記録は作れません');
+      }
+      const result = dayRecords.regenerate(day.data, now().toISOString());
+      return c.json({
+        day: day.data,
+        // 前のスナップショットがなかった日は、比べるものがない
+        hadSnapshot: result.before !== null,
+        changed: result.changed,
+        diff: result.diff,
+        counts: result.after.counts,
+        hasFeedback: jobs.jobs.listFeedbacks('daily', day.data).length > 0,
+      });
     })
 
     .get('/backlog', (c) => {

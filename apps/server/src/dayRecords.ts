@@ -1,13 +1,28 @@
-import type { DailyLog, DailyLogRepository, Task, TaskRepository } from '@mymind/db';
+import type {
+  DailyLog,
+  DailyLogRepository,
+  DailyRecordRepository,
+  DailyRecordSource,
+  TagRepository,
+  Task,
+  TaskRepository,
+} from '@mymind/db';
 import {
   type BusinessDayOptions,
   blankDaysSince,
+  buildDayRecord,
   carryoverBaseDay,
   carryoverCandidates,
+  type DayRecord,
+  type DayRecordDiff,
+  diffDayRecords,
+  isEmptyDayRecordDiff,
   isReviewTarget,
+  STATUSES,
   summarizeDay,
   toBusinessDay,
 } from '@mymind/domain';
+import { z } from 'zod';
 
 /**
  * 日ごとの記録を、カレンダー（FR-R04）と月次総括の入力（FR-A06）で同じ定義で読む。
@@ -103,3 +118,114 @@ export function listReviewTargets(
     .filter((t) => isReviewTarget(touchedDay(t), today, afterDays))
     .sort((a, b) => a.lastTouchedAt.localeCompare(b.lastTouchedAt));
 }
+
+const named = { taskId: z.string(), title: z.string() };
+const count = z.number().int().min(0);
+
+/**
+ * 保存した記録の形（domain の DayRecord）。DB から読んだ中身は、使う前にこのスキーマで確かめる。
+ * 形が合わない記録（壊れた中身、古い形）は「ない」ものとして扱い、イベントから作り直す
+ */
+const dayRecordSchema: z.ZodType<DayRecord> = z.object({
+  day: z.string(),
+  tasks: z.array(
+    z.object({
+      ...named,
+      parentTitle: z.string().nullable(),
+      status: z.enum(STATUSES),
+      statusDays: z.number().int().min(1),
+      tags: z.array(z.string()),
+    }),
+  ),
+  counts: z.object({ planned: count, done: count, doing: count, paused: count, waiting: count }),
+  summary: z.object({
+    completed: z.array(z.object(named)),
+    started: z.array(z.object({ ...named, isNew: z.boolean(), dayOrdinal: z.number().int() })),
+    changes: z.array(
+      z.discriminatedUnion('kind', [
+        z.object({
+          ...named,
+          kind: z.literal('changed'),
+          from: z.enum(STATUSES),
+          to: z.enum(STATUSES),
+        }),
+        z.object({
+          ...named,
+          kind: z.literal('waiting_continues'),
+          dayOrdinal: z.number().int(),
+        }),
+      ]),
+    ),
+  }),
+});
+
+export type RegenerateResult = {
+  /** 作り直す前のスナップショット。なかった、または読めなかったときは null */
+  before: DayRecord | null;
+  after: DayRecord;
+  /** 前後の違い。前のスナップショットがなければ null（比べるものがない） */
+  diff: DayRecordDiff | null;
+  changed: boolean;
+};
+
+/**
+ * 日ごとの記録のスナップショット（FR-R07、architecture.md 4.6）。
+ * 振り返りの保存と FB の依頼で取り、FB の入力に使う。「記録を再生成」はイベントから作り直して上書きする
+ */
+export function createDayRecordStore(deps: {
+  tasks: TaskRepository;
+  tags: TagRepository;
+  records: DailyRecordRepository;
+}) {
+  const { tasks, tags, records } = deps;
+
+  /** その日の記録を、今のイベントから作る。履歴はタスクごとに問い合わせずにまとめて読む（NFR-18） */
+  const build = (day: string): DayRecord => {
+    const plan = tasks.listPlan(day);
+    const candidates = tasks.listSummaryCandidates(day);
+    const events = tasks.listEventsOfTasks([...plan, ...candidates].map((t) => t.id));
+    const parentIds = [...new Set(plan.flatMap((t) => (t.parentId === null ? [] : [t.parentId])))];
+    const parents = new Map(tasks.findMany(parentIds).map((p) => [p.id, p.title]));
+    const tagsOf = tags.tagsOfTasks(plan.map((t) => t.id));
+    return buildDayRecord(
+      day,
+      plan.map((t) => ({
+        taskId: t.id,
+        title: t.title,
+        parentTitle: t.parentId === null ? null : (parents.get(t.parentId) ?? null),
+        // タグは名前だけを持つ。メモ（noteMd）は持たない（FR-A13）
+        tags: (tagsOf.get(t.id) ?? []).map((g) => g.name),
+        events: events.get(t.id) ?? [],
+      })),
+      candidates.map((t) => ({ taskId: t.id, title: t.title, events: events.get(t.id) ?? [] })),
+    );
+  };
+
+  /** 保存してあるスナップショット。ない、または形が合わなければ null */
+  const read = (day: string): DayRecord | null => {
+    const parsed = dayRecordSchema.safeParse(records.find(day)?.record);
+    return parsed.success ? parsed.data : null;
+  };
+
+  const snapshot = (day: string, source: DailyRecordSource, at: string): DayRecord => {
+    const record = build(day);
+    records.save({ day, record, source, at });
+    return record;
+  };
+
+  return {
+    build,
+    read,
+    /** 今のイベントから作って保存する（同じ日は上書き） */
+    snapshot,
+    /** イベントから作り直して上書きし、前後の違いを返す（FR-R07） */
+    regenerate(day: string, at: string): RegenerateResult {
+      const before = read(day);
+      const after = snapshot(day, 'regenerated', at);
+      const diff = before === null ? null : diffDayRecords(before, after);
+      return { before, after, diff, changed: diff !== null && !isEmptyDayRecordDiff(diff) };
+    },
+  };
+}
+
+export type DayRecordStore = ReturnType<typeof createDayRecordStore>;

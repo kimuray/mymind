@@ -15,6 +15,7 @@ import { join } from 'node:path';
 import { createFakeAgentRunner } from '@mymind/agent';
 import {
   createDailyLogRepository,
+  createDailyRecordRepository,
   createJobRepository,
   createSettingsRepository,
   createTagRepository,
@@ -136,6 +137,7 @@ describe('FR-R09 書き出す日を集める', () => {
     const jobs = createJobRepository({ db, codec: plainCodec });
     const logs = createDailyLogRepository({ db, codec: plainCodec });
     const tags = createTagRepository({ db });
+    const records = createDailyRecordRepository({ db, codec: plainCodec });
     const events = createEventBus();
     const fake = createFakeAgentRunner();
     runner = createJobRunner({
@@ -143,6 +145,7 @@ describe('FR-R09 書き出す日を集める', () => {
       tasks,
       logs,
       tags,
+      records,
       runners: { claude: fake, codex: fake },
       defaultAgent: () => 'claude',
       events,
@@ -159,6 +162,7 @@ describe('FR-R09 書き出す日を集める', () => {
       dayOptions: DAY_OPTIONS,
       newId,
       jobs: { runner, jobs, events },
+      records,
       health: {
         checkDatabase: () => ({ ok: true }),
         databaseFiles: [],

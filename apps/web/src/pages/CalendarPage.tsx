@@ -5,6 +5,7 @@ import {
   type MonthResponse,
   useCancelMonthlySummary,
   useMonth,
+  useRegenerateRecord,
   useRequestMonthlySummary,
 } from '../api/calendar';
 import { useCancelJob, useSetCondition } from '../api/feedback';
@@ -21,6 +22,7 @@ import { MarkdownPreview } from '../components/MarkdownPreview';
 import { MonthlyInputPreview } from '../components/MonthlyInputPreview';
 import { MonthlySummaryPanel, summaryTitle } from '../components/MonthlySummaryPanel';
 import { PageLayout } from '../components/PageLayout';
+import { RecordRegenerate } from '../components/RecordRegenerate';
 import { TagCompletedCounts, TagStatsTable } from '../components/TagStats';
 import { formatDayHeading } from '../day';
 import { useFadeInAfterLoading } from '../loadMotion';
@@ -114,6 +116,9 @@ function DayRecord({ d }: { d: MonthDay }) {
   const request = useRequestFeedback(d.day);
   const cancel = useCancelJob(d.day);
   const setCondition = useSetCondition(d.day);
+  const regenerate = useRegenerateRecord();
+  // 日付を選び直したら、前の日の再生成の結果は出さない
+  const regenerated = regenerate.variables === d.day;
   const settings = useSettings();
   // 選び直すまでは設定の既定のエージェント（FR-A07）。読み込む前は送らず、サーバーに既定を選ばせる
   const [chosenAgent, setChosenAgent] = useState<AgentChoice | null>(null);
@@ -208,6 +213,13 @@ function DayRecord({ d }: { d: MonthDay }) {
             value={agent ?? 'claude'}
             onChange={setChosenAgent}
             disabled={request.isPending || agent === undefined}
+          />
+          <RecordRegenerate
+            result={regenerated ? regenerate.data : undefined}
+            busy={regenerated && regenerate.isPending}
+            failed={regenerated && regenerate.isError}
+            onRegenerate={() => regenerate.mutate(d.day)}
+            onRequestFeedback={requestFeedback}
           />
         </>
       )}
