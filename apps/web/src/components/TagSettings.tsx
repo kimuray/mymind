@@ -7,6 +7,9 @@ import { Loading } from './Loading';
 import { TAG_COLOR_LABELS, TagChip } from './TagChip';
 
 /** 変えられなかった理由。重複はサーバーの判定をそのまま伝える */
+/** 設定のタグの節の ID。詳細ペインとコマンドパレットの「タグを管理」が、ここへ移る（issue 273） */
+export const TAG_SETTINGS_ID = 'settings-tags';
+
 const describeError = (e: unknown) =>
   e instanceof ApiError ? e.message : 'タグを変えられませんでした';
 
@@ -136,8 +139,9 @@ function TagRow({ tag }: { tag: TagWithCount }) {
           </Button>
         </span>
       ) : (
+        // 削除できることに気づけるよう、文字のボタンではなく副ボタンにする（issue 273 の決定）
         <Button
-          kind="text"
+          className="tag-settings-delete"
           aria-label={`「${tag.name}」を削除`}
           onClick={() => setConfirming(true)}
         >
@@ -156,7 +160,11 @@ export function TagSettings() {
   const tags = useTags();
   const list = tags.data?.tags ?? [];
   return (
-    <section className="task-list settings-status neu-raised-2" aria-label="タグ">
+    <section
+      id={TAG_SETTINGS_ID}
+      className="task-list settings-status neu-raised-2"
+      aria-label="タグ"
+    >
       <div className="settings-status-head">
         <h2>タグ</h2>
       </div>
