@@ -1,5 +1,6 @@
 export * from './client';
 export * from './dailyLogRepository';
+export * from './dailyRecordRepository';
 export * from './jobRepository';
 export * from './notificationRepository';
 export * from './schema';

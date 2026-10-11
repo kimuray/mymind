@@ -9,16 +9,15 @@ import {
   type MonthlySummaryData,
   RECENT_DAYS,
 } from '@mymind/agent';
-import type { DailyLogRepository, JobRepository, TagRepository, TaskRepository } from '@mymind/db';
-import {
-  dayOrdinalSince,
-  daysOfMonth,
-  type JobKind,
-  previousDays,
-  statusSinceDay,
-  tagStats,
-} from '@mymind/domain';
-import { createDayRecordReader, hasReflection } from './dayRecords';
+import type {
+  DailyLogRepository,
+  DailyRecordRepository,
+  JobRepository,
+  TagRepository,
+  TaskRepository,
+} from '@mymind/db';
+import { type DayRecord, daysOfMonth, type JobKind, previousDays, tagStats } from '@mymind/domain';
+import { createDayRecordReader, createDayRecordStore, hasReflection } from './dayRecords';
 
 export type AgentInputDeps = {
   tasks: TaskRepository;
@@ -26,6 +25,8 @@ export type AgentInputDeps = {
   logs: DailyLogRepository;
   /** タグ（FR-A13）。入力にはタグの名前だけを入れる */
   tags: TagRepository;
+  /** 日ごとの記録のスナップショット（FR-R07）。日次 FB の入力はここから作る */
+  records: DailyRecordRepository;
   /** 日次 FB のプロンプト（prompts/daily-feedback.md） */
   promptText: string;
   /** 月次総括のプロンプト（prompts/monthly-summary.md） */
@@ -48,39 +49,25 @@ export function createAgentInputBuilder({
   jobs,
   logs,
   tags,
+  records,
   promptText,
   monthlyPromptText,
   today,
 }: AgentInputDeps) {
-  /** その日の計画と直近の日から、日次 FB の元のデータを集める。件数と日数はここで数える（FR-A10） */
-  const dailyData = (day: string): DailyFeedbackData => {
-    const plan = tasks.listPlan(day);
-    const parentIds = [...new Set(plan.flatMap((t) => (t.parentId === null ? [] : [t.parentId])))];
-    const parents = new Map(tasks.findMany(parentIds).map((p) => [p.id, p.title]));
-    const count = (s: string) => plan.filter((t) => t.status === s).length;
-    const tagsOf = tags.tagsOfTasks(plan.map((t) => t.id));
-    return {
-      day,
-      tasks: plan.map((t) => ({
-        title: t.title,
-        status: t.status,
-        parentTitle: t.parentId === null ? null : (parents.get(t.parentId) ?? null),
-        // 作成のイベントは必ずあるので、見つからないのはその日に作られた場合と同じに扱う
-        statusDays: dayOrdinalSince(statusSinceDay(tasks.listEvents(t.id)) ?? day, day),
-        // タグは名前だけを渡す。メモ（noteMd）は渡さない（FR-A13）
-        tags: (tagsOf.get(t.id) ?? []).map((g) => g.name),
-      })),
-      counts: {
-        planned: plan.length,
-        done: count('done'),
-        doing: count('doing'),
-        paused: count('paused'),
-        waiting: count('waiting'),
-      },
-      reflection: reflectionOf(day),
-      recent: previousDays(day, RECENT_DAYS).map(recentDay),
-    };
-  };
+  const dayRecords = createDayRecordStore({ tasks, tags, records });
+
+  /**
+   * その日の記録と直近の日から、日次 FB の元のデータを集める。
+   * タスクの状態、件数、日数は記録（domain の buildDayRecord）で数えたものを使う（FR-A10）
+   */
+  const dailyData = (record: DayRecord): DailyFeedbackData => ({
+    day: record.day,
+    // タスクの ID は送らない（エージェントには要らない）
+    tasks: record.tasks.map(({ taskId: _, ...task }) => task),
+    counts: record.counts,
+    reflection: reflectionOf(record.day),
+    recent: previousDays(record.day, RECENT_DAYS).map(recentDay),
+  });
 
   /** その日の振り返り。保存していないか、どちらの欄も空なら送らない */
   const reflectionOf = (day: string): DailyFeedbackData['reflection'] => {
@@ -188,7 +175,16 @@ export function createAgentInputBuilder({
   };
 
   return {
-    build(kind: JobKind, period: string): BuildInputResult {
+    /**
+     * 入力を組み立てる。日次 FB の記録は、record が 'snapshot' なら保存してあるスナップショットを使い
+     * （なければ今のイベントから作る）、'events' なら今のイベントから作る。
+     * 依頼の前のプレビュー（FR-A12）は 'events'（依頼したときに保存されるものと同じ）、実行のときは 'snapshot'
+     */
+    build(
+      kind: JobKind,
+      period: string,
+      options: { record: 'events' | 'snapshot' } = { record: 'events' },
+    ): BuildInputResult {
       const now = today();
       if (kind === 'monthly_summary') {
         // まだ始まっていない月の総括は作れない。月の途中なら、今日までの途中経過にする
@@ -201,7 +197,15 @@ export function createAgentInputBuilder({
           input: buildMonthlySummaryInput(monthlyPromptText, monthlyData(period, now)),
         };
       }
-      return { ok: true, kind, input: buildDailyFeedbackInput(promptText, dailyData(period)) };
+      const record =
+        (options.record === 'snapshot' ? dayRecords.read(period) : null) ??
+        dayRecords.build(period);
+      return { ok: true, kind, input: buildDailyFeedbackInput(promptText, dailyData(record)) };
+    },
+
+    /** FB を依頼したときの記録を保存する（architecture.md 4.6） */
+    snapshotForFeedback(day: string, at: string): void {
+      dayRecords.snapshot(day, 'feedback_requested', at);
     },
   };
 }

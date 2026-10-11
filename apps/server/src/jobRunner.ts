@@ -7,6 +7,7 @@ import {
 } from '@mymind/agent';
 import type {
   DailyLogRepository,
+  DailyRecordRepository,
   Job,
   JobRepository,
   JobSuccess,
@@ -26,6 +27,8 @@ export type JobRunnerDeps = {
   logs: DailyLogRepository;
   /** タグ（入力にタグの名前を入れる、FR-A13） */
   tags: TagRepository;
+  /** 日ごとの記録のスナップショット（FR-R07）。FB を依頼したときに保存し、実行のときに使う */
+  records: DailyRecordRepository;
   /** 選べるエージェントごとのアダプタ（FR-A07） */
   runners: AgentRunners;
   /** 依頼でエージェントを指定しなかったときに使うもの（設定の既定のエージェント） */
@@ -61,6 +64,7 @@ export function createJobRunner(deps: JobRunnerDeps) {
     jobs,
     logs: deps.logs,
     tags: deps.tags,
+    records: deps.records,
     promptText: deps.prompt.text,
     monthlyPromptText: deps.monthlyPrompt.text,
     today: deps.today,
@@ -139,7 +143,8 @@ export function createJobRunner(deps: JobRunnerDeps) {
       );
       return;
     }
-    const built = inputs.build(job.kind, job.period);
+    // 依頼したときの記録（スナップショット）から入力を作る（architecture.md 4.6）
+    const built = inputs.build(job.kind, job.period, { record: 'snapshot' });
     if (!built.ok) {
       jobs.fail(job.id, built.message, iso());
       return;
@@ -269,6 +274,8 @@ export function createJobRunner(deps: JobRunnerDeps) {
         agent: deps.runners[agent].name,
         createdAt: iso(),
       });
+      // 依頼した時点の記録を残す。実行までの間にタスクが変わっても、依頼したときの内容で FB を作る
+      if (kind === 'daily_feedback') inputs.snapshotForFeedback(period, job.createdAt);
       publish(job.id);
       kick();
       return { job, created: true };

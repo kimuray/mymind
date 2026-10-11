@@ -1,5 +1,6 @@
 export * from './businessDay';
 export * from './carryover';
+export * from './dayRecord';
 export * from './daySummary';
 export * from './jobs';
 export * from './morningPlan';

@@ -44,11 +44,19 @@ function stateAt(events: readonly TaskEvent[], isIncluded: (e: TaskEvent) => boo
   return state;
 }
 
+/**
+ * その日の終わりの状態と、その状態になった業務日（FR-R07 の記録、FR-D07 のまとめ）。
+ * 同じ日に何度変わっても、その日の最後の状態を使う。その日にまだないタスクは null
+ */
+export function stateAtEndOfDay(events: readonly TaskEvent[], day: string) {
+  return stateAt(events, (e) => e.day <= day);
+}
+
 /** その日の記録のまとめを作る。件数や日数はここで数え、画面や AI には数えさせない */
 export function summarizeDay(day: string, sources: readonly SummarySource[]): DaySummary {
   const summary: DaySummary = { completed: [], started: [], changes: [] };
   for (const { taskId, title, events } of sources) {
-    const end = stateAt(events, (e) => e.day <= day);
+    const end = stateAtEndOfDay(events, day);
     if (end === null) continue;
     // その日に作ったタスクは、未着手から始まったものとして比べる
     const start = stateAt(events, (e) => e.day < day)?.status ?? 'todo';
