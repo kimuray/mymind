@@ -123,6 +123,7 @@ export function TodayPage() {
         today={day}
         place="today"
         onTransition={(to) => changeStatus(selected, to)}
+        onEditTitle={() => setEditingId(selected.id)}
         onMove={(to) => moveTask(selected, to)}
         childTasks={allTasks.filter((t) => t.parentId === selected.id)}
         onAddChild={(title) =>
