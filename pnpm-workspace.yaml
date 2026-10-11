@@ -3,9 +3,14 @@ packages:
   - "packages/*"
 
 # インストール時のスクリプトを許可する依存関係。Electron は本体（バイナリ）をこのスクリプトで落とす（ADR-0015）。
-# ほかの依存関係（esbuild など）の扱いは issue 015 で決める
 onlyBuiltDependencies:
   - electron
+
+# インストール時のスクリプトを実行しないと明示する依存関係（issue 015）。
+# esbuild の postinstall は、プラットフォーム別のバイナリ（@esbuild/<platform>）を確かめるだけで、
+# バイナリは optionalDependencies として入るので、実行しなくても drizzle-kit と tsx は動く
+ignoredBuiltDependencies:
+  - esbuild
 
 # 推移的な依存関係の脆弱性の修正版に上げる（NFR-26）。親（vitest、@vitest/coverage-v8）が修正版に追いついたら外す
 overrides:
