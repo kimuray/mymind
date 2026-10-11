@@ -114,7 +114,7 @@ for (const screen of [
   { name: 'バックログ', path: '/backlog', inputLabel: 'バックログに追加' },
 ] as const) {
   test.describe(`FR-T09 ${screen.name}の詳細ペインからタイトルを編集する`, () => {
-    test('「名前を編集」を押すと、一覧の行で編集でき、詳細ペインの見出しも変わる', async ({
+    test('「タスク名の編集」を押すと、一覧の行で編集でき、詳細ペインの見出しも変わる', async ({
       page,
     }) => {
       const before = `詳細から直す前 ${screen.name}`;
@@ -123,7 +123,7 @@ for (const screen of [
       await addAndSelect(page, screen.inputLabel, before);
 
       await detail(page)
-        .getByRole('button', { name: /^名前を編集/ })
+        .getByRole('button', { name: /^タスク名の編集/ })
         .click();
       const editor = page.getByLabel('タイトルを編集');
       await expect(editor).toBeFocused();
@@ -141,7 +141,7 @@ for (const screen of [
       await addAndSelect(page, screen.inputLabel, title);
 
       await detail(page)
-        .getByRole('button', { name: /^名前を編集/ })
+        .getByRole('button', { name: /^タスク名の編集/ })
         .click();
       const editor = page.getByLabel('タイトルを編集');
       await editor.fill('途中まで書いた名前');

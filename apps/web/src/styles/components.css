@@ -465,7 +465,7 @@
   gap: var(--space-2);
 }
 
-/* 「名前を編集」は状態の行の右端に、控えめに置く（DESIGN.md 4.12） */
+/* 「タスク名の編集」は状態の行の右端に、控えめに置く（DESIGN.md 4.12） */
 .task-detail-edit {
   margin-left: auto;
   gap: var(--space-2);

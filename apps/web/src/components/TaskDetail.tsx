@@ -120,7 +120,7 @@ export function TaskDetail({
           )}
           {/* キーを知らなくても編集を始められるようにする。編集そのものは一覧の行で行う（issue 271） */}
           <Button kind="text" className="task-detail-edit" onClick={onEditTitle}>
-            <span className="task-detail-edit-label">名前を編集</span>
+            <span className="task-detail-edit-label">タスク名の編集</span>
             <Kbd>{EDIT_KEY}</Kbd>
           </Button>
         </div>
