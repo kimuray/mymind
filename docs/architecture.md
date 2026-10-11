@@ -253,7 +253,7 @@ CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 
 ### 画面の URL
 
-画面の URL は次のとおりです（issue 011 の暫定決定。定義は `apps/web/src/router.tsx`）。画面の移動はブラウザの履歴に積み、戻る操作で前の画面に戻れます。詳細ペインで選んでいる項目は URL に含めません。
+画面の URL は次のとおりです（issue 011 の暫定決定。定義は `apps/web/src/router.tsx`）。画面の移動はブラウザの履歴に積み、戻る操作で前の画面に戻れます。詳細ペインで選んでいるタスクは URL に含めません（カレンダーで選んだ日付だけは、`/calendar/:ym/:day` として URL に含める）。
 
 | 画面 | URL |
 |---|---|
