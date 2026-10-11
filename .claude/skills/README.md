@@ -7,6 +7,5 @@
 | [issue-pick](./issue-pick/SKILL.md) | 次に取り組む課題を選ぶとき |
 | [issue-work](./issue-work/SKILL.md) | 特定の issue に着手して PR まで進めるとき |
 | [autopilot](./autopilot/SKILL.md) | 人の確認を待たずに、issue を連続して片付けるとき |
-| [issue-inventory](./issue-inventory/SKILL.md) | 開いている issue が今の状態に合っているかを確かめるとき |
 
 Codex など Claude Code 以外のエージェントは、スキルとして自動では読み込まれません。AGENTS.md の指示に従い、必要な SKILL.md を直接読んでください。
