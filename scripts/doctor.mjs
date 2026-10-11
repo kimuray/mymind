@@ -70,7 +70,18 @@ check('推奨', 'ディスクの暗号化（FileVault、ADR-0009）', () => {
 });
 check('推奨', 'コミット前のフック（issue 015）', () => {
   // 有効化は人が一度だけ行う。.git/hooks はサンドボックスから書き込めないので、エージェントは入れられない
-  const installed = join(root, '.git/hooks/pre-commit');
+  let hooksPath = '';
+  try {
+    hooksPath = run('git', ['-C', root, 'config', '--get', 'core.hooksPath']);
+  } catch {
+    // 設定がないと git config は終了コード 1 で終わる。これが想定どおりの状態
+  }
+  if (hooksPath) {
+    throw new Error(
+      `core.hooksPath（${hooksPath}）を外してください（git config --unset core.hooksPath）。.git/hooks のフックが使われません`,
+    );
+  }
+  const installed = resolve(root, run('git', ['-C', root, 'rev-parse', '--git-path', 'hooks/pre-commit']));
   const source = join(root, 'scripts/git-hooks/pre-commit');
   const how = 'cp scripts/git-hooks/pre-commit .git/hooks/pre-commit を実行してください';
   if (!existsSync(installed)) throw new Error(`入っていません（${how}）`);
