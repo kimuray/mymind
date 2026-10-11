@@ -159,6 +159,7 @@ export function BacklogPage() {
       today={today}
       place="backlog"
       onTransition={(to) => changeStatus(selected, to)}
+      onEditTitle={() => setEditingId(selected.id)}
       onMove={(to) => moveTask(selected, to)}
       childTasks={allTasks.filter((t) => t.parentId === selected.id)}
       onAddChild={(title) => create.mutate({ title, parentId: selected.id, ...screen })}
