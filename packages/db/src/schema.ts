@@ -108,6 +108,18 @@ export const conditions = sqliteTable('conditions', {
   updatedAt: text('updated_at').notNull(),
 });
 
+/** 記録のスナップショットを取ったきっかけ（architecture.md 4.6） */
+export const DAILY_RECORD_SOURCES = ['log_saved', 'feedback_requested', 'regenerated'] as const;
+
+/** 日ごとの記録のスナップショット（FR-R07、architecture.md 4.6）。FB の入力にはこれを使う */
+export const dailyRecords = sqliteTable('daily_records', {
+  day: text('day').primaryKey(), // 業務日
+  // タスクの名前を含み、エージェントの入力になるので、機微データとして SensitiveCodec を通す（ADR-0009）
+  recordJson: text('record_json').notNull(),
+  generatedAt: text('generated_at').notNull(),
+  source: text('source', { enum: DAILY_RECORD_SOURCES }).notNull(),
+});
+
 /** 送った通知（FR-N01〜N04、architecture.md 9.1）。同じ種類・同じ業務日は2回送らない */
 export const notificationsSent = sqliteTable(
   'notifications_sent',

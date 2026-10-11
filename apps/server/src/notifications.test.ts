@@ -1,6 +1,7 @@
 import { createFakeAgentRunner } from '@mymind/agent';
 import {
   createDailyLogRepository,
+  createDailyRecordRepository,
   createJobRepository,
   createNotificationRepository,
   createSettingsRepository,
@@ -66,6 +67,7 @@ beforeEach(() => {
     tasks,
     logs,
     tags: createTagRepository({ db }),
+    records: createDailyRecordRepository({ db, codec: plainCodec }),
     runners: { claude: createFakeAgentRunner(), codex: createFakeAgentRunner() },
     defaultAgent: () => 'claude',
     events,
@@ -93,6 +95,7 @@ beforeEach(() => {
     settings: createSettingsRepository({ db }),
     logs,
     tags: createTagRepository({ db }),
+    records: createDailyRecordRepository({ db, codec: plainCodec }),
   });
   app = createApp({ ports: [PORT], sessionToken: TOKEN }, api);
   const adapter: NotificationAdapter = {

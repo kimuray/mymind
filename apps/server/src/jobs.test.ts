@@ -7,6 +7,7 @@ import {
 } from '@mymind/agent';
 import {
   createDailyLogRepository,
+  createDailyRecordRepository,
   createJobRepository,
   createSettingsRepository,
   createTagRepository,
@@ -59,6 +60,7 @@ function setup(
     tasks,
     logs: createDailyLogRepository({ db, codec: plainCodec }),
     tags: createTagRepository({ db }),
+    records: createDailyRecordRepository({ db, codec: plainCodec }),
     runners: options.runners ?? { claude: agent, codex: agent },
     defaultAgent: options.defaultAgent ?? (() => 'claude'),
     events,
@@ -88,6 +90,7 @@ function setup(
       settings: createSettingsRepository({ db }),
       logs: createDailyLogRepository({ db, codec: plainCodec }),
       tags: createTagRepository({ db }),
+      records: createDailyRecordRepository({ db, codec: plainCodec }),
     }),
   );
   return { runner, agent, tasks, events, app, db };
@@ -427,6 +430,7 @@ describe('NFR-16 エージェントの入出力のログ', () => {
       tasks,
       logs: createDailyLogRepository({ db, codec: plainCodec }),
       tags: createTagRepository({ db }),
+      records: createDailyRecordRepository({ db, codec: plainCodec }),
       runners: { claude: invalid, codex: invalid },
       defaultAgent: () => 'claude',
       events: createEventBus(),
@@ -470,6 +474,7 @@ describe('NFR-16 エージェントの入出力のログ', () => {
       tasks: createTaskRepository({ db, codec: plainCodec, newEventId: newId }),
       logs: createDailyLogRepository({ db, codec: plainCodec }),
       tags: createTagRepository({ db }),
+      records: createDailyRecordRepository({ db, codec: plainCodec }),
       runners: { claude: failing, codex: failing },
       defaultAgent: () => 'claude',
       events: createEventBus(),
@@ -514,6 +519,7 @@ describe('NFR-15 日次 FB に送る入力', () => {
       tasks,
       logs: createDailyLogRepository({ db, codec: plainCodec }),
       tags: createTagRepository({ db }),
+      records: createDailyRecordRepository({ db, codec: plainCodec }),
       runners: { claude: recording, codex: recording },
       defaultAgent: () => 'claude',
       events: createEventBus(),
