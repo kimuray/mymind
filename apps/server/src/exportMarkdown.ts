@@ -1,8 +1,8 @@
-import { chmodSync, existsSync, mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { type DailyFeedback, dailyFeedbackSchema } from '@mymind/agent';
 import type { DailyLogRepository, JobRepository, TaskRepository } from '@mymind/db';
-import { summarizeDayOf } from './dayRecords';
+import { summarizeDay } from '@mymind/domain';
 
 // 記録を Markdown のファイルとして書き出す（FR-R09）。アプリをやめても、書き出したファイルだけで記録を読めるようにする
 
@@ -72,10 +72,40 @@ export function renderDayMarkdown(d: ExportDay): string {
 
 export type ExportDeps = { tasks: TaskRepository; logs: DailyLogRepository; jobs: JobRepository };
 
-/** 書き出す日を、古い順に集める。計画・振り返り・日次 FB・調子のどれかがある日が対象 */
+/**
+ * 日ごとの、完了したタスクの名前。完了の定義は振り返りの冒頭のまとめ（FR-D07）と同じで、
+ * その日に完了にし、その日の終わりにも完了のタスク。計画に入れずに完了したタスクも含む。
+ * 履歴は、日ごとに問い合わせずに1回でまとめて読む（NFR-18）
+ */
+function completedByDay(tasks: TaskRepository): Map<string, string[]> {
+  const completions = tasks.listCompletions();
+  const ids = [...new Set(completions.map((c) => c.taskId))];
+  const titles = new Map(tasks.findMany(ids).map((t) => [t.id, t.title]));
+  const events = tasks.listEventsOfTasks(ids);
+  const idsOfDay = new Map<string, string[]>();
+  for (const { taskId, day } of completions) {
+    idsOfDay.set(day, [...(idsOfDay.get(day) ?? []), taskId]);
+  }
+  return new Map(
+    [...idsOfDay].map(([day, taskIds]) => [
+      day,
+      summarizeDay(
+        day,
+        taskIds.map((taskId) => ({
+          taskId,
+          title: titles.get(taskId) ?? '',
+          events: events.get(taskId) ?? [],
+        })),
+      ).completed.map((t) => t.title),
+    ]),
+  );
+}
+
+/** 書き出す日を、古い順に集める。完了・振り返り・日次 FB・調子のどれかがある日が対象 */
 export function collectExportDays({ tasks, logs, jobs }: ExportDeps): ExportDay[] {
+  const completed = completedByDay(tasks);
   const days = [
-    ...new Set([...tasks.listPlanDays(), ...logs.listDays(), ...jobs.listFeedbackDays()]),
+    ...new Set([...completed.keys(), ...logs.listDays(), ...jobs.listFeedbackDays()]),
   ].sort();
   return days
     .map((day): ExportDay => {
@@ -87,7 +117,7 @@ export function collectExportDays({ tasks, logs, jobs }: ExportDeps): ExportDay[
       const condition = jobs.findCondition(day);
       return {
         day,
-        completed: summarizeDayOf(tasks, day).completed.map((t) => t.title),
+        completed: completed.get(day) ?? [],
         reflection: hasReflection
           ? { thoughtsMd: log.thoughtsMd, learningMd: log.learningMd }
           : null,
@@ -106,15 +136,25 @@ export function collectExportDays({ tasks, logs, jobs }: ExportDeps): ExportDay[
 
 /**
  * 日ごとのファイル（YYYY-MM-DD.md）を書く。振り返りと FB は機微データなので、本人だけが読めるようにする（NFR-16）。
- * ディレクトリがなければ 700 で作り、既にあるディレクトリの権限は変えない。同じ名前のファイルは上書きする
+ * ディレクトリがなければ 700 で作り、既にあるディレクトリの権限は変えない。同じ名前のファイルは置き換える。
+ * 600 で作った一時ファイルに書いてから、同じディレクトリの中で名前を変えて置き換える。
+ * 既にあるファイルに直接書くと、それがシンボリックリンクだったときにリンク先を書き換えてしまい、
+ * 権限の緩いファイルだったときは、権限を直すまで中身が読める状態になるため
  */
 export function writeExport(dir: string, days: readonly ExportDay[]): string[] {
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true, mode: 0o700 });
   return days.map((d) => {
     const path = join(dir, `${d.day}.md`);
-    writeFileSync(path, renderDayMarkdown(d), { mode: 0o600 });
-    // mode は新しく作るときにしか効かないので、上書きしたファイルも 600 にそろえる
-    chmodSync(path, 0o600);
+    const temporary = join(dir, `.${d.day}.md.${process.pid}.tmp`);
+    // 前回の中断で残った一時ファイル（やリンク）があれば消す。wx は、既にあるパスには書かない
+    rmSync(temporary, { force: true });
+    try {
+      writeFileSync(temporary, renderDayMarkdown(d), { mode: 0o600, flag: 'wx' });
+      renameSync(temporary, path);
+    } catch (e) {
+      rmSync(temporary, { force: true });
+      throw e;
+    }
     return path;
   });
 }

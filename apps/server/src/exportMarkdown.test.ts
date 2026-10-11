@@ -1,4 +1,15 @@
-import { chmodSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync } from 'node:fs';
+import {
+  chmodSync,
+  lstatSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  readFileSync,
+  rmSync,
+  statSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createFakeAgentRunner } from '@mymind/agent';
@@ -200,6 +211,26 @@ describe('FR-R09 書き出す日を集める', () => {
     expect(days[2]?.condition).toEqual({ userLevel: 4, aiLevel: null });
   });
 
+  it('計画に入れずに完了したタスクだけがある日も集める', async () => {
+    // バックログに作って、そのまま着手して完了にする（計画・振り返り・FB・調子はない）
+    let { task } = await send('POST', '/tasks', { title: '歯医者の予約', expectedDay: today() });
+    for (const to of ['doing', 'done']) {
+      ({ task } = await send('POST', `/tasks/${task.id}/transition`, {
+        to,
+        expectedVersion: task.version,
+        expectedDay: today(),
+      }));
+    }
+    expect(collectExportDays(deps)).toMatchObject([
+      { day: '2026-09-22', completed: ['歯医者の予約'] },
+    ]);
+  });
+
+  it('完了を取り消したタスクは、その日の完了に入れない', async () => {
+    await addTask('経費精算', 'doing', 'done', 'doing');
+    expect(collectExportDays(deps)).toEqual([]);
+  });
+
   it('計画はあるが、完了も振り返りも FB もない日は集めない', async () => {
     await addTask('企画書', 'doing');
     expect(collectExportDays(deps)).toEqual([]);
@@ -250,6 +281,26 @@ describe('FR-R09 NFR-16 ファイルに書く', () => {
     chmodSync(root, 0o755);
     writeExport(root, [full]);
     expect(mode(root)).toBe(0o755);
+  });
+
+  it('書き出し先のファイルがシンボリックリンクでも、リンク先は書き換えない', () => {
+    const outside = join(root, 'outside.txt');
+    writeFileSync(outside, '書き換えてはいけない', { mode: 0o644 });
+    const dir = join(root, 'out');
+    mkdirSync(dir);
+    symlinkSync(outside, join(dir, '2026-09-23.md'));
+
+    writeExport(dir, [full]);
+
+    expect(readFileSync(outside, 'utf8')).toBe('書き換えてはいけない');
+    expect(mode(outside)).toBe(0o644);
+    expect(lstatSync(join(dir, '2026-09-23.md')).isSymbolicLink()).toBe(false);
+    expect(readFileSync(join(dir, '2026-09-23.md'), 'utf8')).toBe(renderDayMarkdown(full));
+  });
+
+  it('一時ファイルを残さない', () => {
+    writeExport(root, [full]);
+    expect(readdirSync(root)).toEqual(['2026-09-23.md']);
   });
 
   it('書き出し直すと同じ名前のファイルを上書きし、権限も 600 にそろえる', () => {
