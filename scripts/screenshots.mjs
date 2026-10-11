@@ -51,7 +51,9 @@ try {
   for (const screen of screens) {
     // settings を書いた画面は、その設定にしてから撮り、撮ったら元に戻す（棚卸しの対象を出す、など）
     if (screen.settings !== undefined) await settings(screen.settings);
-    await page.goto(base + screen.path.replace('{ym}', ym), { waitUntil: 'networkidle' });
+    await page.goto(base + screen.path.replace('{ym}', ym).replace('{day}', businessDay()), {
+      waitUntil: 'networkidle',
+    });
     if (screen.select !== undefined) {
       await page.locator('.task-title', { hasText: screen.select }).first().click();
       await page.waitForTimeout(300);
