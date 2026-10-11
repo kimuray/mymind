@@ -16,7 +16,7 @@ mymind は、日々のTODOと振り返りを1か所で扱い、ローカルのAI
 | [design/](./design/) | デザインの正本（Figma）と参照手順 | 画面を実装するとき |
 | `issue-numbers.json` | GitHub に登録する前の issue の番号と、GitHub の番号の対応表。文書中の「issue 002」は GitHub の #11 を指す（HTML では自動でリンクになる） | 古い番号の issue を探すとき |
 | [../.claude/rules/](../.claude/rules/README.md) | コーディング・アーキテクチャ・テスト・UI・作業の進め方・自律モードのルール（エージェントのハーネスの一部） | 実装するとき |
-| [../.claude/skills/](../.claude/skills/README.md) | エージェントの手順（issue-pick / issue-work / autopilot） | 課題に着手するとき |
+| [../.claude/skills/](../.claude/skills/README.md) | エージェントの手順（issue-pick / issue-work / autopilot / issue-inventory） | 課題に着手するとき |
 | [../prompts/](../prompts/) | FB の方針とプロンプト | FB に関わる変更をするとき |
 
 ## 文書の更新ルール

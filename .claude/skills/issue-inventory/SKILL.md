@@ -5,14 +5,17 @@ description: 「issue の棚卸しをして」と言われたとき、着手で�
 
 # issue の棚卸し
 
-開いている issue が、今のリポジトリの状態に合っているかを確かめて報告してください。ラベルの変更、コメント、issue を閉じることは、報告に対してユーザーの了承を得てから行います。自律モードの中で実行した場合も、閉じることは提案にとどめます（`type:decision` と `status:needs-human` は人が閉じる）。
+開いている issue が、今のリポジトリの状態に合っているかを確かめて報告してください。ラベルの変更、コメント、issue を閉じることは、報告に対してユーザーの了承を得てから行います。
+
+自律モード（`.claude/rules/autonomy.md`）の中で実行した場合は、確認を待たずに、ラベルの変更（解消した `status:blocked`・`status:needs-decision` を `status:ready` にするなど）と、根拠のコメントまで進めます。ただし、`type:decision` と `status:needs-human` の issue を閉じることは人に任せ、報告で提案するだけにします。文書を直す PR は、通常の issue と同じ手順（`issue-work`）で作ります。
 
 ## 1. 集める
 
 `gh` は単独で実行し、絞り込みは `--json` と `--jq` で行う（CLAUDE.md）。
 
 1. 開いている issue を、ラベル、マイルストーン、更新日、本文の `依存:` の行と一緒に取得する
-   `gh issue list --state open --limit 200 --json number,title,labels,milestone,updatedAt,body`
+   `gh issue list --state open --limit 1000 --json number,title,labels,milestone,updatedAt,body`
+   取得した件数が `--limit` と同じなら取りこぼしがあるので、上限を上げて取り直す
 2. 各 issue の本文と、最後の2件ほどのコメントを読む（保留の理由、人へのお願い、選択肢は、たいていコメントにある）
 3. `依存:` の行と、コメントに出てくる issue・PR の状態を確かめる（`gh issue view <番号> --json state`、`gh pr view <番号> --json state,mergedAt`）
 4. 開いている PR を確かめる（`gh pr list --state open`）。issue に紐づく PR が止まっていないか見る
@@ -44,4 +47,4 @@ issue に書かれた「やること」「完了条件」と、保留にした�
 | 人の作業待ち | 頼んだ作業が残っている | 何をすればよいかを1行で |
 | そのままでよい | 将来の検討など、今は動かなくてよい | なし |
 
-最後に、ユーザーの了承を得て行う操作（ラベルの変更、コメント、文書の修正 PR）をまとめて示し、「実行してよいですか？」と確認して終える。了承された操作だけを実行し、閉じた issue に依存する issue があれば `依存:` の行と照らしてラベルを更新する。
+自律モードでないときは、最後に、ユーザーの了承を得て行う操作（ラベルの変更、コメント、文書の修正 PR）をまとめて示し、「実行してよいですか？」と確認して終える。了承された操作だけを実行し、閉じた issue に依存する issue があれば `依存:` の行と照らしてラベルを更新する。
