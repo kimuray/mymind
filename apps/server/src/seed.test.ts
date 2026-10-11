@@ -13,6 +13,7 @@ import {
   MANUAL_CONDITION_OFFSET,
   NO_FEEDBACK_OFFSET,
   SEED_DAYS,
+  type SeedTargetFs,
   seedDatabase,
   shiftDay,
 } from './seed';
@@ -94,11 +95,24 @@ describe('開発用のシードデータ（issue 017）', () => {
 });
 
 describe('シードを入れる先の確認（issue 017）', () => {
-  const home = '/Users/me';
-  const none = () => false;
+  const where = { home: '/Users/me', repoRoot: '/work/mymind' };
+  /** links はシンボリックリンク（リンク → 実体）、dirs は中身のあるディレクトリ、files は既にあるファイル */
+  const fsWith = ({
+    links = {},
+    dirs = {},
+    files = [],
+  }: {
+    links?: Record<string, string>;
+    dirs?: Record<string, string[]>;
+    files?: string[];
+  } = {}): SeedTargetFs => ({
+    realpath: (path) => links[path] ?? (path in dirs || path === '/Users/me' ? path : undefined),
+    list: (path) => dirs[links[path] ?? path],
+    exists: (path) => files.includes(path),
+  });
 
   it('MYMIND_DATA_DIR を指定していなければ断る', () => {
-    expect(checkSeedTarget({}, home, none)).toEqual({
+    expect(checkSeedTarget({}, where, fsWith())).toEqual({
       ok: false,
       error: { kind: 'data_dir_missing' },
     });
@@ -106,22 +120,62 @@ describe('シードを入れる先の確認（issue 017）', () => {
 
   it('実データのディレクトリとその中は断る', () => {
     for (const dir of ['/Users/me/.mymind', '/Users/me/.mymind/', '/Users/me/.mymind/sub']) {
-      expect(checkSeedTarget({ MYMIND_DATA_DIR: dir }, home, none)).toMatchObject({
+      expect(checkSeedTarget({ MYMIND_DATA_DIR: dir }, where, fsWith())).toMatchObject({
         ok: false,
         error: { kind: 'real_data_dir' },
       });
     }
   });
 
-  it('名前が似ているだけの別のディレクトリは使える', () => {
-    expect(checkSeedTarget({ MYMIND_DATA_DIR: '/Users/me/.mymind-dev' }, home, none)).toEqual({
+  it('実データのディレクトリを指すシンボリックリンクも断る', () => {
+    const fs = fsWith({
+      links: { '/tmp/data': '/Users/me/.mymind' },
+      dirs: { '/Users/me/.mymind': ['mymind.db'] },
+    });
+    expect(checkSeedTarget({ MYMIND_DATA_DIR: '/tmp/data' }, where, fs)).toMatchObject({
+      ok: false,
+      error: { kind: 'real_data_dir' },
+    });
+  });
+
+  it('名前が似ているだけの、まだないディレクトリは使える', () => {
+    expect(checkSeedTarget({ MYMIND_DATA_DIR: '/Users/me/.mymind-dev' }, where, fsWith())).toEqual({
       ok: true,
       dataDir: '/Users/me/.mymind-dev',
     });
   });
 
+  it('リポジトリの外の、中身のあるディレクトリは断る', () => {
+    const fs = fsWith({ dirs: { '/Users/me/Documents': ['report.pdf'] } });
+    expect(checkSeedTarget({ MYMIND_DATA_DIR: '/Users/me/Documents' }, where, fs)).toMatchObject({
+      ok: false,
+      error: { kind: 'not_empty_outside_repo' },
+    });
+  });
+
+  it('リポジトリの外でも、空のディレクトリは使える', () => {
+    const fs = fsWith({ dirs: { '/Users/me/empty': [] } });
+    expect(checkSeedTarget({ MYMIND_DATA_DIR: '/Users/me/empty' }, where, fs)).toMatchObject({
+      ok: true,
+    });
+  });
+
+  it('リポジトリの中なら、ほかのファイルがあっても使える（./.data）', () => {
+    const fs = fsWith({
+      dirs: { '/work/mymind': ['package.json'], '/work/mymind/.data': ['reviews'] },
+    });
+    expect(checkSeedTarget({ MYMIND_DATA_DIR: '/work/mymind/.data' }, where, fs)).toEqual({
+      ok: true,
+      dataDir: '/work/mymind/.data',
+    });
+  });
+
   it('DB が既にあれば上書きせずに断る', () => {
-    expect(checkSeedTarget({ MYMIND_DATA_DIR: '/work/.data' }, home, () => true)).toMatchObject({
+    const fs = fsWith({
+      dirs: { '/work/mymind': [], '/work/mymind/.data': ['mymind.db'] },
+      files: ['/work/mymind/.data/mymind.db'],
+    });
+    expect(checkSeedTarget({ MYMIND_DATA_DIR: '/work/mymind/.data' }, where, fs)).toMatchObject({
       ok: false,
       error: { kind: 'database_exists' },
     });

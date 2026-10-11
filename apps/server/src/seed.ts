@@ -1,4 +1,4 @@
-import { relative, resolve } from 'node:path';
+import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:path';
 import { createFakeAgentRunner } from '@mymind/agent';
 import {
   createDailyLogRepository,
@@ -309,25 +309,55 @@ export async function seedDatabase({
 export type SeedTargetError =
   | { kind: 'data_dir_missing' }
   | { kind: 'real_data_dir'; dataDir: string }
-  | { kind: 'database_exists'; path: string };
+  | { kind: 'database_exists'; path: string }
+  | { kind: 'not_empty_outside_repo'; dataDir: string };
+
+/** シードを入れる先を確かめるのに使う、ファイルシステムの読み取り（テストで差し替える） */
+export type SeedTargetFs = {
+  /** シンボリックリンクを解決したパス。ないパスは undefined */
+  realpath: (path: string) => string | undefined;
+  /** ディレクトリの中身の名前。ないディレクトリは undefined */
+  list: (path: string) => string[] | undefined;
+  exists: (path: string) => boolean;
+};
+
+const isInside = (parent: string, child: string) => {
+  const rel = relative(parent, child);
+  return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel));
+};
+
+/** まだないパスは、あるところまでをシンボリックリンクを解決して、残りをつなげる */
+function realpathOf(path: string, fs: SeedTargetFs): string {
+  const real = fs.realpath(path);
+  if (real !== undefined) return real;
+  const parent = dirname(path);
+  return parent === path ? path : join(realpathOf(parent, fs), basename(path));
+}
 
 /**
- * シードを入れてよいデータディレクトリかを確かめる。実データ（~/.mymind）に触れないよう、
- * MYMIND_DATA_DIR の明示を求め、~/.mymind の中は断る。既にある DB は上書きしない
+ * シードを入れてよいデータディレクトリかを確かめる（issue 017）。
+ * - 実データ（~/.mymind）に触れないよう、MYMIND_DATA_DIR の明示を求め、~/.mymind の中は断る。
+ *   シンボリックリンクで指している場合も、解決したパスで比べて断る
+ * - 誤って別の用途のディレクトリを指定しても書き換えないよう、リポジトリの外では、まだないか空のディレクトリだけを使う
+ * - 既にある DB は上書きしない
  */
 export function checkSeedTarget(
   env: Record<string, string | undefined>,
-  home: string,
-  hasFile: (path: string) => boolean,
+  { home, repoRoot }: { home: string; repoRoot: string },
+  fs: SeedTargetFs,
 ): { ok: true; dataDir: string } | { ok: false; error: SeedTargetError } {
   const dir = env['MYMIND_DATA_DIR'];
   if (dir === undefined || dir === '') return { ok: false, error: { kind: 'data_dir_missing' } };
   const dataDir = resolve(dir);
-  const fromReal = relative(resolve(home, '.mymind'), dataDir);
-  if (fromReal === '' || !fromReal.startsWith('..')) {
+  const realData = realpathOf(resolve(home, '.mymind'), fs);
+  if (isInside(resolve(home, '.mymind'), dataDir) || isInside(realData, realpathOf(dataDir, fs))) {
     return { ok: false, error: { kind: 'real_data_dir', dataDir } };
   }
   const path = databasePath(dataDir);
-  if (hasFile(path)) return { ok: false, error: { kind: 'database_exists', path } };
+  if (fs.exists(path)) return { ok: false, error: { kind: 'database_exists', path } };
+  const entries = fs.list(dataDir) ?? [];
+  if (entries.length > 0 && !isInside(realpathOf(repoRoot, fs), realpathOf(dataDir, fs))) {
+    return { ok: false, error: { kind: 'not_empty_outside_repo', dataDir } };
+  }
   return { ok: true, dataDir };
 }
