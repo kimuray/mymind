@@ -21,6 +21,22 @@ const dayBefore = (day: string) => {
 
 const thoughts = (page: Page) => page.getByRole('textbox', { name: '思考の整理' });
 
+/**
+ * 「思考の整理」の欄に、サーバーが持っているその日の内容が出ていることを確かめる。
+ * E2E は1つの DB を共有していて、ほかのテストが今日の振り返りを書いていることがあるので、空とは決めない
+ */
+async function expectSavedThoughts(page: Page, day: string) {
+  const saved = await page.evaluate(async (day) => {
+    const res = await fetch(`/api/days/${day}`);
+    return ((await res.json()) as { log: { thoughtsMd: string } | null }).log?.thoughtsMd ?? '';
+  }, day);
+  await expect(thoughts(page)).toBeVisible();
+  // 空の欄には、書き方の案内（placeholder）が出る
+  if (saved === '') await expect(thoughts(page)).toHaveText('一行だけでも大丈夫です');
+  // 入力欄は行ごとに分かれるので、最初の行で比べる
+  else await expect(thoughts(page)).toContainText(saved.split('\n')[0] ?? '');
+}
+
 test.describe('FR-D06 NFR-14 振り返りの画面を開いたまま業務日をまたぐ', () => {
   test('今日の画面へ移ると、前の日に書いた内容は残らず、今日の内容になる', async ({ page }) => {
     const today = serverDay();
@@ -41,8 +57,8 @@ test.describe('FR-D06 NFR-14 振り返りの画面を開いたまま業務日を
     await dialog.getByRole('button', { name: '今日の画面へ移る' }).click();
 
     await expect(page.getByRole('heading', { level: 1 })).toContainText(monthDay(today));
-    await expect(thoughts(page)).toBeVisible();
-    await expect(thoughts(page)).toHaveText('一行だけでも大丈夫です');
+    await expectSavedThoughts(page, today);
+    await expect(thoughts(page)).not.toContainText(text);
   });
 
   test('保存していない文字があっても、今日の画面へ移ると今日の欄は空になる', async ({ page }) => {
@@ -61,8 +77,8 @@ test.describe('FR-D06 NFR-14 振り返りの画面を開いたまま業務日を
     await dialog.getByRole('button', { name: '今日の画面へ移る' }).click();
 
     await expect(page.getByRole('heading', { level: 1 })).toContainText(monthDay(today));
-    await expect(thoughts(page)).toBeVisible();
-    await expect(thoughts(page)).toHaveText('一行だけでも大丈夫です');
+    await expectSavedThoughts(page, today);
+    await expect(thoughts(page)).not.toContainText(text);
   });
 
   test('ほかの画面で日をまたいでから振り返りを開いても、今日の欄は前の日の内容にならない', async ({
@@ -93,7 +109,8 @@ test.describe('FR-D06 NFR-14 振り返りの画面を開いたまま業務日を
     await page.clock.runFor(1000);
 
     await expect(page.getByRole('heading', { level: 1 })).toContainText(monthDay(today));
-    await expect(thoughts(page)).toHaveText('一行だけでも大丈夫です');
+    await expectSavedThoughts(page, today);
+    await expect(thoughts(page)).not.toContainText(text);
   });
 });
 
@@ -117,6 +134,7 @@ test.describe('FR-D06 過去の日の振り返りから今日の振り返りへ�
 
     await expect(page).toHaveURL(/\/reflection$/);
     await expect(page.getByRole('heading', { level: 1 })).toContainText(monthDay(today));
+    await expectSavedThoughts(page, today);
     await expect(thoughts(page)).not.toContainText(text);
   });
 });
