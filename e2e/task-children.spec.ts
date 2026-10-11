@@ -107,3 +107,48 @@ for (const screen of [
     });
   });
 }
+
+// キーを知らなくても、詳細ペインからタイトルの編集を始められる（FR-T09、issue 271）
+for (const screen of [
+  { name: '今日', path: '/', inputLabel: '今日のタスクを追加' },
+  { name: 'バックログ', path: '/backlog', inputLabel: 'バックログに追加' },
+] as const) {
+  test.describe(`FR-T09 ${screen.name}の詳細ペインからタイトルを編集する`, () => {
+    test('「名前を編集」を押すと、一覧の行で編集でき、詳細ペインの見出しも変わる', async ({
+      page,
+    }) => {
+      const before = `詳細から直す前 ${screen.name}`;
+      const after = `詳細から直した後 ${screen.name}`;
+      await page.goto(screen.path);
+      await addAndSelect(page, screen.inputLabel, before);
+
+      await detail(page)
+        .getByRole('button', { name: /^名前を編集/ })
+        .click();
+      const editor = page.getByLabel('タイトルを編集');
+      await expect(editor).toBeFocused();
+      await expect(editor).toHaveValue(before);
+      await editor.fill(after);
+      await editor.press('Enter');
+
+      await expect(row(page, after)).toBeVisible();
+      await expect(detail(page).getByRole('heading', { name: after })).toBeVisible();
+    });
+
+    test('Esc で編集をやめると、名前は変わらない', async ({ page }) => {
+      const title = `詳細から直さない ${screen.name}`;
+      await page.goto(screen.path);
+      await addAndSelect(page, screen.inputLabel, title);
+
+      await detail(page)
+        .getByRole('button', { name: /^名前を編集/ })
+        .click();
+      const editor = page.getByLabel('タイトルを編集');
+      await editor.fill('途中まで書いた名前');
+      await editor.press('Escape');
+
+      await expect(row(page, title)).toBeVisible();
+      await expect(row(page, '途中まで書いた名前')).toHaveCount(0);
+    });
+  });
+}

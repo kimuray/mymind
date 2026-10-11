@@ -9,12 +9,17 @@ import {
 import { useRef, useState } from 'react';
 import { type ListTask, type TaskEventJson, useTaskEvents } from '../api/tasks';
 import { formatShortDay } from '../day';
+import { KEY_BINDINGS } from '../keymap';
 import { useListMotion } from '../listMotion';
 import { AddTaskInput } from './AddTaskInput';
 import { Button } from './Button';
+import { Kbd } from './Kbd';
 import { StatusBadge } from './StatusBadge';
 import { TaskMemo } from './TaskMemo';
 import { TaskTags } from './TaskTags';
+
+/** タイトルの編集のキー（キーマップの定義から出す。割り当てを変えても表示がずれない） */
+const EDIT_KEY = (KEY_BINDINGS.find((b) => b.action === 'list.edit')?.keys[0] ?? '').toUpperCase();
 
 /** 詳細ペインの主な操作。状態ごとに、次にとる自然な操作を1つ選ぶ */
 const PRIMARY: Readonly<Record<Status, { to: Status; label: string }>> = {
@@ -49,6 +54,8 @@ type TaskDetailProps = {
   /** 今日の画面では「明日へ」「バックログへ」、バックログでは「今日へ」「明日へ」を出す */
   place: 'today' | 'backlog';
   onTransition: (to: Status) => void;
+  /** タイトルの編集を始める（FR-T09）。E キーと同じく、一覧の行で編集する */
+  onEditTitle: () => void;
   onMove: (to: 'today' | 'tomorrow' | 'backlog') => void;
   /** 同じ画面にある、このタスクの子 */
   childTasks: readonly ListTask[];
@@ -74,6 +81,7 @@ export function TaskDetail({
   today,
   place,
   onTransition,
+  onEditTitle,
   onMove,
   childTasks,
   onAddChild,
@@ -110,6 +118,11 @@ export function TaskDetail({
               {STATUS_LABELS[task.status]}から{dayOrdinalSince(task.statusSince, today)}日目
             </span>
           )}
+          {/* キーを知らなくても編集を始められるようにする。編集そのものは一覧の行で行う（issue 271） */}
+          <Button kind="text" className="task-detail-edit" onClick={onEditTitle}>
+            <span className="task-detail-edit-label">名前を編集</span>
+            <Kbd>{EDIT_KEY}</Kbd>
+          </Button>
         </div>
       </header>
 
