@@ -1,0 +1,12 @@
+#!/bin/sh
+# コミットの前に Biome と型チェックを実行する（issue 015）。Claude Code 以外のエージェント（Codex など）と
+# 人のコミットにも、Claude Code のフックと同じ関門を通すため。
+#
+# このファイルは .git/hooks/pre-commit に人がコピーして有効にする（docs/operations.md）。
+# core.hooksPath でリポジトリの中を指さないのは、サンドボックスから書き込める場所にフックを置くと、
+# サンドボックスの外で実行される git push の pre-push フックを仕込めてしまうため。
+# push 前のテストは CI に任せる。
+set -eu
+
+pnpm exec biome check --staged --no-errors-on-unmatched
+pnpm typecheck
