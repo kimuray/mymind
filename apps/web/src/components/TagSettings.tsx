@@ -1,5 +1,5 @@
 import { normalizeTagName, TAG_COLORS, type TagColor } from '@mymind/domain';
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { ApiError } from '../api/client';
 import { type TagWithCount, useDeleteTag, useTags, useUpdateTag } from '../api/tags';
 import { Button } from './Button';
@@ -7,6 +7,12 @@ import { Loading } from './Loading';
 import { TAG_COLOR_LABELS, TagChip } from './TagChip';
 
 /** 変えられなかった理由。重複はサーバーの判定をそのまま伝える */
+/** 設定のタグの節の ID。詳細ペインとコマンドパレットの「タグを管理」が、ここへ移る（issue 273） */
+export const TAG_SETTINGS_ID = 'settings-tags';
+
+/** 「タグを管理」から開いたあと、節の位置を合わせ直す時間（ほかの節の読み込みが終わるまで） */
+const ALIGN_WINDOW_MS = 3000;
+
 const describeError = (e: unknown) =>
   e instanceof ApiError ? e.message : 'タグを変えられませんでした';
 
@@ -136,8 +142,9 @@ function TagRow({ tag }: { tag: TagWithCount }) {
           </Button>
         </span>
       ) : (
+        // 削除できることに気づけるよう、文字のボタンではなく副ボタンにする（issue 273 の決定）
         <Button
-          kind="text"
+          className="tag-settings-delete"
           aria-label={`「${tag.name}」を削除`}
           onClick={() => setConfirming(true)}
         >
@@ -155,8 +162,35 @@ function TagRow({ tag }: { tag: TagWithCount }) {
 export function TagSettings() {
   const tags = useTags();
   const list = tags.data?.tags ?? [];
+  const section = useRef<HTMLElement>(null);
+  // 「タグを管理」から来たとき（URL が #settings-tags）は、この節を画面の先頭に出す（issue 273）。
+  // 上にある節（状態など）は後から読み込まれて高さが変わるので、開いてからしばらくは、
+  // 高さが変わるたびに合わせ直す。利用者が自分で動かしたら、そこでやめる
+  useEffect(() => {
+    const el = section.current;
+    const container = el?.parentElement;
+    if (el === null || container == null) return;
+    if (window.location.hash !== `#${TAG_SETTINGS_ID}`) return;
+    const align = () => el.scrollIntoView({ block: 'start' });
+    const observer = new ResizeObserver(align);
+    observer.observe(container);
+    const stop = () => observer.disconnect();
+    const timer = setTimeout(stop, ALIGN_WINDOW_MS);
+    const userEvents = ['wheel', 'pointerdown', 'keydown'] as const;
+    for (const type of userEvents) window.addEventListener(type, stop, { once: true });
+    return () => {
+      stop();
+      clearTimeout(timer);
+      for (const type of userEvents) window.removeEventListener(type, stop);
+    };
+  }, []);
   return (
-    <section className="task-list settings-status neu-raised-2" aria-label="タグ">
+    <section
+      ref={section}
+      id={TAG_SETTINGS_ID}
+      className="task-list settings-status neu-raised-2"
+      aria-label="タグ"
+    >
       <div className="settings-status-head">
         <h2>タグ</h2>
       </div>

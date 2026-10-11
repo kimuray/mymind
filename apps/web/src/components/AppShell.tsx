@@ -17,6 +17,7 @@ import { Kbd } from './Kbd';
 import { Mame } from './Mame';
 import { NotificationBanner } from './NotificationBanner';
 import { ShortcutHelp } from './ShortcutHelp';
+import { TAG_SETTINGS_ID } from './TagSettings';
 
 // 業務日の切り替え（FR-D01）。設定を読む API ができるまでは初期値を使う
 const DAY_OPTIONS = { timeZone: 'Asia/Tokyo', dayStartHour: 5 };
@@ -151,6 +152,13 @@ export function AppShell() {
         keys: c.keys,
         run: () => runAction(c.action),
       })),
+      // タグの名前と色の変更、削除は設定の画面にある。キーの割り当てはなく、パレットから開く（issue 273 の決定）
+      {
+        id: 'app:manage-tags',
+        label: 'タグを管理（設定）',
+        keys: [],
+        run: () => void navigate({ to: '/settings', hash: TAG_SETTINGS_ID }),
+      },
       ...pagePaletteCommands().map((c) => ({
         id: `page:${c.id}`,
         label: c.label,

@@ -119,3 +119,43 @@ test.describe('FR-T13 設定の画面でのタグの管理', () => {
     await other.close();
   });
 });
+
+// タグの管理が設定にあることに気づけるよう、詳細ペインとコマンドパレットに入口を置く（issue 273 の決定 B）
+test.describe('FR-T13 タグの管理への入口', () => {
+  test('詳細ペインの「タグを管理」から、設定のタグの節へ移る', async ({ page }) => {
+    const title = unique('入口のタスク');
+    const tag = unique('入口');
+    await addTaskWithTag(page, title, tag);
+
+    await detail(page).getByRole('link', { name: 'タグを管理' }).click();
+
+    await expect(page).toHaveURL(/\/settings#settings-tags$/);
+    // 節の見出しが、スクロールせずに見える（タグの行は、数が多いと下に続く）
+    await expect(tagSection(page).getByRole('heading', { name: 'タグ' })).toBeInViewport();
+    await expect(nameInput(page, tag)).toBeVisible();
+  });
+
+  test('コマンドパレットの「タグを管理」から、設定のタグの節へ移る', async ({ page }) => {
+    await page.goto('/');
+    await page.locator('body').click();
+    await page.keyboard.press('ControlOrMeta+k');
+    const palette = page.getByRole('dialog', { name: 'コマンドパレット' });
+    await page.keyboard.type('タグを管理');
+    await expect(palette.getByRole('option', { selected: true })).toHaveText(/^タグを管理/);
+    await page.keyboard.press('Enter');
+
+    await expect(page).toHaveURL(/\/settings#settings-tags$/);
+    await expect(tagSection(page).getByRole('heading', { name: 'タグ' })).toBeInViewport();
+  });
+
+  test('設定の削除は、文字だけでなくボタンの面で出す', async ({ page }) => {
+    const tag = unique('面で出す');
+    await addTaskWithTag(page, unique('削除のボタンのタスク'), tag);
+    await page.goto('/settings');
+    const remove = tagRow(page, tag).getByRole('button', { name: `「${tag}」を削除` });
+    await expect(remove).toHaveText('削除');
+    // 副ボタン（DESIGN.md 4.4）：下線の文字ではなく、浮き出た面
+    await expect(remove).toHaveCSS('text-decoration-line', 'none');
+    await expect(remove).not.toHaveCSS('box-shadow', 'none');
+  });
+});

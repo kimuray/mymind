@@ -637,6 +637,20 @@
   padding: 2px var(--space-2) 2px var(--space-3);
 }
 
+/* 見出しの右に、設定のタグの節への入口を控えめに置く（DESIGN.md 4.22） */
+.task-tags-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.task-tags-manage {
+  font-size: 12px;
+  color: var(--accent);
+  text-decoration: underline;
+}
+
 .task-tags-input {
   height: 36px;
   padding: 0 var(--space-4);
@@ -2795,11 +2809,11 @@
 }
 
 .tag-settings-row > .tag-chip {
-  width: 8em;
+  width: 7em;
 }
 
 .tag-settings-name {
-  width: 200px;
+  width: 180px;
   min-height: 36px;
   padding: 0 var(--space-3);
   border: var(--input-border);
@@ -2821,6 +2835,15 @@
   color: var(--ink-3);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
+}
+
+/* 行の入力欄と高さをそろえた副ボタン（DESIGN.md 4.22） */
+.tag-settings-delete {
+  height: 36px;
+  /* 行の右端に寄せる。幅が足りずに折り返したときも、右端に置く */
+  margin-left: auto;
+  padding: 0 var(--space-3);
+  font-size: 13px;
 }
 
 .tag-settings-confirm {

@@ -5,11 +5,13 @@ import {
   TAG_COLORS,
   type TagColor,
 } from '@mymind/domain';
+import { Link } from '@tanstack/react-router';
 import { useId, useState } from 'react';
 import { ApiError } from '../api/client';
 import { PENDING_TAG_PREFIX, tagKeyOf, useTags } from '../api/tags';
 import type { ListTask } from '../api/tasks';
 import { TAG_COLOR_LABELS, TagChip } from './TagChip';
+import { TAG_SETTINGS_ID } from './TagSettings';
 
 /** 詳細ペインのタグの入力欄。リストの # キーでここへ移る（DESIGN.md 5.2） */
 export const TASK_TAG_INPUT_ID = 'task-tag-input';
@@ -79,7 +81,13 @@ export function TaskTags({
 
   return (
     <section className="task-tags" aria-label="タグ">
-      <h3 className="text-label">タグ</h3>
+      <div className="task-tags-head">
+        <h3 className="text-label">タグ</h3>
+        {/* 名前と色の変更、削除は設定の画面で行う。その入口をここに置く（issue 273 の決定） */}
+        <Link to="/settings" hash={TAG_SETTINGS_ID} className="task-tags-manage">
+          タグを管理
+        </Link>
+      </div>
       {task.tags.length > 0 && (
         <ul className="tag-chips">
           {task.tags.map((t) => (
