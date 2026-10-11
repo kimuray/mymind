@@ -2797,11 +2797,11 @@
 }
 
 .tag-settings-row > .tag-chip {
-  width: 8em;
+  width: 7em;
 }
 
 .tag-settings-name {
-  width: 200px;
+  width: 180px;
   min-height: 36px;
   padding: 0 var(--space-3);
   border: var(--input-border);
@@ -2828,7 +2828,9 @@
 /* 行の入力欄と高さをそろえた副ボタン（DESIGN.md 4.22） */
 .tag-settings-delete {
   height: 36px;
-  padding: 0 var(--space-4);
+  /* 行の右端に寄せる。幅が足りずに折り返したときも、右端に置く */
+  margin-left: auto;
+  padding: 0 var(--space-3);
   font-size: 13px;
 }
 
