@@ -325,6 +325,19 @@ export function createTaskRepository({ db, codec, newEventId }: TaskRepositoryDe
         .map((r) => r.day);
     },
 
+    /**
+     * 完了にしたイベントの、タスクと業務日の組を、記録した順に重ねずに返す（FR-R09 の書き出し）。
+     * 計画に入れずに完了したタスクも含む。その日の終わりにも完了だったかは、使う側が履歴から確かめる
+     */
+    listCompletions(): { taskId: string; day: string }[] {
+      return db
+        .selectDistinct({ taskId: taskEvents.taskId, day: taskEvents.day })
+        .from(taskEvents)
+        .where(eq(taskEvents.toStatus, 'done'))
+        .orderBy(asc(taskEvents.day), asc(taskEvents.taskId))
+        .all();
+    },
+
     /** 計画に行がある業務日（持ち越しの基準日を求めるため、architecture.md 4.5） */
     listPlanDays(): string[] {
       return db

@@ -237,6 +237,17 @@ export function createJobRepository({ db, codec }: { db: Database; codec: Sensit
       return saved;
     },
 
+    /** 日次 FB か調子がある業務日を、古い順に重ねずに返す（FR-R09 の書き出し） */
+    listFeedbackDays(): string[] {
+      const withFeedback = db
+        .selectDistinct({ day: feedbacks.period })
+        .from(feedbacks)
+        .where(eq(feedbacks.scope, 'daily'))
+        .all();
+      const withCondition = db.select({ day: conditions.day }).from(conditions).all();
+      return [...new Set([...withFeedback, ...withCondition].map((row) => row.day))].sort();
+    },
+
     findCondition(day: string): Condition | undefined {
       const row = db.select().from(conditions).where(eq(conditions.day, day)).get();
       if (row === undefined) return undefined;

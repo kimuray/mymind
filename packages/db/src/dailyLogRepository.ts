@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { asc, eq } from 'drizzle-orm';
 import type { Database } from './client';
 import { dailyLogs } from './schema';
 import type { SensitiveCodec } from './sensitiveCodec';
@@ -65,6 +65,16 @@ export function createDailyLogRepository({ db, codec }: { db: Database; codec: S
         .values({ day, planConfirmedAt: at, updatedAt: at })
         .onConflictDoUpdate({ target: dailyLogs.day, set: { planConfirmedAt: at } })
         .run();
+    },
+
+    /** 記録（振り返りか、計画の確定）がある業務日を、古い順に返す（FR-R09 の書き出し） */
+    listDays(): string[] {
+      return db
+        .select({ day: dailyLogs.day })
+        .from(dailyLogs)
+        .orderBy(asc(dailyLogs.day))
+        .all()
+        .map((row) => row.day);
     },
   };
 }
