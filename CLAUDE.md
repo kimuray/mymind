@@ -18,5 +18,5 @@
 - 権限は `.claude/settings.json` で管理しています。依存関係の追加、push、PR の作成、エージェントの起動は確認を求められます
 - 複数のパッケージにまたがる変更や、要件・設計に関わる変更は、先に計画を示してから着手してください
 - ルールは `.claude/rules/` にあります（coding / architecture / testing / ui / workflow / autonomy）。実装の前に、対象に合うものを読んでください
-- 手順はスキルとして `.claude/skills/` にあります。次の課題を選ぶときは `issue-pick`、着手して PR まで進めるときは `issue-work`、人の確認を待たずに連続して進めるときは `autopilot` を使ってください
+- 手順はスキルとして `.claude/skills/` にあります。次の課題を選ぶときは `issue-pick`、着手して PR まで進めるときは `issue-work`、人の確認を待たずに連続して進めるときは `autopilot`、開いている issue が今の状態に合っているかを確かめるときは `issue-inventory` を使ってください
 - 画面を実装するときは、Figma「mymind view design」（fileKey `VLCoEFLm1ujvYPq8xyEQFg`）の該当フレームを `get_design_context` で確認します。どのフレームを見るかは `docs/design/README.md` にあります
