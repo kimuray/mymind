@@ -59,6 +59,7 @@ e2e/            Playwright の E2E テスト
 |---|---|
 | `pnpm install` | 依存関係のインストール |
 | `pnpm dev` | 開発サーバーの起動（偽のエージェントを使う場合は `MYMIND_AGENT=fake`） |
+| `pnpm export <ディレクトリ>` | 記録を、業務日ごとの Markdown のファイルに書き出す（FR-R09。手順は `docs/operations.md`）。開発では `MYMIND_DATA_DIR=./.data` を付ける |
 | `pnpm lint` / `pnpm lint:fix` | Biome による lint と format の確認 / 自動修正 |
 | `pnpm typecheck` | 全パッケージの型チェック |
 | `pnpm deps:check` | パッケージ間の依存方向の検証 |
