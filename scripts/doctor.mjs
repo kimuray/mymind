@@ -1,6 +1,6 @@
 // 開発環境の前提を確認する。エージェントは作業の開始・再開時に実行する（.claude/rules/autonomy.md）。
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 
@@ -66,6 +66,17 @@ check('推奨', 'ディスクの暗号化（FileVault、ADR-0009）', () => {
     );
   }
   if (!/FileVault is On/.test(status)) throw new Error(`有効になっていません（${status}）`);
+  return '有効';
+});
+check('推奨', 'コミット前のフック（issue 015）', () => {
+  // 有効化は人が一度だけ行う。.git/hooks はサンドボックスから書き込めないので、エージェントは入れられない
+  const installed = join(root, '.git/hooks/pre-commit');
+  const source = join(root, 'scripts/git-hooks/pre-commit');
+  const how = 'cp scripts/git-hooks/pre-commit .git/hooks/pre-commit を実行してください';
+  if (!existsSync(installed)) throw new Error(`入っていません（${how}）`);
+  if (readFileSync(installed, 'utf8') !== readFileSync(source, 'utf8')) {
+    throw new Error(`scripts/git-hooks/pre-commit と内容が違います（${how}）`);
+  }
   return '有効';
 });
 check('任意', 'Docker Compose（コンテナで開発する場合）', () =>
