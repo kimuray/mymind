@@ -2,6 +2,7 @@ import { basename, dirname, isAbsolute, join, relative, resolve } from 'node:pat
 import { createFakeAgentRunner } from '@mymind/agent';
 import {
   createDailyLogRepository,
+  createDailyRecordRepository,
   createJobRepository,
   createSettingsRepository,
   createTagRepository,
@@ -63,6 +64,7 @@ export async function seedDatabase({
   const tasks = createTaskRepository({ db, codec: plainCodec, newEventId: newId });
   const jobs = createJobRepository({ db, codec: plainCodec });
   const logs = createDailyLogRepository({ db, codec: plainCodec });
+  const records = createDailyRecordRepository({ db, codec: plainCodec });
   const tags = createTagRepository({ db });
   const events = createEventBus();
   const fake = createFakeAgentRunner();
@@ -71,6 +73,7 @@ export async function seedDatabase({
     tasks,
     logs,
     tags,
+    records,
     runners: { claude: fake, codex: fake },
     defaultAgent: () => 'claude',
     events,
@@ -87,6 +90,7 @@ export async function seedDatabase({
     dayOptions,
     newId,
     jobs: { runner, jobs, events },
+    records,
     health: {
       checkDatabase: () => ({ ok: true }),
       databaseFiles: [],
