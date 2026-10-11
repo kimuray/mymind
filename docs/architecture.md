@@ -251,6 +251,24 @@ CREATE TABLE settings (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 | 通知のバナー | `GET /api/notifications/pending`、`DELETE /api/notifications/pending/:kind` | 画面のバナーに出す通知の一覧と、閉じる操作（FR-N05、9.2） |
 | ブラウザの通知の許可 | `PUT /api/notifications/browser` | 画面が `Notification.permission` を知らせる（FR-N05、9.2） |
 
+### 画面の URL
+
+画面の URL は次のとおりです（issue 011 の暫定決定。定義は `apps/web/src/router.tsx`）。画面の移動はブラウザの履歴に積み、戻る操作で前の画面に戻れます。詳細ペインで選んでいる項目は URL に含めません。
+
+| 画面 | URL |
+|---|---|
+| 今日 | `/` |
+| 朝の計画 | `/morning` |
+| 振り返り | `/reflection`（今日）、`/reflection/:day`（過去の日） |
+| バックログ | `/backlog`。タスクを選んでいないときの詳細ペインに棚卸しを出す（DESIGN.md 4.15） |
+| タイムライン | `/timeline`。表示する期間は URL に含めず、画面の中で切り替える |
+| カレンダー | `/calendar/:ym`、日付を選んだ状態は `/calendar/:ym/:day` |
+| 設定 | `/settings` |
+
+通知から開く画面は、朝が `/morning`、夜が `/reflection`、棚卸しが `/backlog` です（9.2）。
+
+暫定決定と違うところが2つあります。タイムラインは期間を `?from=&to=` で URL に含める案でしたが、含めていません。棚卸しの通知は `/backlog?review=stale` で開く案でしたが、棚卸しはバックログでタスクを選んでいないときに必ず出るので、`/backlog` で開いています。
+
 ## 7. エージェント連携
 
 ### 7.1 流れ
