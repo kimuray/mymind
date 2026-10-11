@@ -1,5 +1,6 @@
 import {
   createDailyLogRepository,
+  createDailyRecordRepository,
   createJobRepository,
   createTaskRepository,
   MIGRATIONS_FOLDER,
@@ -31,6 +32,7 @@ async function seeded() {
     tasks: createTaskRepository({ db, codec: plainCodec, newEventId: () => 'unused' }),
     logs: createDailyLogRepository({ db, codec: plainCodec }),
     jobs: createJobRepository({ db, codec: plainCodec }),
+    records: createDailyRecordRepository({ db, codec: plainCodec }),
   };
 }
 
@@ -66,6 +68,14 @@ describe('開発用のシードデータ（issue 017）', () => {
       expect(jobs.listFeedbacks('daily', day).length, day).toBe(skipped ? 0 : 1);
       if (!skipped) expect(jobs.findCondition(day)?.aiLevel, day).toBe(3);
     }
+  });
+
+  it('FR-R07 振り返りを書いた日には、記録のスナップショットがある', async () => {
+    const { records } = await seeded();
+    // FB をもらった日は FB の依頼で、もらわなかった日は振り返りの保存で取ったものが残る
+    expect(records.find(shiftDay(TODAY, -2))?.source).toBe('feedback_requested');
+    expect(records.find(shiftDay(TODAY, -NO_FEEDBACK_OFFSET))?.source).toBe('log_saved');
+    expect(records.find(shiftDay(TODAY, -BLANK_OFFSETS[0]))).toBeUndefined();
   });
 
   it('調子を手で直した日が1日ある', async () => {
