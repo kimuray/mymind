@@ -22,6 +22,7 @@ import {
   planMorning,
   planMove,
   planReviewDecision,
+  previousDays,
   REVIEW_DECISIONS,
   rulesOnMoveToBacklog,
   rulesOnStatusChange,
@@ -403,13 +404,19 @@ export function createApi({
     return { ok: true as const, task: result.value[0] ?? task, suggestions: outcome.suggestions };
   };
 
+  /**
+   * 前日の FB（FR-D02）。前の業務日にもらった FB だけを返し、なければ null。
+   * それより前の FB は返さない（朝の計画に何日も前の FB が出続けるのを避ける、issue 272 の決定）
+   */
   const previousFeedback = (day: string) => {
-    const latest = jobs.jobs.latestDailyFeedbackBefore(day);
+    const yesterday = previousDays(day, 1)[0];
+    if (yesterday === undefined) return null;
+    const latest = jobs.jobs.latestFeedback('daily', yesterday);
     if (latest === undefined) return null;
     return {
-      day: latest.period,
+      day: yesterday,
       feedback: toDailyFeedback(latest),
-      condition: jobs.jobs.findCondition(latest.period) ?? null,
+      condition: jobs.jobs.findCondition(yesterday) ?? null,
     };
   };
 
@@ -430,7 +437,7 @@ export function createApi({
         feedback: toDailyFeedback(jobs.jobs.listFeedbacks('daily', day.data)[0]),
         condition: jobs.jobs.findCondition(day.data) ?? null,
         job: jobs.jobs.latestJob('daily_feedback', day.data) ?? null,
-        // 前日の FB：最後に FB をもらった日のもの（architecture.md 4.5、FR-D02）
+        // 前日の FB：前の業務日にもらったものだけ（architecture.md 4.5、FR-D02）
         previous: previousFeedback(day.data),
         // 振り返りの冒頭の記録のまとめ（FR-D07）。件数や日数はここで数える
         summary: summarizeDayOf(tasks, day.data),

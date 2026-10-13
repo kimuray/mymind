@@ -81,6 +81,37 @@ test.describe('FR-D02 前日の FB と調子', () => {
       .click();
     await expect(panel.getByText(/手動で修正（AIの判定：/)).toBeVisible();
   });
+
+  test('前の日より前にもらった FB は、朝の計画に出さない', async ({ page }) => {
+    await page.goto('/morning');
+    // 3日前の FB をもらっておく。前の日の FB の有無は、ほかのテストとデータを共有していて決められない
+    const requested = await callApi(page, '/api/jobs', {
+      kind: 'daily_feedback',
+      period: businessDay(3),
+    });
+    expect(requested.status).toBe(202);
+    const jobId = (requested.body['job'] as { id: string }).id;
+    await expect
+      .poll(async () =>
+        page.evaluate(
+          async (id) =>
+            ((await (await fetch(`/api/jobs/${id}`)).json()) as { job: { status: string } }).job
+              .status,
+          jobId,
+        ),
+      )
+      .toBe('succeeded');
+
+    await page.reload();
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+    // 日付の付いた見出し（「9月18日のフィードバック」）では出さない。出すなら昨日のものだけ
+    await expect(page.getByRole('region', { name: /月\d+日のフィードバック/ })).toHaveCount(0);
+    const previous = await page.evaluate(async (day) => {
+      const res = await fetch(`/api/days/${day}`);
+      return ((await res.json()) as { previous: { day: string } | null }).previous;
+    }, businessDay(0));
+    expect(previous === null || previous.day === businessDay(1)).toBe(true);
+  });
 });
 
 test.describe('FR-D03 FR-D04 FR-D05 朝の計画', () => {

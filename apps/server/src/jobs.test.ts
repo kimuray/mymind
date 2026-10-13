@@ -826,7 +826,11 @@ describe('FR-A03 FR-A04 FR-D02 その日の FB と調子、前日の FB', () => 
     feedback: { id: string; content: { next_action: string } | null } | null;
     condition: { aiLevel: number | null; userLevel: number | null } | null;
     job: { status: string } | null;
-    previous: { day: string; feedback: { id: string } | null } | null;
+    previous: {
+      day: string;
+      feedback: { id: string } | null;
+      condition: { aiLevel: number | null } | null;
+    } | null;
   };
   const getDay = async (app: ReturnType<typeof setup>['app'], day: string) =>
     (await (await app.request(`/api/days/${day}`, { headers })).json()) as DayJson;
@@ -876,14 +880,31 @@ describe('FR-A03 FR-A04 FR-D02 その日の FB と調子、前日の FB', () => 
     expect(await getDay(app, DAY)).toMatchObject({ feedback: null, job: { status: 'failed' } });
   });
 
-  it('前日の FB は、空白日をはさんでも最後にもらった日のもの', async () => {
+  it('FR-D02 前日の FB は、前の業務日にもらったものを返す', async () => {
     const { app, runner } = setup();
-    runner.enqueue('daily_feedback', '2026-09-20');
+    runner.enqueue('daily_feedback', '2026-09-22');
     await runner.idle();
     expect((await getDay(app, DAY)).previous).toMatchObject({
-      day: '2026-09-20',
+      day: '2026-09-22',
       feedback: { id: expect.any(String) },
+      condition: { aiLevel: FAKE_OUTPUT.condition.level },
     });
+  });
+
+  it('FR-D02 前の業務日に FB がなければ、それより前の FB があっても前日の FB は null', async () => {
+    const { app, runner } = setup();
+    // 3日前と2日前にもらい、前の日（9/22）にはもらっていない
+    runner.enqueue('daily_feedback', '2026-09-20');
+    runner.enqueue('daily_feedback', '2026-09-21');
+    await runner.idle();
+    expect((await getDay(app, DAY)).previous).toBeNull();
+  });
+
+  it('FR-D02 月の初日の前日は、前の月の末日', async () => {
+    const { app, runner } = setup();
+    runner.enqueue('daily_feedback', '2026-09-30');
+    await runner.idle();
+    expect((await getDay(app, '2026-10-01')).previous).toMatchObject({ day: '2026-09-30' });
   });
 
   it('調子を手で直すと、AI の値と手動の値の両方が残り、null で手動の値を外せる', async () => {
