@@ -42,14 +42,10 @@ export function carryoverHeading(baseDay: string | null, today: string) {
   };
 }
 
-/** 前日の FB の見出しと日付（「昨日のフィードバック」と「9月21日（月）」） */
-export function previousFeedbackLabels(previousDay: string, today: string) {
+/** 前日の FB の日付（「9月21日（月）」）。朝の計画に出すのは、前の業務日の FB だけ（issue 272 の決定） */
+export function previousFeedbackDayLabel(previousDay: string): string {
   const { date, weekday } = formatDayHeading(previousDay);
-  return {
-    heading:
-      daysBetween(previousDay, today) <= 1 ? '昨日のフィードバック' : `${date}のフィードバック`,
-    dayLabel: `${date}（${weekday.slice(0, 1)}）`,
-  };
+  return `${date}（${weekday.slice(0, 1)}）`;
 }
 
 /** 状態と日数のチップの文言（「待ち・5日目」「未着手」） */
@@ -160,13 +156,12 @@ export function MorningPage() {
     </header>
   );
 
-  // 詳細ペイン：前日の FB と調子（FR-D02）。「前日」は最後に FB をもらった日（architecture.md 4.5）
-  const previousLabels = previous === null ? null : previousFeedbackLabels(previous.day, day);
+  // 詳細ペイン：前日の FB と調子（FR-D02）。前の業務日にもらった FB だけを出す（architecture.md 4.5）
   const detail =
-    previous === null || previousLabels === null ? undefined : (
+    previous === null ? undefined : (
       <FeedbackPanel
-        heading={previousLabels.heading}
-        dayLabel={previousLabels.dayLabel}
+        heading="昨日のフィードバック"
+        dayLabel={previousFeedbackDayLabel(previous.day)}
         feedback={previous.feedback}
         condition={previous.condition}
         job={null}
@@ -174,7 +169,7 @@ export function MorningPage() {
         onChangeCondition={(level) => setCondition.mutate(level)}
       />
     );
-  const emptyNote = 'FBをもらうと、次の朝ここに表示されます';
+  const emptyNote = '昨日のFBはありません。振り返りでFBをもらうと、次の朝ここに表示されます';
 
   if (confirmedAt !== null) {
     return (
